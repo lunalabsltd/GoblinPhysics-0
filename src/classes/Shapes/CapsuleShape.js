@@ -19,7 +19,7 @@ Goblin.CapsuleShape = function( radius, half_height ) {
 	 * @property half_height
 	 * @type {Number}
 	 */
-	this.half_height = half_height;
+	this.half_height = Math.abs(half_height);
 
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
@@ -40,9 +40,18 @@ Goblin.CapsuleShape.prototype.calculateLocalAABB = function( aabb ) {
 };
 
 Goblin.CapsuleShape.prototype.getInertiaTensor = function( mass ) {
-	if ( this.radius <= 0 || this.half_height <= 0 ) {
-		return new Goblin.Matrix3();
+	if ( -Goblin.EPSILON <= this.half_height && this.half_height <= Goblin.EPSILON ) {
+		if ( -Goblin.EPSILON <= this.radius && this.radius <= Goblin.EPSILON ) {
+			return new Goblin.Matrix3();
+		}
+		var element = 0.4 * mass * this.radius * this.radius;
+		return new Goblin.Matrix3(
+			element, 0, 0,
+			0, element, 0,
+			0, 0, element
+		);
 	}
+	
 	var k = 1.5 * this.half_height / this.radius;
 	var ms = mass / ( 1 + k );
 	var mc = mass / ( 1 + 1 / k );
