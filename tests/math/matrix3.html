@@ -62,9 +62,9 @@ window.onload = function() {
 			expect( matrix ).property( 'e02', 0 );
 			expect( matrix ).property( 'e10', 0 );
 			expect( matrix ).property( 'e11', 2.220446049250313e-16 );
-			expect( matrix ).property( 'e12', -0.9999999999999998 );
+			expect( matrix ).property( 'e12', -1 );
 			expect( matrix ).property( 'e20', 0 );
-			expect( matrix ).property( 'e21', 0.9999999999999998 );
+			expect( matrix ).property( 'e21', 1 );
 			expect( matrix ).property( 'e22', 2.220446049250313e-16 );
 		});
 
@@ -94,9 +94,9 @@ window.onload = function() {
 				new Goblin.Quaternion( 0, 1, 0, 1 )
 			);
 			matrix.transformVector3( vector );
-			expect( vector ).property( 'x', 5.499999999999999 );
+			expect( vector ).property( 'x', 5.5 );
 			expect( vector ).property( 'y', 3 );
-			expect( vector ).property( 'z', -0.9999999999999986 );
+			expect( vector ).property( 'z', -1 );
 		});
 
 		it('transformVector3Into', function(){
@@ -126,9 +126,9 @@ window.onload = function() {
 				new Goblin.Quaternion( 0, 1, 0, 1 )
 			);
 			matrix.transformVector3Into( vector, dest );
-			expect( dest ).property( 'x', 5.499999999999999 );
+			expect( dest ).property( 'x', 5.5 );
 			expect( dest ).property( 'y', 3 );
-			expect( dest ).property( 'z', -0.9999999999999986 );
+			expect( dest ).property( 'z', -1 );
 		});
 
 		it('transpose', function(){
@@ -171,9 +171,9 @@ window.onload = function() {
 
 			vector = new Goblin.Vector3( 1, 3, 5.5 );
 			matrix.transformVector3( vector );
-			expect( vector ).property( 'x', -5.500000000000001 );
+			expect( vector ).property( 'x', -5.5 );
 			expect( vector ).property( 'y', 3 );
-			expect( vector ).property( 'z', 1.0000000000000016 );
+			expect( vector ).property( 'z', 1 );
 		});
 
 		it('invertInto', function(){
@@ -200,9 +200,9 @@ window.onload = function() {
 
 			vector = new Goblin.Vector3( 1, 3, 5.5 );
 			dest.transformVector3( vector );
-			expect( vector ).property( 'x', -5.500000000000001 );
+			expect( vector ).property( 'x', -5.5 );
 			expect( vector ).property( 'y', 3 );
-			expect( vector ).property( 'z', 1.0000000000000016 );
+			expect( vector ).property( 'z', 1 );
 		});
 
 		it('multiply', function(){
@@ -227,12 +227,12 @@ window.onload = function() {
 			expect( b ).property( 'e00', 1 );
 			expect( b ).property( 'e10', 4 );
 			expect( b ).property( 'e20', 7 );
-			expect( b ).property( 'e01', 2.9999999999999996 );
-			expect( b ).property( 'e11', 5.999999999999999 );
+			expect( b ).property( 'e01', 3 );
+			expect( b ).property( 'e11', 6 );
 			expect( b ).property( 'e21', 9 );
-			expect( b ).property( 'e02', -1.999999999999999 );
-			expect( b ).property( 'e12', -4.999999999999998 );
-			expect( b ).property( 'e22', -7.9999999999999964 );
+			expect( b ).property( 'e02', -2 );
+			expect( b ).property( 'e12', -5 );
+			expect( b ).property( 'e22', -8 );
 		});
 
 		it('multiplyFrom', function(){
@@ -258,12 +258,12 @@ window.onload = function() {
 			expect( c ).property( 'e00', 1 );
 			expect( c ).property( 'e10', 4 );
 			expect( c ).property( 'e20', 7 );
-			expect( c ).property( 'e01', 2.9999999999999996 );
-			expect( c ).property( 'e11', 5.999999999999999 );
+			expect( c ).property( 'e01', 3 );
+			expect( c ).property( 'e11', 6 );
 			expect( c ).property( 'e21', 9 );
-			expect( c ).property( 'e02', -1.999999999999999 );
-			expect( c ).property( 'e12', -4.999999999999998 );
-			expect( c ).property( 'e22', -7.9999999999999964 );
+			expect( c ).property( 'e02', -2 );
+			expect( c ).property( 'e12', -5 );
+			expect( c ).property( 'e22', -8 );
 		});
 	});
 
