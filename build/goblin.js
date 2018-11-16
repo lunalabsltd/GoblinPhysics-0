@@ -5,6 +5,848 @@
 */
 (function(){
 	var Goblin = {};
+if (typeof pc === 'undefined') {
+	pc = (function() {
+
+		/**
+		 * @private
+		 * @name pc._typeLookup
+		 * @function
+		 * @description Create look up table for types
+		 */
+		var _typeLookup = (function() {
+			var result = {},
+			index,
+			names = ["Array", "Object", "Function", "Date", "RegExp", "Float32Array"];
+
+			for ( index = 0; index < names.length; ++index ) {
+				result["[object " + names[index] + "]"] = names[index].toLowerCase();
+			}
+
+			return result;
+		}());
+
+		return {
+
+			/**
+			 * @private
+			 * @function
+			 * @name pc.type
+			 * @description Extended typeof() function, returns the type of the object.
+			 * @param {Object} obj The object to get the type of
+			 * @return {String} The type string: "null", "undefined", "number", "string", "boolean", "array", "object", "function", "date", "regexp" or "float32array"
+			 */
+			type: function( obj ) {
+				if ( obj === null ) {
+					return "null";
+				}
+
+				var type = typeof( obj );
+
+				if ( type == "undefined" || type == "number" || type == "string" || type == "boolean" ) {
+					return type;
+				}
+
+				return _typeLookup[Object.prototype.toString.call( obj )];
+			},
+
+			/**
+			 * @private
+			 * @function
+			 * @name pc.extend
+			 * @description Merge the contents of two objects into a single object
+			 * @param {Object} target The target object of the merge
+			 * @param {Object} ex The object that is merged with target
+			 * @return {Object} The target object
+			 * @example
+			 * var A = {a: function() {console.log(this.a}};
+			 * var B = {b: function() {console.log(this.b}};
+			 *
+			 * pc.extend(A,B);
+			 * A.a();
+			 * // logs "a"
+			 * A.b();
+			 * // logs "b"
+			 */
+			extend: function( target, ex ) {
+				var prop,
+				copy;
+
+				for ( prop in ex ) {
+					copy = ex[prop];
+					if ( pc.type( copy ) == "object" ) {
+						target[prop] = pc.extend( {}, copy );
+					} else if ( pc.type( copy ) == "array" ) {
+						target[prop] = pc.extend( [], copy );
+					} else {
+						target[prop] = copy;
+					}
+				}
+
+				return target;
+			}
+		};
+	}());
+}
+pc.extend(pc, (function () {
+    'use strict';
+
+    /**
+    * @name pc.Vec3
+    * @class A 3-dimensional vector.
+    * @description Creates a new Vec3 object
+    * @param {Number} [x] The x value
+    * @param {Number} [y] The y value
+    * @param {Number} [z] The z value
+    * @example
+    * var v = new pc.Vec3(1,2,3);
+    */
+    var Vec3 = function(x, y, z) {
+        this.data = new Float32Array(3);
+
+        this.data[0] = x || 0;
+        this.data[1] = y || 0;
+        this.data[2] = z || 0;
+    };
+
+    Vec3.prototype = {
+        /**
+         * @function
+         * @name pc.Vec3#add
+         * @description Adds a 3-dimensional vector to another in place.
+         * @param {pc.Vec3} rhs The vector to add to the specified vector.
+         * @returns {pc.Vec3} Self for chaining.
+         * @example
+         * var a = new pc.Vec3(10, 10, 10);
+         * var b = new pc.Vec3(20, 20, 20);
+         *
+         * a.add(b);
+         *
+         * // Should output [30, 30, 30]
+         * console.log("The result of the addition is: " + a.toString());
+         */
+        add: function (rhs) {
+            var a = this.data,
+                b = rhs.data;
+
+            a[0] += b[0];
+            a[1] += b[1];
+            a[2] += b[2];
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#add2
+         * @description Adds two 3-dimensional vectors together and returns the result.
+         * @param {pc.Vec3} lhs The first vector operand for the addition.
+         * @param {pc.Vec3} rhs The second vector operand for the addition.
+         * @returns {pc.Vec3} Self for chaining.
+         * @example
+         * var a = new pc.Vec3(10, 10, 10);
+         * var b = new pc.Vec3(20, 20, 20);
+         * var r = new pc.Vec3();
+         *
+         * r.add2(a, b);
+         * // Should output [30, 30, 30]
+         *
+         * console.log("The result of the addition is: " + r.toString());
+         */
+        add2: function (lhs, rhs) {
+            var a = lhs.data,
+                b = rhs.data,
+                r = this.data;
+
+            r[0] = a[0] + b[0];
+            r[1] = a[1] + b[1];
+            r[2] = a[2] + b[2];
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#clone
+         * @description Returns an identical copy of the specified 3-dimensional vector.
+         * @returns {pc.Vec3} A 3-dimensional vector containing the result of the cloning.
+         * @example
+         * var v = new pc.Vec3(10, 20, 30);
+         * var vclone = v.clone();
+         * console.log("The result of the cloning is: " + vclone.toString());
+         */
+        clone: function () {
+            return new Vec3().copy(this);
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#copy
+         * @description Copied the contents of a source 3-dimensional vector to a destination 3-dimensional vector.
+         * @param {pc.Vec3} rhs A vector to copy to the specified vector.
+         * @returns {pc.Vec3} Self for chaining.
+         * @example
+         * var src = new pc.Vec3(10, 20, 30);
+         * var dst = new pc.Vec3();
+         *
+         * dst.copy(src);
+         *
+         * console.log("The two vectors are " + (dst.equals(src) ? "equal" : "different"));
+         */
+        copy: function (rhs) {
+            var a = this.data,
+                b = rhs.data;
+
+            a[0] = b[0];
+            a[1] = b[1];
+            a[2] = b[2];
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#cross
+         * @description Returns the result of a cross product operation performed on the two specified 3-dimensional vectors.
+         * @param {pc.Vec3} lhs The first 3-dimensional vector operand of the cross product.
+         * @param {pc.Vec3} rhs The second 3-dimensional vector operand of the cross product.
+         * @returns {pc.Vec3} Self for chaining.
+         * @example
+         * var back = new pc.Vec3().cross(pc.Vec3.RIGHT, pc.Vec3.UP);
+         *
+         * // Should print the Z axis (i.e. [0, 0, 1])
+         * console.log("The result of the cross product is: " + back.toString());
+         */
+        cross: function (lhs, rhs) {
+
+            var a, b, r, ax, ay, az, bx, by, bz;
+
+            if (typeof rhs === 'undefined') {
+                a = this.data;
+                b = lhs.data;
+            } else {
+                a = lhs.data;
+                b = rhs.data;
+            }
+
+            r = this.data;
+
+            ax = a[0];
+            ay = a[1];
+            az = a[2];
+            bx = b[0];
+            by = b[1];
+            bz = b[2];
+
+            r[0] = ay * bz - by * az;
+            r[1] = az * bx - bz * ax;
+            r[2] = ax * by - bx * ay;
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#dot
+         * @description Returns the result of a dot product operation performed on the two specified 3-dimensional vectors.
+         * @param {pc.Vec3} rhs The second 3-dimensional vector operand of the dot product.
+         * @returns {Number} The result of the dot product operation.
+         * @example
+         * var v1 = new pc.Vec3(5, 10, 20);
+         * var v2 = new pc.Vec3(10, 20, 40);
+         * var v1dotv2 = v1.dot(v2);
+         * console.log("The result of the dot product is: " + v1dotv2);
+         */
+        dot: function (rhs) {
+            var a = this.data,
+                b = rhs.data;
+
+            return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#equals
+         * @description Reports whether two vectors are equal.
+         * @param {pc.Vec3} rhs The vector to compare to the specified vector.
+         * @returns {Boolean} true if the vectors are equal and false otherwise.
+         * @example
+         * var a = new pc.Vec3(1, 2, 3);
+         * var b = new pc.Vec3(4, 5, 6);
+         * console.log("The two vectors are " + (a.equals(b) ? "equal" : "different"));
+         */
+        equals: function (rhs) {
+            var a = this.data,
+                b = rhs.data;
+
+            return a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#length
+         * @description Returns the magnitude of the specified 3-dimensional vector.
+         * @returns {Number} The magnitude of the specified 3-dimensional vector.
+         * @example
+         * var vec = new pc.Vec3(3, 4, 0);
+         * var len = vec.length();
+         * // Should output 5
+         * console.log("The length of the vector is: " + len);
+         */
+        length: function () {
+            var v = this.data;
+
+            return Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#lengthSq
+         * @description Returns the magnitude squared of the specified 3-dimensional vector.
+         * @returns {Number} The magnitude of the specified 3-dimensional vector.
+         * @example
+         * var vec = new pc.Vec3(3, 4, 0);
+         * var len = vec.lengthSq();
+         * // Should output 25
+         * console.log("The length squared of the vector is: " + len);
+         */
+        lengthSq: function () {
+            var v = this.data;
+
+            return v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#lerp
+         * @description Returns the result of a linear interpolation between two specified 3-dimensional vectors.
+         * @param {pc.Vec3} lhs The 3-dimensional to interpolate from.
+         * @param {pc.Vec3} rhs The 3-dimensional to interpolate to.
+         * @param {Number} alpha The value controlling the point of interpolation. Between 0 and 1, the linear interpolant
+         * will occur on a straight line between lhs and rhs. Outside of this range, the linear interpolant will occur on
+         * a ray extrapolated from this line.
+         * @returns {pc.Vec3} Self for chaining.
+         * @example
+         * var a = new pc.Vec3(0, 0, 0);
+         * var b = new pc.Vec3(10, 10, 10);
+         * var r = new pc.Vec3();
+         *
+         * r.lerp(a, b, 0);   // r is equal to a
+         * r.lerp(a, b, 0.5); // r is 5, 5, 5
+         * r.lerp(a, b, 1);   // r is equal to b
+         */
+        lerp: function (lhs, rhs, alpha) {
+            var a = lhs.data,
+                b = rhs.data,
+                r = this.data;
+
+            r[0] = a[0] + alpha * (b[0] - a[0]);
+            r[1] = a[1] + alpha * (b[1] - a[1]);
+            r[2] = a[2] + alpha * (b[2] - a[2]);
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#mul
+         * @description Returns the result of multiplying the specified 3-dimensional vectors together.
+         * @param {pc.Vec3} rhs The 3-dimensional vector used as the second multiplicand of the operation.
+         * @returns {pc.Vec3} Self for chaining.
+         * @example
+         * var a = new pc.Vec3(2, 3, 4);
+         * var b = new pc.Vec3(4, 5, 6);
+         *
+         * a.mul(b);
+         *
+         * // Should output 8, 15, 24
+         * console.log("The result of the multiplication is: " + a.toString());
+         */
+        mul: function (rhs) {
+            var a = this.data,
+                b = rhs.data;
+
+            a[0] *= b[0];
+            a[1] *= b[1];
+            a[2] *= b[2];
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#mul2
+         * @description Returns the result of multiplying the specified 3-dimensional vectors together.
+         * @param {pc.Vec3} lhs The 3-dimensional vector used as the first multiplicand of the operation.
+         * @param {pc.Vec3} rhs The 3-dimensional vector used as the second multiplicand of the operation.
+         * @returns {pc.Vec3} Self for chaining.
+         * @example
+         * var a = new pc.Vec3(2, 3, 4);
+         * var b = new pc.Vec3(4, 5, 6);
+         * var r = new pc.Vec3();
+         *
+         * r.mul2(a, b);
+         *
+         * // Should output 8, 15, 24
+         * console.log("The result of the multiplication is: " + r.toString());
+         */
+        mul2: function (lhs, rhs) {
+            var a = lhs.data,
+                b = rhs.data,
+                r = this.data;
+
+            r[0] = a[0] * b[0];
+            r[1] = a[1] * b[1];
+            r[2] = a[2] * b[2];
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#normalize
+         * @description Returns the specified 3-dimensional vector copied and converted to a unit vector.
+         * If the vector has a length of zero, the vector's elements will be set to zero.
+         * @returns {pc.Vec3} The result of the normalization.
+         * @example
+         * var v = new pc.Vec3(25, 0, 0);
+         *
+         * v.normalize();
+         *
+         * // Should output 1, 0, 0, 0
+         * console.log("The result of the vector normalization is: " + v.toString());
+         */
+        normalize: function () {
+            var v = this.data;
+
+            var lengthSq = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+            if (lengthSq > 0) {
+                var invLength = 1 / Math.sqrt(lengthSq);
+                v[0] *= invLength;
+                v[1] *= invLength;
+                v[2] *= invLength;
+            } else {
+                v[0] = v[1] = v[2] = 0;
+            }
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#normalize
+         * @description Returns the specified 3-dimensional vector copied and converted to a unit vector.
+         * If the vector has a length of zero, the vector's elements will be set to zero.
+         * @returns {pc.Vec3} The result of the normalization.
+         */
+        normalize2: function( rhs ) {
+            var a = this.data,
+                b = rhs.data;
+
+            var lengthSq = b[0] * b[0] + b[1] * b[1] + b[2] * b[2];
+            if (lengthSq > 0) {
+                var invLength = 1 / Math.sqrt(lengthSq);
+                a[0] = b[0] * invLength;
+                a[1] = b[1] * invLength;
+                a[2] = b[2] * invLength;
+            } else {
+                a[0] = a[1] = a[2] = 0;
+            }
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name  pc.Vec3#project
+         * @description Projects this 3-dimensional vector onto the specified vector.
+         * @param {pc.Vec3} rhs The vector onto which the original vector will be projected on.
+         * @returns {pc.Vec3} Self for chaining.
+         * @example
+         * var v = new pc.Vec3(5, 5, 5);
+         * var normal = new pc.Vec3(1, 0, 0);
+         *
+         * v.project(normal);
+         *
+         * // Should output 5, 0, 0
+         * console.log("The result of the vector projection is: " + v.toString());
+         */
+        project: function (rhs) {
+            var a = this.data;
+            var b = rhs.data;
+            var a_dot_b = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+            var b_dot_b = b[0] * b[0] + b[1] * b[1] + b[2] * b[2];
+            var s = a_dot_b / b_dot_b;
+            a[0] = b[0] * s;
+            a[1] = b[1] * s;
+            a[2] = b[2] * s;
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#scale
+         * @description Scales each dimension of the specified 3-dimensional vector by the supplied
+         * scalar value.
+         * @param {Number} scalar The value by which each vector component is multiplied.
+         * @returns {pc.Vec3} Self for chaining.
+         * @example
+         * var v = new pc.Vec3(2, 4, 8);
+         *
+         * // Multiply by 2
+         * v.scale(2);
+         *
+         * // Negate
+         * v.scale(-1);
+         *
+         * // Divide by 2
+         * v.scale(0.5);
+         */
+        scale: function (scalar) {
+            var v = this.data;
+
+            v[0] *= scalar;
+            v[1] *= scalar;
+            v[2] *= scalar;
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#scale
+         * @description Scales each dimension of the specified 3-dimensional vector by the supplied
+         * scalar value.
+         * @param {pc.Vec3} rhs The 3-dimensional vector.
+         * @param {Number} scalar The value by which each vector component is multiplied.
+         * @returns {pc.Vec3} Self for chaining.
+         */
+        scale2: function(rhs, scalar) {
+            var a = this.data,
+                b = rhs.data;
+
+            a[0] = b[0] * scalar;
+            a[1] = b[1] * scalar;
+            a[2] = b[2] * scalar;
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#set
+         * @description Sets the specified 3-dimensional vector to the supplied numerical values.
+         * @param {Number} x The value to set on the first component of the vector.
+         * @param {Number} y The value to set on the second component of the vector.
+         * @param {Number} z The value to set on the third component of the vector.
+         * @example
+         * var v = new pc.Vec3();
+         * v.set(5, 10, 20);
+         *
+         * // Should output 5, 10, 20
+         * console.log("The result of the vector set is: " + v.toString());
+         */
+        set: function (x, y, z) {
+            var v = this.data;
+
+            v[0] = x;
+            v[1] = y;
+            v[2] = z;
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#sub
+         * @description Subtracts a 3-dimensional vector from another in place.
+         * @param {pc.Vec3} rhs The vector to add to the specified vector.
+         * @returns {pc.Vec3} Self for chaining.
+         * @example
+         * var a = new pc.Vec3(10, 10, 10);
+         * var b = new pc.Vec3(20, 20, 20);
+         *
+         * a.sub(b);
+         *
+         * // Should output [-10, -10, -10]
+         * console.log("The result of the addition is: " + a.toString());
+         */
+        sub: function (rhs) {
+            var a = this.data,
+                b = rhs.data;
+
+            a[0] -= b[0];
+            a[1] -= b[1];
+            a[2] -= b[2];
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#sub2
+         * @description Subtracts two 3-dimensional vectors from one another and returns the result.
+         * @param {pc.Vec3} lhs The first vector operand for the addition.
+         * @param {pc.Vec3} rhs The second vector operand for the addition.
+         * @returns {pc.Vec3} Self for chaining.
+         * @example
+         * var a = new pc.Vec3(10, 10, 10);
+         * var b = new pc.Vec3(20, 20, 20);
+         * var r = new pc.Vec3();
+         *
+         * r.sub2(a, b);
+         *
+         * // Should output [-10, -10, -10]
+         * console.log("The result of the addition is: " + r.toString());
+         */
+        sub2: function (lhs, rhs) {
+            var a = lhs.data,
+                b = rhs.data,
+                r = this.data;
+
+            r[0] = a[0] - b[0];
+            r[1] = a[1] - b[1];
+            r[2] = a[2] - b[2];
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#distance
+         * @description Finds distance between two vectors.
+         * @param {pc.Vec3} rhs Second vector.
+         * @returns {Number} Distance between two vectors.
+         */
+        distance: function(rhs) {
+            var a = this.data,
+                b = rhs.data;
+
+            var x = b[0] - a[0],
+                y = b[1] - a[1],
+                z = b[2] - a[2];
+            return Math.sqrt( x * x + y * y + z * z );
+        },
+
+        /**
+         * @function
+         * @name pc.Vec3#toString
+         * @description Converts the vector to string form.
+         * @returns {String} The vector in string form.
+         * @example
+         * var v = new pc.Vec3(20, 10, 5);
+         * // Should output '[20, 10, 5]'
+         * console.log(v.toString());
+         */
+        toString: function () {
+            return "[" + this.data[0] + ", " + this.data[1] + ", " + this.data[2] + "]";
+        }
+    };
+
+    /**
+     * @name pc.Vec3#x
+     * @type Number
+     * @description The first component of the vector.
+     * @example
+     * var vec = new pc.Vec3(10, 20, 30);
+     *
+     * // Get x
+     * var x = vec.x;
+     *
+     * // Set x
+     * vec.x = 0;
+     */
+    Object.defineProperty(Vec3.prototype, 'x', {
+        get: function () {
+            return this.data[0];
+        },
+        set: function (value) {
+            this.data[0] = value;
+        }
+    });
+
+    /**
+     * @name pc.Vec3#y
+     * @type Number
+     * @description The second component of the vector.
+     * @example
+     * var vec = new pc.Vec3(10, 20, 30);
+     *
+     * // Get y
+     * var y = vec.y;
+     *
+     * // Set y
+     * vec.y = 0;
+     */
+    Object.defineProperty(Vec3.prototype, 'y', {
+        get: function () {
+            return this.data[1];
+        },
+        set: function (value) {
+            this.data[1] = value;
+        }
+    });
+
+    /**
+     * @name pc.Vec3#z
+     * @type Number
+     * @description The third component of the vector.
+     * @example
+     * var vec = new pc.Vec3(10, 20, 30);
+     *
+     * // Get z
+     * var z = vec.z;
+     *
+     * // Set z
+     * vec.z = 0;
+     */
+    Object.defineProperty(Vec3.prototype, 'z', {
+        get: function () {
+            return this.data[2];
+        },
+        set: function (value) {
+            this.data[2] = value;
+        }
+    });
+
+    /**
+     * @static
+     * @readonly
+     * @type pc.Vec3
+     * @name pc.Vec3.BACK
+     * @description A constant vector set to [0, 0, 1].
+     */
+    Object.defineProperty(Vec3, 'BACK', {
+        get: (function () {
+            var back = new Vec3(0, 0, 1);
+            return function () {
+                return back;
+            };
+        }())
+    });
+
+    /**
+     * @static
+     * @readonly
+     * @type pc.Vec3
+     * @name pc.Vec3.DOWN
+     * @description A constant vector set to [0, -1, 0].
+     */
+    Object.defineProperty(Vec3, 'DOWN', {
+        get: (function () {
+            var down = new Vec3(0, -1, 0);
+            return function () {
+                return down;
+            };
+        }())
+    });
+
+    /**
+     * @static
+     * @readonly
+     * @type pc.Vec3
+     * @name pc.Vec3.FORWARD
+     * @description A constant vector set to [0, 0, -1].
+     */
+    Object.defineProperty(Vec3, 'FORWARD', {
+        get: (function () {
+            var forward = new Vec3(0, 0, -1);
+            return function () {
+                return forward;
+            };
+        }())
+    });
+
+    /**
+     * @field
+     * @static
+     * @readonly
+     * @type pc.Vec3
+     * @name pc.Vec3.LEFT
+     * @description A constant vector set to [-1, 0, 0].
+     */
+    Object.defineProperty(Vec3, 'LEFT', {
+        get: (function () {
+            var left = new Vec3(-1, 0, 0);
+            return function () {
+                return left;
+            };
+        }())
+    });
+
+    /**
+     * @field
+     * @static
+     * @readonly
+     * @type pc.Vec3
+     * @name pc.Vec3.ONE
+     * @description A constant vector set to [1, 1, 1].
+     */
+    Object.defineProperty(Vec3, 'ONE', {
+        get: (function () {
+            var one = new Vec3(1, 1, 1);
+            return function () {
+                return one;
+            };
+        }())
+    });
+
+    /**
+     * @field
+     * @static
+     * @readonly
+     * @type pc.Vec3
+     * @name pc.Vec3.RIGHT
+     * @description A constant vector set to [1, 0, 0].
+     */
+    Object.defineProperty(Vec3, 'RIGHT', {
+        get: (function () {
+            var right = new Vec3(1, 0, 0);
+            return function () {
+                return right;
+            };
+        }())
+    });
+
+    /**
+     * @field
+     * @static
+     * @readonly
+     * @type pc.Vec3
+     * @name pc.Vec3.UP
+     * @description A constant vector set to [0, 1, 0].
+     */
+    Object.defineProperty(Vec3, 'UP', {
+        get: (function () {
+            var down = new Vec3(0, 1, 0);
+            return function () {
+                return down;
+            };
+        }())
+    });
+
+    /**
+     * @field
+     * @static
+     * @readonly
+     * @type pc.Vec3
+     * @name pc.Vec3.ZERO
+     * @description A constant vector set to [0, 0, 0].
+     */
+    Object.defineProperty(Vec3, 'ZERO', {
+        get: (function () {
+            var zero = new Vec3(0, 0, 0);
+            return function () {
+                return zero;
+            };
+        }())
+    });
+
+    return {
+        Vec3: Vec3
+    };
+}()));
+
 Goblin.Matrix3 = function( e00, e01, e02, e10, e11, e12, e20, e21, e22 ) {
 	this.e00 = e00 || 0;
 	this.e01 = e01 || 0;
@@ -574,140 +1416,45 @@ Goblin.Quaternion.prototype = {
 		dest.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
 	}
 };
-Goblin.Vector3 = function( x, y, z ) {
-	this.x = x || 0;
-	this.y = y || 0;
-	this.z = z || 0;
-};
+Goblin.Vector3 = (function() {
+	var prototype = pc.Vec3.prototype;
 
-Goblin.Vector3.prototype = {
-	set: function( x, y, z ) {
-		this.x = x;
-		this.y = y;
-		this.z = z;
-	},
+	prototype.addVectors      = prototype.add2;
+	prototype.subtract        = prototype.sub;
+	prototype.subtractVectors = prototype.sub2;
+	prototype.multiply        = prototype.mul;
+	prototype.multiplyVectors = prototype.mul2;
+	prototype.lengthSquared   = prototype.lengthSq;
+	prototype.scaleVector     = prototype.scale2;
+	prototype.normalizeVector = prototype.normalize2;
+	prototype.crossVectors    = prototype.cross;
+	prototype.distanceTo      = prototype.distance;
 
-	copy: function( v ) {
-		this.x = v.x;
-		this.y = v.y;
-		this.z = v.z;
-	},
+	prototype.findOrthogonal  = function( o1, o2 ) {
+		var d = this.data,
+			d1 = o1.data,
+			d2 = o2.data,
+			a, k;
 
-	add: function( v ) {
-		this.x += v.x;
-		this.y += v.y;
-		this.z += v.z;
-	},
-
-	addVectors: function( a, b ) {
-		this.x = a.x + b.x;
-		this.y = a.y + b.y;
-		this.z = a.z + b.z;
-	},
-
-	subtract: function( v ) {
-		this.x -= v.x;
-		this.y -= v.y;
-		this.z -= v.z;
-	},
-
-	subtractVectors: function( a, b ) {
-		this.x = a.x - b.x;
-		this.y = a.y - b.y;
-		this.z = a.z - b.z;
-	},
-
-	multiply: function( v ) {
-		this.x *= v.x;
-		this.y *= v.y;
-		this.z *= v.z;
-	},
-
-	multiplyVectors: function( a, b ) {
-		this.x = a.x * b.x;
-		this.y = a.y * b.y;
-		this.z = a.z * b.z;
-	},
-
-	scale: function( scalar ) {
-		this.x *= scalar;
-		this.y *= scalar;
-		this.z *= scalar;
-	},
-
-	scaleVector: function( v, scalar ) {
-		this.x = v.x * scalar;
-		this.y = v.y * scalar;
-		this.z = v.z * scalar;
-	},
-
-	lengthSquared: function() {
-		return this.dot( this );
-	},
-
-	length: function() {
-		return Math.sqrt( this.lengthSquared() );
-	},
-
-	normalize: function() {
-		var length = this.length();
-		if ( length === 0 ) {
-			this.x = this.y = this.z = 0;
-		} else {
-			this.scale( 1 / length );
-		}
-	},
-
-	normalizeVector: function( v ) {
-		this.copy( v );
-		this.normalize();
-	},
-
-	dot: function( v ) {
-		return this.x * v.x + this.y * v.y + this.z * v.z;
-	},
-
-	cross: function( v ) {
-		var x = this.x, y = this.y, z = this.z;
-
-		this.x = y * v.z - z * v.y;
-		this.y = z * v.x - x * v.z;
-		this.z = x * v.y - y * v.x;
-	},
-
-	crossVectors: function( a, b ) {
-		this.x = a.y * b.z - a.z * b.y;
-		this.y = a.z * b.x - a.x * b.z;
-		this.z = a.x * b.y - a.y * b.x;
-	},
-
-	distanceTo: function( v ) {
-		var x = v.x - this.x,
-			y = v.y - this.y,
-			z = v.z - this.z;
-		return Math.sqrt( x*x + y*y + z*z );
-	},
-
-	findOrthogonal: function( o1, o2 ) {
-		var a, k;
-		if ( Math.abs( this.z ) > 0.7071067811865476 ) {
+		if ( Math.abs( d[2] ) > 0.7071067811865476 ) {
 			// choose p in y-z plane
-			a = -this.y * this.y + this.z * this.z;
+			a = -d[1] * d[1] + d[2] * d[2];
 			k = 1 / Math.sqrt( a );
-			o1.set( 0, -this.z * k, this.y * k );
+			o1.set( 0, -d[2] * k, d[1] * k );
 			// set q = n x p
-			o2.set( a * k, -this.x * o1.z, this.x * o1.y );
-		}
-		else {
+			o2.set( a * k, -d[0] * d1[2], d[0] * d1[1] );
+		} else {
 			// choose p in x-y plane
-			a = this.x * this.x + this.y * this.y;
+			a = d[0] * d[0] + d[1] * d[1];
 			k = 1 / Math.sqrt( a );
-			o1.set( -this.y * k, this.x * k, 0 );
+			o1.set( -d[1] * k, d[0] * k, 0 );
 			// set q = n x p
-			o2.set( -this.z * o1.y, this.z * o1.x, a * k );
+			o2.set( -d[2] * d1[1], d[2] * d1[0], a * k );
 		}
-	}
-};
+	};
+
+	return pc.Vec3;
+}());
 Goblin.EPSILON = 0.00001;
 
 var _tmp_vec3_1 = new Goblin.Vector3(),
@@ -4096,348 +4843,6 @@ Goblin.RayIntersection = function() {
 	this.t = null;
     this.normal = new Goblin.Vector3();
 };
-Goblin.CollisionUtils = {};
-
-Goblin.CollisionUtils.canBodiesCollide = function( object_a, object_b ) {
-	if ( object_a._mass === Infinity && object_b._mass === Infinity ) {
-		// Two static objects aren't considered to be in contact
-		return false;
-	}
-
-	// Check collision masks
-	if ( object_a.collision_mask !== 0 ) {
-		if ( ( object_a.collision_mask & 1 ) === 0 ) {
-			// object_b must not be in a matching group
-			if ( ( object_a.collision_mask & object_b.collision_groups ) !== 0 ) {
-				return false;
-			}
-		} else {
-			// object_b must be in a matching group
-			if ( ( object_a.collision_mask & object_b.collision_groups ) === 0 ) {
-				return false;
-			}
-		}
-	}
-	if ( object_b.collision_mask !== 0 ) {
-		if ( ( object_b.collision_mask & 1 ) === 0 ) {
-			// object_a must not be in a matching group
-			if ( ( object_b.collision_mask & object_a.collision_groups ) !== 0 ) {
-				return false;
-			}
-		} else {
-			// object_a must be in a matching group
-			if ( ( object_b.collision_mask & object_a.collision_groups ) === 0 ) {
-				return false;
-			}
-		}
-	}
-
-	return true;
-};
-/**
- * Provides methods useful for working with various types of geometries
- *
- * @class GeometryMethods
- * @static
- */
-Goblin.GeometryMethods = {
-	/**
-	 * determines the location in a triangle closest to a given point
-	 *
-	 * @method findClosestPointInTriangle
-	 * @param {vec3} p point
-	 * @param {vec3} a first triangle vertex
-	 * @param {vec3} b second triangle vertex
-	 * @param {vec3} c third triangle vertex
-	 * @param {vec3} out vector where the result will be stored
-	 */
-	findClosestPointInTriangle: (function() {
-		var ab = new Goblin.Vector3(),
-			ac = new Goblin.Vector3(),
-			_vec = new Goblin.Vector3();
-
-		return function( p, a, b, c, out ) {
-			var v;
-
-			// Check if P in vertex region outside A
-			ab.subtractVectors( b, a );
-			ac.subtractVectors( c, a );
-			_vec.subtractVectors( p, a );
-			var d1 = ab.dot( _vec ),
-				d2 = ac.dot( _vec );
-			if ( d1 <= 0 && d2 <= 0 ) {
-				out.copy( a );
-				return;
-			}
-
-			// Check if P in vertex region outside B
-			_vec.subtractVectors( p, b );
-			var d3 = ab.dot( _vec ),
-				d4 = ac.dot( _vec );
-			if ( d3 >= 0 && d4 <= d3 ) {
-				out.copy( b );
-				return;
-			}
-
-			// Check if P in edge region of AB
-			var vc = d1*d4 - d3*d2;
-			if ( vc <= 0 && d1 >= 0 && d3 <= 0 ) {
-				v = d1 / ( d1 - d3 );
-				out.scaleVector( ab, v );
-				out.add( a );
-				return;
-			}
-
-			// Check if P in vertex region outside C
-			_vec.subtractVectors( p, c );
-			var d5 = ab.dot( _vec ),
-				d6 = ac.dot( _vec );
-			if ( d6 >= 0 && d5 <= d6 ) {
-				out.copy( c );
-				return;
-			}
-
-			// Check if P in edge region of AC
-			var vb = d5*d2 - d1*d6,
-				w;
-			if ( vb <= 0 && d2 >= 0 && d6 <= 0 ) {
-				w = d2 / ( d2 - d6 );
-				out.scaleVector( ac, w );
-				out.add( a );
-				return;
-			}
-
-			// Check if P in edge region of BC
-			var va = d3*d6 - d5*d4;
-			if ( va <= 0 && d4-d3 >= 0 && d5-d6 >= 0 ) {
-				w = (d4 - d3) / ( (d4-d3) + (d5-d6) );
-				out.subtractVectors( c, b );
-				out.scale( w );
-				out.add( b );
-				return;
-			}
-
-			// P inside face region
-			var denom = 1 / ( va + vb + vc );
-			v = vb * denom;
-			w = vc * denom;
-
-
-			// At this point `ab` and `ac` can be recycled and lose meaning to their nomenclature
-
-			ab.scale( v );
-			ab.add( a );
-
-			ac.scale( w );
-
-			out.addVectors( ab, ac );
-		};
-	})(),
-
-	/**
-	 * Finds the Barycentric coordinates of point `p` in the triangle `a`, `b`, `c`
-	 *
-	 * @method findBarycentricCoordinates
-	 * @param p {vec3} point to calculate coordinates of
-	 * @param a {vec3} first point in the triangle
-	 * @param b {vec3} second point in the triangle
-	 * @param c {vec3} third point in the triangle
-	 * @param out {vec3} resulting Barycentric coordinates of point `p`
-	 */
-	findBarycentricCoordinates: function( p, a, b, c, out ) {
-
-		var v0 = new Goblin.Vector3(),
-			v1 = new Goblin.Vector3(),
-			v2 = new Goblin.Vector3();
-
-		v0.subtractVectors( b, a );
-		v1.subtractVectors( c, a );
-		v2.subtractVectors( p, a );
-
-		var d00 = v0.dot( v0 ),
-			d01 = v0.dot( v1 ),
-			d11 = v1.dot( v1 ),
-			d20 = v2.dot( v0 ),
-			d21 = v2.dot( v1 ),
-			denom = d00 * d11 - d01 * d01;
-
-		out.y = ( d11 * d20 - d01 * d21 ) / denom;
-		out.z = ( d00 * d21 - d01 * d20 ) / denom;
-		out.x = 1 - out.y - out.z;
-	},
-
-	/**
-	 * Calculates the distance from point `p` to line `ab`
-	 * @param p {vec3} point to calculate distance to
-	 * @param a {vec3} first point in line
-	 * @param b [vec3] second point in line
-	 * @returns {number}
-	 */
-	findSquaredDistanceFromSegment: (function(){
-		var ab = new Goblin.Vector3(),
-			ap = new Goblin.Vector3(),
-			bp = new Goblin.Vector3();
-
-		return function( p, a, b ) {
-			ab.subtractVectors( a, b );
-			ap.subtractVectors( a, p );
-			bp.subtractVectors( b, p );
-
-			var e = ap.dot( ab );
-			if ( e <= 0 ) {
-				return ap.dot( ap );
-			}
-
-			var f = ab.dot( ab );
-			if ( e >= f ) {
-				return bp.dot( bp );
-			}
-
-			return ap.dot( ap ) - e * e / f;
-		};
-	})(),
-
-	findClosestPointsOnSegments: (function(){
-		var d1 = new Goblin.Vector3(),
-			d2 = new Goblin.Vector3(),
-			r = new Goblin.Vector3(),
-			clamp = function( x, min, max ) {
-				return Math.min( Math.max( x, min ), max );
-			};
-
-		return function( aa, ab, ba, bb, p1, p2 ) {
-			d1.subtractVectors( ab, aa );
-			d2.subtractVectors( bb, ba );
-			r.subtractVectors( aa, ba );
-
-			var a = d1.dot( d1 ),
-				e = d2.dot( d2 ),
-				f = d2.dot( r );
-
-			var s, t;
-
-			if ( a <= Goblin.EPSILON && e <= Goblin.EPSILON ) {
-				// Both segments are degenerate
-				s = t = 0;
-				p1.copy( aa );
-				p2.copy( ba );
-				_tmp_vec3_1.subtractVectors( p1, p2 );
-				return _tmp_vec3_1.dot( _tmp_vec3_1 );
-			}
-
-			if ( a <= Goblin.EPSILON ) {
-				// Only first segment is degenerate
-				s = 0;
-				t = f / e;
-				t = clamp( t, 0, 1 );
-			} else {
-				var c = d1.dot( r );
-				if ( e <= Goblin.EPSILON ) {
-					// Second segment is degenerate
-					t = 0;
-					s = clamp( -c / a, 0, 1 );
-				} else {
-					// Neither segment is degenerate
-					var b = d1.dot( d2 ),
-						denom = a * e - b * b;
-
-					if ( denom !== 0 ) {
-						// Segments aren't parallel
-						s = clamp( ( b * f - c * e ) / denom, 0, 1 );
-					} else {
-						s = 0;
-					}
-
-					// find point on segment2 closest to segment1(s)
-					t = ( b * s + f ) / e;
-
-					// validate t, if it needs clamping then clamp and recompute s
-					if ( t < 0 ) {
-						t = 0;
-						s = clamp( -c / a, 0, 1 );
-					} else if ( t > 1 ) {
-						t = 1;
-						s = clamp( ( b - c ) / a, 0, 1 );
-					}
-				}
-			}
-
-			p1.scaleVector( d1, s );
-			p1.add( aa );
-
-			p2.scaleVector( d2, t );
-			p2.add( ba );
-
-			_tmp_vec3_1.subtractVectors( p1, p2 );
-			return _tmp_vec3_1.dot( _tmp_vec3_1 );
-		};
-	})()
-};
-(function(){
-	Goblin.MinHeap = function( array ) {
-		this.heap = array == null ? [] : array.slice();
-
-		if ( this.heap.length > 0 ) {
-			this.heapify();
-		}
-	};
-	Goblin.MinHeap.prototype = {
-		heapify: function() {
-			var start = ~~( ( this.heap.length - 2 ) / 2 );
-			while ( start >= 0 ) {
-				this.siftUp( start, this.heap.length - 1 );
-				start--;
-			}
-		},
-		siftUp: function( start, end ) {
-			var root = start;
-
-			while ( root * 2 + 1 <= end ) {
-				var child = root * 2 + 1;
-
-				if ( child + 1 <= end && this.heap[child + 1].valueOf() < this.heap[child].valueOf() ) {
-					child++;
-				}
-
-				if ( this.heap[child].valueOf() < this.heap[root].valueOf() ) {
-					var tmp = this.heap[child];
-					this.heap[child] = this.heap[root];
-					this.heap[root] = tmp;
-					root = child;
-				} else {
-					return;
-				}
-			}
-		},
-		push: function( item ) {
-			this.heap.push( item );
-
-			var root = this.heap.length - 1;
-			while ( root !== 0 ) {
-				var parent = ~~( ( root - 1 ) / 2 );
-
-				if ( this.heap[parent].valueOf() > this.heap[root].valueOf() ) {
-					var tmp = this.heap[parent];
-					this.heap[parent] = this.heap[root];
-					this.heap[root] = tmp;
-				}
-
-				root = parent;
-			}
-		},
-		peek: function() {
-			return this.heap.length > 0 ? this.heap[0] : null;
-		},
-		pop: function() {
-			var entry = this.heap[0];
-			this.heap[0] = this.heap[this.heap.length - 1];
-			this.heap.length = this.heap.length - 1;
-			this.siftUp( 0, this.heap.length - 1 );
-
-			return entry;
-		}
-	};
-})();
 /**
  * @class BoxShape
  * @param half_width {Number} half width of the cube ( X axis )
@@ -4605,6 +5010,358 @@ Goblin.BoxShape.prototype.rayIntersect = (function(){
 				max = extent - Math.abs( intersection.point[axis] );
 			}
 		}
+
+		return intersection;
+	};
+})();
+/**
+ * @class CapsuleShape
+ * @param radius {Number} capsule radius
+ * @param half_height {Number} half height of the capsule
+ * @constructor
+ */
+Goblin.CapsuleShape = function( radius, half_height ) {
+	/**
+	 * radius of the capsule
+	 *
+	 * @property radius
+	 * @type {Number}
+	 */
+	this.radius = radius;
+
+	/**
+	 * half height of the capsule
+	 *
+	 * @property half_height
+	 * @type {Number}
+	 */
+	this.half_height = Math.abs(half_height);
+
+	this.aabb = new Goblin.AABB();
+	this.calculateLocalAABB( this.aabb );
+};
+
+/**
+ * Calculates this shape's local AABB and stores it in the passed AABB object
+ *
+ * @method calculateLocalAABB
+ * @param aabb {AABB}
+ */
+Goblin.CapsuleShape.prototype.calculateLocalAABB = function( aabb ) {
+	aabb.min.x = aabb.min.z = -this.radius;
+	aabb.min.y = -this.half_height - this.radius;
+
+	aabb.max.x = aabb.max.z = this.radius;
+	aabb.max.y = this.half_height + this.radius;
+};
+
+Goblin.CapsuleShape.prototype.getInertiaTensor = function( mass ) {
+	if ( -Goblin.EPSILON <= this.half_height && this.half_height <= Goblin.EPSILON ) {
+		if ( -Goblin.EPSILON <= this.radius && this.radius <= Goblin.EPSILON ) {
+			return new Goblin.Matrix3();
+		}
+		var element = 0.4 * mass * this.radius * this.radius;
+		return new Goblin.Matrix3(
+			element, 0, 0,
+			0, element, 0,
+			0, 0, element
+		);
+	}
+	
+	var k = 1.5 * this.half_height / this.radius;
+	var ms = mass / ( 1 + k );
+	var mc = mass / ( 1 + 1 / k );
+	var r2 = this.radius * this.radius;
+	var is = 0.4 * ms * r2;
+	var ic = 0.0833 * mc * ( 3 * r2 + 4 * this.half_height * this.half_height );
+	var i = is + ic + ms * ( 3 * this.radius + 4 * this.half_height ) * this.half_height / 4;
+
+	return new Goblin.Matrix3(
+		i, 0, 0,
+		0, is + 0.5 * mc * r2, 0,
+		0, 0, i
+	);
+};
+
+/**
+ * Given `direction`, find the point in this body which is the most extreme in that direction.
+ * This support point is calculated in local coordinates and stored in the second parameter `support_point`
+ *
+ * @method findSupportPoint
+ * @param direction {vec3} direction to use in finding the support point
+ * @param support_point {vec3} vec3 variable which will contain the supporting point after calling this method
+ */
+Goblin.CapsuleShape.prototype.findSupportPoint = (function(){
+	var temp = new Goblin.Vector3();
+	return function( direction, support_point ) {
+		temp.normalizeVector( direction );
+		support_point.scaleVector( temp, this.radius );
+		support_point.y += direction.y < 0 ? -this.half_height : this.half_height;
+	};
+})();
+
+/**
+ * Checks if a ray segment intersects with the shape
+ *
+ * @method rayIntersect
+ * @property start {vec3} start point of the segment
+ * @property end {vec3} end point of the segment
+ * @return {RayIntersection|null} if the segment intersects, a RayIntersection is returned, else `null`
+ */
+Goblin.CapsuleShape.prototype.rayIntersect = (function(){
+	var direction = new Goblin.Vector3(),
+		length,
+		k, a, c,
+		py,
+		discr, discr_sqrt,
+		y1, y2, y4,
+		t1, t2, t3, t4,
+		intersection;
+
+	function getIntersectionFromPoint( x, y, z, scale ) {
+		var intersection = Goblin.ObjectPool.getObject( 'RayIntersection' );
+		intersection.object = this;
+		intersection.point.set( x, y, z );
+		intersection.t = scale;
+		return intersection;
+	}
+
+	function getIntersectionFromDirection( start, scale ) {
+		var intersection = Goblin.ObjectPool.getObject( 'RayIntersection' );
+		intersection.object = this;
+		intersection.point.scaleVector( direction, scale );
+		intersection.point.add( start );
+		intersection.t = scale;
+		return intersection;
+	}
+
+	return function( start, end ) {
+
+		direction.subtractVectors( end, start );
+		length = direction.length();
+		direction.scale( 1 / length  ); // normalize direction
+
+		a = direction.x * direction.x + direction.z * direction.z;
+		c = start.x * start.x + start.z * start.z - this.radius * this.radius;
+
+		if ( a <= Goblin.EPSILON ) { // segment runs parallel to capsule y axis
+			if ( -Goblin.EPSILON <= c && c <= Goblin.EPSILON ) { // segment is on the side surface
+				if ( start.y > this.half_height ) { // segment starts above top
+					if ( end.y > this.half_height ) { // segment ends above top, it's fully outside
+						return null;
+					}
+					intersection = getIntersectionFromPoint( start.x, this.half_height, start.z, start.y - this.half_height );
+				} else if ( start.y < -this.half_height ) { // segment starts below bottom
+					if ( end.y < -this.half_height ) { // segment ends below bottom, it's fully outside
+						return null;
+					}
+					intersection = getIntersectionFromPoint( start.x, -this.half_height, start.z, -start.y - this.half_height );
+				} else if ( end.y >= this.half_height ) { // segment starts between top and bottom and ends above top
+					intersection = getIntersectionFromPoint( start.x, this.half_height, start.z, this.half_height - start.y );
+				} else if ( end.y <= -this.half_height ) { // segment starts between top and bottom and ends below bottom
+					intersection = getIntersectionFromPoint( start.x, -this.half_height, start.z, start.y + this.half_height );
+				} else { // segment is fully included into capsule side surface
+					return null // segment is fully inside
+				}
+			} else if ( c > 0 ) { // segment runs parallel to the capsule and fully outside
+				return null;
+			} else {
+				py = this.half_height + Math.sqrt( -c ); // intersection point y absolute value
+
+				if ( start.y > py ) { // segment starts above top
+					if ( end.y > py ) { // segment ends above top, it's fully outside
+						return null;
+					}
+					intersection = getIntersectionFromPoint( start.x, py, start.z, start.y - py );
+				} else if ( start.y < -py ) { // segment starts below bottom
+					if ( end.y < -py ) { // segment ends below bottom, it's fully outside
+						return null;
+					}
+					intersection = getIntersectionFromPoint( start.x, -py, start.z, -py - start.y );
+				} else { // segment starts between top and bottom
+					if ( end.y >= py ) { // segment ends above top
+						intersection = getIntersectionFromPoint( start.x, py, start.z, py - start.y );
+					} else if ( end.y <= -py ) { // segment ends below bottom
+						intersection = getIntersectionFromPoint( start.x, -py, start.z, start.y + py );
+					} else { // segment ends between top and bottom, it's fully inside
+						return null;
+					}
+				}
+			}
+		} else { // segment is not parallel to capsule y axis
+			k = start.x * direction.x + start.z * direction.z;
+			discr = k * k - a * c;
+
+			if ( -Goblin.EPSILON <= discr && discr <= Goblin.EPSILON ) { // there is only one line and cylinder intersection
+				t1 = -k / a;
+				y1 = start.y + t1 * direction.y;
+				if ( -this.half_height <= y1 && y1 <= this.half_height ) { // segment intersects capsule in a single point
+					intersection = getIntersectionFromDirection( start, t1 );
+				} else { // no intersections with the capsule
+					return null;
+				}
+			}
+			else if ( discr < 0 ) { // no intersections with cylinder containing capsule
+				return null;
+			}
+
+			discr_sqrt = Math.sqrt( discr );
+			t2 = ( -k + discr_sqrt ) / a; // t2 is farther away from start point than t1
+			if ( t2 < 0 ) { // segment is pointing away from the capsule, no intersections
+				return null;
+			}
+			t1 = ( -k - discr_sqrt ) / a;
+
+			y1 = start.y + t1 * direction.y;
+			if ( y1 > this.half_height ) { // line intersects cylinder above capsule top
+				a += direction.y * direction.y;
+				c += start.y * start.y + this.half_height * ( this.half_height - 2 * start.y );
+				k += direction.y * ( start.y - this.half_height );
+				discr = k * k - a * c;
+
+				if ( discr <= 0 ) { // line doesn't intersect top sphere
+					return null;
+				}
+
+				discr_sqrt = Math.sqrt( discr );
+				t3 = ( -k - discr_sqrt ) / a; // line and top sphere intersection closest to start point
+
+				if ( t3 >= 0 ) {
+					intersection = getIntersectionFromDirection( start, t3 );
+				} else { // segment is pointing away from the line and top sphere first intersection
+					t4 = ( -k + discr_sqrt ) / a; // line and top sphere second intersection point
+					y4 = start.y + t4 * direction.y;
+					if ( y4 > this.half_height ) { // line and top sphere intersection happens on capsule surface
+						intersection = getIntersectionFromDirection( start, t4 );
+					} else { // line intersects bottom hemisphere of the top sphere
+						y2 = start.y + t2 * direction.y; // line and cylinder second intersection point
+						if ( y2 < -this.half_height ) { // line intersects cylinder below capsule bottom
+
+							c += 4 * this.half_height * start.y;
+							k += 2 * direction.y * this.half_height;
+							discr = k * k - a * c;
+
+							if ( discr < 0 ) { // line doesn't intersect bottom sphere, that should never happen
+								return null;
+							}
+
+							discr_sqrt = Math.sqrt( discr );
+							t4 = ( -k + discr_sqrt ) / a;
+
+							if ( t4 < 0 ) { // segment is pointing away from bottom sphere, no intersections
+								return null;
+							}
+
+							intersection = getIntersectionFromDirection( start, t4 );
+						} else { // line intersects cylinder inside of the capsule
+							intersection = getIntersectionFromDirection( start, t2 );
+						}
+					}
+				}
+			} else if ( y1 < -this.half_height ) { // line intersects cylinder below capsule bottom
+				a += direction.y * direction.y;
+				c += start.y * start.y + this.half_height * ( this.half_height + 2 * start.y );
+				k += direction.y * ( start.y + this.half_height );
+				discr = k * k - a * c;
+
+				if ( discr < 0 ) { // line doesn't intersect bottom sphere
+					return null;
+				}
+
+				discr_sqrt = Math.sqrt( discr );
+				t3 = ( -k - discr_sqrt ) / a; // line and bottom sphere intersection closest to start point
+
+				if ( t3 >= 0 ) {
+					intersection = getIntersectionFromDirection( start, t3 );
+				} else { // segment is pointing away from the line and bottom sphere first intersection
+					t4 = ( -k + discr_sqrt ) / a; // line and bottom sphere second intersection point
+					y4 = start.y + t4 * direction.y;
+					if ( y4 < -this.half_height ) { // line and bottom sphere intersection happens on capsule surface
+						intersection = getIntersectionFromDirection( start, t4 );
+					} else { // line intersects top hemisphere of the bottom sphere
+						y2 = start.y + t2 * direction.y; // line and cylinder second intersection point
+						if ( y2 > this.half_height ) { // line intersects cylinder above capsule top
+
+							c -= 4 * this.half_height * start.y;
+							k -= 2 * direction.y * this.half_height;
+							discr = k * k - a * c;
+
+							if ( discr <= 0 ) { // line doesn't intersect top sphere, that should never happen
+								return null;
+							}
+
+							discr_sqrt = Math.sqrt( discr );
+							t4 = ( -k + discr_sqrt ) / a;
+
+							if ( t4 < 0 ) { // segment is pointing away from top sphere, no intersections
+								return null;
+							}
+
+							intersection = getIntersectionFromDirection( start, t4 );
+						} else { // line intersects cylinder inside of the capsule
+							intersection = getIntersectionFromDirection( start, t2 );
+						}
+					}
+				}
+
+			} else if ( t1 >= 0 ) { // line intersects capsule between top and bottom (first intersection point)
+				intersection = getIntersectionFromDirection( start, t1 );
+			} else { // segment is pointing away from line and capsule first intersection point
+				y2 = start.y + t2 * direction.y; // line and capsule second intersection point
+				if ( y2 > this.half_height ) { // line intersects cylinder above capsule top
+
+					a += direction.y * direction.y;
+					c += start.y * start.y + this.half_height * ( this.half_height - 2 * start.y );
+					k += direction.y * ( start.y - this.half_height );
+					discr = k * k - a * c;
+
+					if ( discr < 0 ) { // line doesn't intersect top sphere, that should never happen
+						return null;
+					}
+
+					discr_sqrt = Math.sqrt( discr );
+					t4 = ( -k + discr_sqrt ) / a; // line and top sphere intersection point, the most distant from the start point
+
+					if ( t4 < 0 ) { // segment is pointing away from the top sphere
+						return null;
+					}
+
+					intersection = getIntersectionFromDirection( start, t4 );
+				} else if ( y2 < -this.half_height ) { // line intersects cylinder below capsule bottom
+
+					a += direction.y * direction.y;
+					c += start.y * start.y + this.half_height * ( this.half_height + 2 * start.y );
+					k += direction.y * ( start.y + this.half_height );
+					discr = k * k - a * c;
+
+					if ( discr < 0 ) { // line doesn't intersect bottom sphere, that should never happen
+						return null;
+					}
+
+					discr_sqrt = Math.sqrt( discr );
+					t4 = ( -k + discr_sqrt ) / a; // line and bottom intersection point, the most distant from the start point
+
+					if ( t4 < 0 ) { // segment is pointing away from the bottom sphere
+						return null;
+					}
+
+					intersection = getIntersectionFromDirection( start, t4 );
+				} else { // line intersects capsule side surface
+					intersection = getIntersectionFromDirection( start, t2 );
+				}
+			}
+		}
+
+		intersection.normal.x = intersection.point.x;
+		intersection.normal.z = intersection.point.z;
+		if ( intersection.point.y < -this.half_height ) {
+			intersection.normal.y = intersection.point.y + this.half_height;
+		} else if ( intersection.point.y > this.half_height ) {
+			intersection.normal.y = intersection.point.y - this.half_height;
+		} else {
+			intersection.normal.y = 0;
+		}
+		intersection.normal.scale( 1 / this.radius );
 
 		return intersection;
 	};
@@ -6325,6 +7082,348 @@ Goblin.TriangleShape.prototype.rayIntersect = (function(){
 		intersection.normal.copy( this.normal );
 
 		return intersection;
+	};
+})();
+Goblin.CollisionUtils = {};
+
+Goblin.CollisionUtils.canBodiesCollide = function( object_a, object_b ) {
+	if ( object_a._mass === Infinity && object_b._mass === Infinity ) {
+		// Two static objects aren't considered to be in contact
+		return false;
+	}
+
+	// Check collision masks
+	if ( object_a.collision_mask !== 0 ) {
+		if ( ( object_a.collision_mask & 1 ) === 0 ) {
+			// object_b must not be in a matching group
+			if ( ( object_a.collision_mask & object_b.collision_groups ) !== 0 ) {
+				return false;
+			}
+		} else {
+			// object_b must be in a matching group
+			if ( ( object_a.collision_mask & object_b.collision_groups ) === 0 ) {
+				return false;
+			}
+		}
+	}
+	if ( object_b.collision_mask !== 0 ) {
+		if ( ( object_b.collision_mask & 1 ) === 0 ) {
+			// object_a must not be in a matching group
+			if ( ( object_b.collision_mask & object_a.collision_groups ) !== 0 ) {
+				return false;
+			}
+		} else {
+			// object_a must be in a matching group
+			if ( ( object_b.collision_mask & object_a.collision_groups ) === 0 ) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+};
+/**
+ * Provides methods useful for working with various types of geometries
+ *
+ * @class GeometryMethods
+ * @static
+ */
+Goblin.GeometryMethods = {
+	/**
+	 * determines the location in a triangle closest to a given point
+	 *
+	 * @method findClosestPointInTriangle
+	 * @param {vec3} p point
+	 * @param {vec3} a first triangle vertex
+	 * @param {vec3} b second triangle vertex
+	 * @param {vec3} c third triangle vertex
+	 * @param {vec3} out vector where the result will be stored
+	 */
+	findClosestPointInTriangle: (function() {
+		var ab = new Goblin.Vector3(),
+			ac = new Goblin.Vector3(),
+			_vec = new Goblin.Vector3();
+
+		return function( p, a, b, c, out ) {
+			var v;
+
+			// Check if P in vertex region outside A
+			ab.subtractVectors( b, a );
+			ac.subtractVectors( c, a );
+			_vec.subtractVectors( p, a );
+			var d1 = ab.dot( _vec ),
+				d2 = ac.dot( _vec );
+			if ( d1 <= 0 && d2 <= 0 ) {
+				out.copy( a );
+				return;
+			}
+
+			// Check if P in vertex region outside B
+			_vec.subtractVectors( p, b );
+			var d3 = ab.dot( _vec ),
+				d4 = ac.dot( _vec );
+			if ( d3 >= 0 && d4 <= d3 ) {
+				out.copy( b );
+				return;
+			}
+
+			// Check if P in edge region of AB
+			var vc = d1*d4 - d3*d2;
+			if ( vc <= 0 && d1 >= 0 && d3 <= 0 ) {
+				v = d1 / ( d1 - d3 );
+				out.scaleVector( ab, v );
+				out.add( a );
+				return;
+			}
+
+			// Check if P in vertex region outside C
+			_vec.subtractVectors( p, c );
+			var d5 = ab.dot( _vec ),
+				d6 = ac.dot( _vec );
+			if ( d6 >= 0 && d5 <= d6 ) {
+				out.copy( c );
+				return;
+			}
+
+			// Check if P in edge region of AC
+			var vb = d5*d2 - d1*d6,
+				w;
+			if ( vb <= 0 && d2 >= 0 && d6 <= 0 ) {
+				w = d2 / ( d2 - d6 );
+				out.scaleVector( ac, w );
+				out.add( a );
+				return;
+			}
+
+			// Check if P in edge region of BC
+			var va = d3*d6 - d5*d4;
+			if ( va <= 0 && d4-d3 >= 0 && d5-d6 >= 0 ) {
+				w = (d4 - d3) / ( (d4-d3) + (d5-d6) );
+				out.subtractVectors( c, b );
+				out.scale( w );
+				out.add( b );
+				return;
+			}
+
+			// P inside face region
+			var denom = 1 / ( va + vb + vc );
+			v = vb * denom;
+			w = vc * denom;
+
+
+			// At this point `ab` and `ac` can be recycled and lose meaning to their nomenclature
+
+			ab.scale( v );
+			ab.add( a );
+
+			ac.scale( w );
+
+			out.addVectors( ab, ac );
+		};
+	})(),
+
+	/**
+	 * Finds the Barycentric coordinates of point `p` in the triangle `a`, `b`, `c`
+	 *
+	 * @method findBarycentricCoordinates
+	 * @param p {vec3} point to calculate coordinates of
+	 * @param a {vec3} first point in the triangle
+	 * @param b {vec3} second point in the triangle
+	 * @param c {vec3} third point in the triangle
+	 * @param out {vec3} resulting Barycentric coordinates of point `p`
+	 */
+	findBarycentricCoordinates: function( p, a, b, c, out ) {
+
+		var v0 = new Goblin.Vector3(),
+			v1 = new Goblin.Vector3(),
+			v2 = new Goblin.Vector3();
+
+		v0.subtractVectors( b, a );
+		v1.subtractVectors( c, a );
+		v2.subtractVectors( p, a );
+
+		var d00 = v0.dot( v0 ),
+			d01 = v0.dot( v1 ),
+			d11 = v1.dot( v1 ),
+			d20 = v2.dot( v0 ),
+			d21 = v2.dot( v1 ),
+			denom = d00 * d11 - d01 * d01;
+
+		out.y = ( d11 * d20 - d01 * d21 ) / denom;
+		out.z = ( d00 * d21 - d01 * d20 ) / denom;
+		out.x = 1 - out.y - out.z;
+	},
+
+	/**
+	 * Calculates the distance from point `p` to line `ab`
+	 * @param p {vec3} point to calculate distance to
+	 * @param a {vec3} first point in line
+	 * @param b [vec3] second point in line
+	 * @returns {number}
+	 */
+	findSquaredDistanceFromSegment: (function(){
+		var ab = new Goblin.Vector3(),
+			ap = new Goblin.Vector3(),
+			bp = new Goblin.Vector3();
+
+		return function( p, a, b ) {
+			ab.subtractVectors( a, b );
+			ap.subtractVectors( a, p );
+			bp.subtractVectors( b, p );
+
+			var e = ap.dot( ab );
+			if ( e <= 0 ) {
+				return ap.dot( ap );
+			}
+
+			var f = ab.dot( ab );
+			if ( e >= f ) {
+				return bp.dot( bp );
+			}
+
+			return ap.dot( ap ) - e * e / f;
+		};
+	})(),
+
+	findClosestPointsOnSegments: (function(){
+		var d1 = new Goblin.Vector3(),
+			d2 = new Goblin.Vector3(),
+			r = new Goblin.Vector3(),
+			clamp = function( x, min, max ) {
+				return Math.min( Math.max( x, min ), max );
+			};
+
+		return function( aa, ab, ba, bb, p1, p2 ) {
+			d1.subtractVectors( ab, aa );
+			d2.subtractVectors( bb, ba );
+			r.subtractVectors( aa, ba );
+
+			var a = d1.dot( d1 ),
+				e = d2.dot( d2 ),
+				f = d2.dot( r );
+
+			var s, t;
+
+			if ( a <= Goblin.EPSILON && e <= Goblin.EPSILON ) {
+				// Both segments are degenerate
+				s = t = 0;
+				p1.copy( aa );
+				p2.copy( ba );
+				_tmp_vec3_1.subtractVectors( p1, p2 );
+				return _tmp_vec3_1.dot( _tmp_vec3_1 );
+			}
+
+			if ( a <= Goblin.EPSILON ) {
+				// Only first segment is degenerate
+				s = 0;
+				t = f / e;
+				t = clamp( t, 0, 1 );
+			} else {
+				var c = d1.dot( r );
+				if ( e <= Goblin.EPSILON ) {
+					// Second segment is degenerate
+					t = 0;
+					s = clamp( -c / a, 0, 1 );
+				} else {
+					// Neither segment is degenerate
+					var b = d1.dot( d2 ),
+						denom = a * e - b * b;
+
+					if ( denom !== 0 ) {
+						// Segments aren't parallel
+						s = clamp( ( b * f - c * e ) / denom, 0, 1 );
+					} else {
+						s = 0;
+					}
+
+					// find point on segment2 closest to segment1(s)
+					t = ( b * s + f ) / e;
+
+					// validate t, if it needs clamping then clamp and recompute s
+					if ( t < 0 ) {
+						t = 0;
+						s = clamp( -c / a, 0, 1 );
+					} else if ( t > 1 ) {
+						t = 1;
+						s = clamp( ( b - c ) / a, 0, 1 );
+					}
+				}
+			}
+
+			p1.scaleVector( d1, s );
+			p1.add( aa );
+
+			p2.scaleVector( d2, t );
+			p2.add( ba );
+
+			_tmp_vec3_1.subtractVectors( p1, p2 );
+			return _tmp_vec3_1.dot( _tmp_vec3_1 );
+		};
+	})()
+};
+(function(){
+	Goblin.MinHeap = function( array ) {
+		this.heap = array == null ? [] : array.slice();
+
+		if ( this.heap.length > 0 ) {
+			this.heapify();
+		}
+	};
+	Goblin.MinHeap.prototype = {
+		heapify: function() {
+			var start = ~~( ( this.heap.length - 2 ) / 2 );
+			while ( start >= 0 ) {
+				this.siftUp( start, this.heap.length - 1 );
+				start--;
+			}
+		},
+		siftUp: function( start, end ) {
+			var root = start;
+
+			while ( root * 2 + 1 <= end ) {
+				var child = root * 2 + 1;
+
+				if ( child + 1 <= end && this.heap[child + 1].valueOf() < this.heap[child].valueOf() ) {
+					child++;
+				}
+
+				if ( this.heap[child].valueOf() < this.heap[root].valueOf() ) {
+					var tmp = this.heap[child];
+					this.heap[child] = this.heap[root];
+					this.heap[root] = tmp;
+					root = child;
+				} else {
+					return;
+				}
+			}
+		},
+		push: function( item ) {
+			this.heap.push( item );
+
+			var root = this.heap.length - 1;
+			while ( root !== 0 ) {
+				var parent = ~~( ( root - 1 ) / 2 );
+
+				if ( this.heap[parent].valueOf() > this.heap[root].valueOf() ) {
+					var tmp = this.heap[parent];
+					this.heap[parent] = this.heap[root];
+					this.heap[root] = tmp;
+				}
+
+				root = parent;
+			}
+		},
+		peek: function() {
+			return this.heap.length > 0 ? this.heap[0] : null;
+		},
+		pop: function() {
+			var entry = this.heap[0];
+			this.heap[0] = this.heap[this.heap.length - 1];
+			this.heap.length = this.heap.length - 1;
+			this.siftUp( 0, this.heap.length - 1 );
+
+			return entry;
+		}
 	};
 })();
 /**

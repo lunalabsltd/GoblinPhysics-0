@@ -14,6 +14,7 @@ gulp.task('lint', function(){
 gulp.task('build', ['lint'], function(){
 	gulp.src([
 		'src/intro.js',
+		'src/classes/pc/*.js',
 		'src/classes/Math/**.js',
 		'src/libglobals.js',
 		'src/classes/EventEmitter.js',
@@ -29,6 +30,7 @@ gulp.task('build', ['lint'], function(){
 gulp.task('build-minified', ['lint'], function(){
 	gulp.src([
 		'src/intro.js',
+		'src/classes/pc/*.js',
 		'src/classes/Math/**.js',
 		'src/libglobals.js',
 		'src/classes/EventEmitter.js',

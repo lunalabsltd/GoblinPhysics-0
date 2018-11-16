@@ -152,26 +152,26 @@ window.exampleUtils = (function(){
 			}
 		},
 
-        render: function() {
+		render: function() {
 			// Sync objects
-            var i, object;
-            for ( i = 0; i < objects.length; i++ ) {
-                object = objects[i];
-                object.position.set(
-                    object.goblin.position.x,
-                    object.goblin.position.y,
-                    object.goblin.position.z
-                );
-                object.quaternion.set(
-                    object.goblin.rotation.x,
-                    object.goblin.rotation.y,
-                    object.goblin.rotation.z,
-                    object.goblin.rotation.w
-                );
-            }
+			var i, object;
+			for ( i = 0; i < objects.length; i++ ) {
+				object = objects[i];
+				object.position.set(
+					object.goblin.position.x,
+					object.goblin.position.y,
+					object.goblin.position.z
+				);
+				object.quaternion.set(
+					object.goblin.rotation.x,
+					object.goblin.rotation.y,
+					object.goblin.rotation.z,
+					object.goblin.rotation.w
+				);
+			}
 
-            renderer.render( exampleUtils.scene, camera );
-        },
+			renderer.render( exampleUtils.scene, camera );
+		},
 
 		run: function() {
 			requestAnimationFrame( exampleUtils.run );
@@ -206,6 +206,42 @@ window.exampleUtils = (function(){
 			world.addRigidBody( sphere.goblin );
 
 			return sphere;
+		},
+
+		createCapsule: function ( radius, half_height, mass, material ) {
+			var merged = new THREE.Geometry();
+			var cyl = new THREE.CylinderGeometry( radius, radius, 2 * half_height, 32, 32 );
+			var top = new THREE.SphereGeometry( radius, 32, 32 );
+			var bot = new THREE.SphereGeometry( radius, 32, 32 );
+
+			var matrix = new THREE.Matrix4();
+			matrix.makeTranslation(0, half_height, 0);
+			top.applyMatrix(matrix);
+
+			var matrix = new THREE.Matrix4();
+			matrix.makeTranslation(0, -half_height, 0);
+			bot.applyMatrix(matrix);
+
+			merged.merge(top);
+			merged.merge(bot);
+			merged.merge(cyl);
+
+			var capsule = new THREE.Mesh(
+				merged,
+				material
+			);
+			capsule.castShadow = true;
+			capsule.receiveShadow = true;
+			capsule.goblin = new Goblin.RigidBody(
+				new Goblin.CapsuleShape( radius, half_height ),
+				mass
+			);
+
+			objects.push( capsule );
+			exampleUtils.scene.add( capsule );
+			world.addRigidBody( capsule.goblin );
+
+			return capsule;
 		},
 
 		createBox: function( half_width, half_height, half_length, mass, material ) {
