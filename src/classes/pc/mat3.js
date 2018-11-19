@@ -104,17 +104,18 @@ pc.extend(pc, (function () {
 
         fromMatrix4: function (m) {
             var n = this.data;
-            n[0] = m.e00;
-            n[1] = m.e01;
-            n[2] = m.e02;
+            m = m.data;
+            n[0] = m[0];
+            n[1] = m[1];
+            n[2] = m[2];
 
-            n[3] = m.e10;
-            n[4] = m.e11;
-            n[5] = m.e12;
+            n[3] = m[4];
+            n[4] = m[5];
+            n[5] = m[6];
 
-            n[6] = m.e20;
-            n[7] = m.e21;
-            n[8] = m.e22;
+            n[6] = m[8];
+            n[7] = m[9];
+            n[8] = m[10];
 
             return this;
         },
@@ -287,8 +288,8 @@ pc.extend(pc, (function () {
                 d = a00 * b01 + a01 * b11 + a02 * b21,
                 id;
 
-            if ( !d ) {
-                return true;
+            if (!d) {
+                return null;
             }
             id = 1 / d;
 
@@ -302,10 +303,10 @@ pc.extend(pc, (function () {
             m[7] = (-a21 * a00 + a01 * a20) * id;
             m[8] = (a11 * a00 - a01 * a10) * id;
 
-            return true;
+            return this;
         },
 
-        invertInto: function( m ) {
+        invertInto: function(m) {
             var n = this.data,
                 a00 = n[0], a01 = n[1], a02 = n[2],
                 a10 = n[3], a11 = n[4], a12 = n[5],
@@ -316,28 +317,28 @@ pc.extend(pc, (function () {
                 b21 = a21 * a10 - a11 * a20,
 
                 d = a00 * b01 + a01 * b11 + a02 * b21,
-                id;
+                id, k;
 
-            if ( !d ) {
-                return false;
+            if (!d) {
+                return null;
             }
             id = 1 / d;
 
-            m = m.data;
-            m[0] = b01 * id;
-            m[1] = (-a22 * a01 + a02 * a21) * id;
-            m[2] = (a12 * a01 - a02 * a11) * id;
-            m[3] = b11 * id;
-            m[4] = (a22 * a00 - a02 * a20) * id;
-            m[5] = (-a12 * a00 + a02 * a10) * id;
-            m[6] = b21 * id;
-            m[7] = (-a21 * a00 + a01 * a20) * id;
-            m[8] = (a11 * a00 - a01 * a10) * id;
+            k = m.data;
+            k[0] = b01 * id;
+            k[1] = (-a22 * a01 + a02 * a21) * id;
+            k[2] = (a12 * a01 - a02 * a11) * id;
+            k[3] = b11 * id;
+            k[4] = (a22 * a00 - a02 * a20) * id;
+            k[5] = (-a12 * a00 + a02 * a10) * id;
+            k[6] = b21 * id;
+            k[7] = (-a21 * a00 + a01 * a20) * id;
+            k[8] = (a11 * a00 - a01 * a10) * id;
 
-            return true;
+            return m;
         },
 
-        multiply: function( m ) {
+        multiply: function(m) {
             m = m.data;
             var n = this.data,
                 a00 = n[0], a01 = n[1], a02 = n[2],
@@ -361,7 +362,7 @@ pc.extend(pc, (function () {
             n[8] = b02 * a20 + b12 * a21 + b22 * a22;
         },
 
-        multiplyFrom: function( a, b ) {
+        multiplyFrom: function(a, b) {
             a = a.data;
             b = b.data;
             var a00 = a[0], a01 = a[1], a02 = a[2],

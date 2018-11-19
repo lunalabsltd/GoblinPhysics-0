@@ -164,9 +164,9 @@
 						new Goblin.Vector3( -1, 0, 0 )
 					);
 					matrix.transformVector3( vector );
-					expect( vector ).property( 'x', 4.499999999999999 );
+					expect( vector ).property( 'x', 4.5 );
 					expect( vector ).property( 'y', 3 );
-					expect( vector ).property( 'z', -0.9999999999999986 );
+					expect( vector ).property( 'z', -1 );
 				});
 
 				it('transformVector3Into', function(){
@@ -207,9 +207,9 @@
 						new Goblin.Vector3( -1, 0, 0 )
 					);
 					matrix.transformVector3Into( vector, dest );
-					expect( dest ).property( 'x', 4.499999999999999 );
+					expect( dest ).property( 'x', 4.5 );
 					expect( dest ).property( 'y', 3 );
-					expect( dest ).property( 'z', -0.9999999999999986 );
+					expect( dest ).property( 'z', -1 );
 				});
 
 				it('rotateVector3', function(){
@@ -253,9 +253,9 @@
 						new Goblin.Vector3( -1, 0, 0 )
 					);
 					matrix.rotateVector3( vector );
-					expect( vector ).property( 'x', 5.499999999999999 );
+					expect( vector ).property( 'x', 5.5 );
 					expect( vector ).property( 'y', 3 );
-					expect( vector ).property( 'z', -0.9999999999999986 );
+					expect( vector ).property( 'z', -1 );
 				});
 
 				it('invert', function(){
@@ -285,8 +285,8 @@
 					vector = new Goblin.Vector3( 18, -3, 12 );
 					matrix.transformVector3( vector );
 					expect( vector ).property( 'x', 17 );
-					expect( vector ).property( 'y', 6.500000000000001 );
-					expect( vector ).property( 'z', 6.000000000000003 );
+					expect( vector ).property( 'y', 6.5 );
+					expect( vector ).property( 'z', 6 );
 				});
 
 				it('invertInto', function(){
@@ -316,8 +316,8 @@
 					vector = new Goblin.Vector3( 18, -3, 12 );
 					dest.transformVector3( vector );
 					expect( vector ).property( 'x', 17 );
-					expect( vector ).property( 'y', 6.500000000000001 );
-					expect( vector ).property( 'z', 6.000000000000003 );
+					expect( vector ).property( 'y', 6.5 );
+					expect( vector ).property( 'z', 6 );
 				});
 			});
 
