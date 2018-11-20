@@ -395,15 +395,34 @@ pc.extend(pc, (function () {
         transformVector3: function (v) {
             // Technically this should compute the `w` term and divide the resulting vector
             // components by `w` to homogenize but we don't scale so `w` is just `1`
+            var u = v.data,
+                x = u[0],
+                y = u[1],
+                z = u[2],
+                m = this.data;
+
+            u[0] = m[0] * x + m[1] * y + m[2] * z + m[3];
+            u[1] = m[4] * x + m[5] * y + m[6] * z + m[7];
+            u[2] = m[8] * x + m[9] * y + m[10] * z + m[11];
+
+            return v;
+        },
+
+        transformVector3Into: function(v, dest) {
+            // Technically this should compute the `w` term and divide the resulting vector
+            // components by `w` to homogenize but we don't scale so `w` is just `1`
             v = v.data;
             var x = v[0],
                 y = v[1],
                 z = v[2],
-                m = this.data;
+                m = this.data,
+                dst = dest.data;
 
-            v[0] = m[0] * x + m[1] * y + m[2] * z + m[3];
-            v[1] = m[4] * x + m[5] * y + m[6] * z + m[7];
-            v[2] = m[8] * x + m[9] * y + m[10] * z + m[11];
+            dst[0] = m[0] * x + m[1] * y + m[2] * z + m[3];
+            dst[1] = m[4] * x + m[5] * y + m[6] * z + m[7];
+            dst[2] = m[8] * x + m[9] * y + m[10] * z + m[11];
+
+            return dest;
         },
 
 
@@ -441,28 +460,34 @@ pc.extend(pc, (function () {
             m[7] = translation.y;
             m[11] = translation.z;
             m[15] = 1;
+
+            return this;
         },
 
         rotateVector3: function (v) {
-            v = v.data;
-            var x = v[0],
-                y = v[1],
-                z = v[2],
+            var u = v.data,
+                x = u[0],
+                y = u[1],
+                z = u[2],
                 m = this.data;
-            v[0] = m[0] * x + m[1] * y + m[2] * z;
-            v[1] = m[4] * x + m[5] * y + m[6] * z;
-            v[2] = m[8] * x + m[9] * y + m[10] * z;
+            u[0] = m[0] * x + m[1] * y + m[2] * z;
+            u[1] = m[4] * x + m[5] * y + m[6] * z;
+            u[2] = m[8] * x + m[9] * y + m[10] * z;
+
+            return v;
         },
 
         rotateVector3Into: function (v, dest) {
             v = v.data;
-            dest = dest.data;
             var x = v[0],
                 y = v[1],
-                z = v[2];
-            dest[0] = m[0] * x + m[1] * y + m[2] * z;
-            dest[1] = m[4] * x + m[5] * y + m[6] * z;
-            dest[2] = m[8] * x + m[9] * y + m[10] * z;
+                z = v[2],
+                dst = dest.data;
+            dst[0] = m[0] * x + m[1] * y + m[2] * z;
+            dst[1] = m[4] * x + m[5] * y + m[6] * z;
+            dst[2] = m[8] * x + m[9] * y + m[10] * z;
+
+            return dest;
         },
 
         /**

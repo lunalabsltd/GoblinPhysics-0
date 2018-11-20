@@ -1,7 +1,6 @@
 Goblin.Matrix4 = (function() {
-
+	var prototype = pc.Mat4.prototype;
 	prototype.identity = prototype.setIdentity;
-	prototype.transformVector3Into = prototype.transformVector;
 	prototype.multiply = prototype.mul;
 
 	prototype.setInitial = function() {
@@ -51,7 +50,7 @@ Goblin.Matrix4 = (function() {
 			this.data[2] = v;
 		}
 	});
-	Object.defineProperty(prototype, 'e10', {
+	Object.defineProperty(prototype, 'e03', {
 		get: function() {
 			return this.data[3];
 		},
@@ -59,7 +58,7 @@ Goblin.Matrix4 = (function() {
 			this.data[3] = v;
 		}
 	});
-	Object.defineProperty(prototype, 'e11', {
+	Object.defineProperty(prototype, 'e10', {
 		get: function() {
 			return this.data[4];
 		},
@@ -67,7 +66,7 @@ Goblin.Matrix4 = (function() {
 			this.data[4] = v;
 		}
 	});
-	Object.defineProperty(prototype, 'e12', {
+	Object.defineProperty(prototype, 'e11', {
 		get: function() {
 			return this.data[5];
 		},
@@ -75,7 +74,7 @@ Goblin.Matrix4 = (function() {
 			this.data[5] = v;
 		}
 	});
-	Object.defineProperty(prototype, 'e20', {
+	Object.defineProperty(prototype, 'e12', {
 		get: function() {
 			return this.data[6];
 		},
@@ -83,7 +82,7 @@ Goblin.Matrix4 = (function() {
 			this.data[6] = v;
 		}
 	});
-	Object.defineProperty(prototype, 'e21', {
+	Object.defineProperty(prototype, 'e13', {
 		get: function() {
 			return this.data[7];
 		},
@@ -91,12 +90,68 @@ Goblin.Matrix4 = (function() {
 			this.data[7] = v;
 		}
 	});
-	Object.defineProperty(prototype, 'e22', {
+	Object.defineProperty(prototype, 'e20', {
 		get: function() {
 			return this.data[8];
 		},
 		set: function(v) {
 			this.data[8] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e21', {
+		get: function() {
+			return this.data[9];
+		},
+		set: function(v) {
+			this.data[9] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e22', {
+		get: function() {
+			return this.data[10];
+		},
+		set: function(v) {
+			this.data[10] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e23', {
+		get: function() {
+			return this.data[11];
+		},
+		set: function(v) {
+			this.data[11] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e30', {
+		get: function() {
+			return this.data[12];
+		},
+		set: function(v) {
+			this.data[12] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e31', {
+		get: function() {
+			return this.data[13];
+		},
+		set: function(v) {
+			this.data[13] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e32', {
+		get: function() {
+			return this.data[14];
+		},
+		set: function(v) {
+			this.data[14] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e33', {
+		get: function() {
+			return this.data[15];
+		},
+		set: function(v) {
+			this.data[15] = v;
 		}
 	});
 

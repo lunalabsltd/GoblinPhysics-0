@@ -237,29 +237,33 @@ pc.extend(pc, (function () {
         },
 
         transposeInto: function (m) {
-            m = m.data;
-            var n = this.data;
-            m[0] = n[0];
-            m[3] = n[1];
-            m[6] = n[2];
-            m[1] = n[3];
-            m[4] = n[4];
-            m[7] = n[5];
-            m[2] = n[6];
-            m[5] = n[7];
-            m[8] = n[8];
+            var n = this.data,
+                k = m.data;
+            k[0] = n[0];
+            k[3] = n[1];
+            k[6] = n[2];
+            k[1] = n[3];
+            k[4] = n[4];
+            k[7] = n[5];
+            k[2] = n[6];
+            k[5] = n[7];
+            k[8] = n[8];
+
+            return m;
         },
 
         transformVector3: function (v) {
-            v = v.data;
-            var x = v[0],
-                y = v[1],
-                z = v[2],
+            var u = v.data,
+                x = u[0],
+                y = u[1],
+                z = u[2],
                 m = this.data;
 
-            v[0] = m[0] * x + m[1] * y + m[2] * z;
-            v[1] = m[3] * x + m[4] * y + m[5] * z;
-            v[2] = m[6] * x + m[7] * y + m[8] * z;
+            u[0] = m[0] * x + m[1] * y + m[2] * z;
+            u[1] = m[3] * x + m[4] * y + m[5] * z;
+            u[2] = m[6] * x + m[7] * y + m[8] * z;
+
+            return v;
         },
 
         transformVector3Into: function (v, dest) {
@@ -273,6 +277,8 @@ pc.extend(pc, (function () {
             dst[0] = m[0] * x + m[1] * y + m[2] * z;
             dst[1] = m[3] * x + m[4] * y + m[5] * z;
             dst[2] = m[6] * x + m[7] * y + m[8] * z;
+
+            return dest;
         },
 
         invert: function() {
@@ -360,6 +366,8 @@ pc.extend(pc, (function () {
             n[2] = b02 * a00 + b12 * a01 + b22 * a02;
             n[5] = b02 * a10 + b12 * a11 + b22 * a12;
             n[8] = b02 * a20 + b12 * a21 + b22 * a22;
+
+            return this;
         },
 
         multiplyFrom: function(a, b) {
@@ -385,6 +393,8 @@ pc.extend(pc, (function () {
             m[2] = b02 * a00 + b12 * a01 + b22 * a02;
             m[5] = b02 * a10 + b12 * a11 + b22 * a12;
             m[8] = b02 * a20 + b12 * a21 + b22 * a22;
+
+            return this;
         }
     };
 

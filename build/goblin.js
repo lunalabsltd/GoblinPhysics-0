@@ -1086,29 +1086,33 @@ pc.extend(pc, (function () {
         },
 
         transposeInto: function (m) {
-            m = m.data;
-            var n = this.data;
-            m[0] = n[0];
-            m[3] = n[1];
-            m[6] = n[2];
-            m[1] = n[3];
-            m[4] = n[4];
-            m[7] = n[5];
-            m[2] = n[6];
-            m[5] = n[7];
-            m[8] = n[8];
+            var n = this.data,
+                k = m.data;
+            k[0] = n[0];
+            k[3] = n[1];
+            k[6] = n[2];
+            k[1] = n[3];
+            k[4] = n[4];
+            k[7] = n[5];
+            k[2] = n[6];
+            k[5] = n[7];
+            k[8] = n[8];
+
+            return m;
         },
 
         transformVector3: function (v) {
-            v = v.data;
-            var x = v[0],
-                y = v[1],
-                z = v[2],
+            var u = v.data,
+                x = u[0],
+                y = u[1],
+                z = u[2],
                 m = this.data;
 
-            v[0] = m[0] * x + m[1] * y + m[2] * z;
-            v[1] = m[3] * x + m[4] * y + m[5] * z;
-            v[2] = m[6] * x + m[7] * y + m[8] * z;
+            u[0] = m[0] * x + m[1] * y + m[2] * z;
+            u[1] = m[3] * x + m[4] * y + m[5] * z;
+            u[2] = m[6] * x + m[7] * y + m[8] * z;
+
+            return v;
         },
 
         transformVector3Into: function (v, dest) {
@@ -1122,6 +1126,8 @@ pc.extend(pc, (function () {
             dst[0] = m[0] * x + m[1] * y + m[2] * z;
             dst[1] = m[3] * x + m[4] * y + m[5] * z;
             dst[2] = m[6] * x + m[7] * y + m[8] * z;
+
+            return dest;
         },
 
         invert: function() {
@@ -1209,6 +1215,8 @@ pc.extend(pc, (function () {
             n[2] = b02 * a00 + b12 * a01 + b22 * a02;
             n[5] = b02 * a10 + b12 * a11 + b22 * a12;
             n[8] = b02 * a20 + b12 * a21 + b22 * a22;
+
+            return this;
         },
 
         multiplyFrom: function(a, b) {
@@ -1234,6 +1242,8 @@ pc.extend(pc, (function () {
             m[2] = b02 * a00 + b12 * a01 + b22 * a02;
             m[5] = b02 * a10 + b12 * a11 + b22 * a12;
             m[8] = b02 * a20 + b12 * a21 + b22 * a22;
+
+            return this;
         }
     };
 
@@ -1675,15 +1685,34 @@ pc.extend(pc, (function () {
         transformVector3: function (v) {
             // Technically this should compute the `w` term and divide the resulting vector
             // components by `w` to homogenize but we don't scale so `w` is just `1`
+            var u = v.data,
+                x = u[0],
+                y = u[1],
+                z = u[2],
+                m = this.data;
+
+            u[0] = m[0] * x + m[1] * y + m[2] * z + m[3];
+            u[1] = m[4] * x + m[5] * y + m[6] * z + m[7];
+            u[2] = m[8] * x + m[9] * y + m[10] * z + m[11];
+
+            return v;
+        },
+
+        transformVector3Into: function(v, dest) {
+            // Technically this should compute the `w` term and divide the resulting vector
+            // components by `w` to homogenize but we don't scale so `w` is just `1`
             v = v.data;
             var x = v[0],
                 y = v[1],
                 z = v[2],
-                m = this.data;
+                m = this.data,
+                dst = dest.data;
 
-            v[0] = m[0] * x + m[1] * y + m[2] * z + m[3];
-            v[1] = m[4] * x + m[5] * y + m[6] * z + m[7];
-            v[2] = m[8] * x + m[9] * y + m[10] * z + m[11];
+            dst[0] = m[0] * x + m[1] * y + m[2] * z + m[3];
+            dst[1] = m[4] * x + m[5] * y + m[6] * z + m[7];
+            dst[2] = m[8] * x + m[9] * y + m[10] * z + m[11];
+
+            return dest;
         },
 
 
@@ -1721,28 +1750,34 @@ pc.extend(pc, (function () {
             m[7] = translation.y;
             m[11] = translation.z;
             m[15] = 1;
+
+            return this;
         },
 
         rotateVector3: function (v) {
-            v = v.data;
-            var x = v[0],
-                y = v[1],
-                z = v[2],
+            var u = v.data,
+                x = u[0],
+                y = u[1],
+                z = u[2],
                 m = this.data;
-            v[0] = m[0] * x + m[1] * y + m[2] * z;
-            v[1] = m[4] * x + m[5] * y + m[6] * z;
-            v[2] = m[8] * x + m[9] * y + m[10] * z;
+            u[0] = m[0] * x + m[1] * y + m[2] * z;
+            u[1] = m[4] * x + m[5] * y + m[6] * z;
+            u[2] = m[8] * x + m[9] * y + m[10] * z;
+
+            return v;
         },
 
         rotateVector3Into: function (v, dest) {
             v = v.data;
-            dest = dest.data;
             var x = v[0],
                 y = v[1],
-                z = v[2];
-            dest[0] = m[0] * x + m[1] * y + m[2] * z;
-            dest[1] = m[4] * x + m[5] * y + m[6] * z;
-            dest[2] = m[8] * x + m[9] * y + m[10] * z;
+                z = v[2],
+                dst = dest.data;
+            dst[0] = m[0] * x + m[1] * y + m[2] * z;
+            dst[1] = m[4] * x + m[5] * y + m[6] * z;
+            dst[2] = m[8] * x + m[9] * y + m[10] * z;
+
+            return dest;
         },
 
         /**
@@ -2684,6 +2719,715 @@ pc.extend(pc, (function () {
     };
 }()));
 
+pc.extend(pc, (function () {
+    'use strict';
+
+    /**
+    * @name pc.Quat
+    * @class A quaternion.
+    * @description Create a new Quat object
+    * @param {Number} [x] The quaternion's x component. Default value 0.
+    * @param {Number} [y] The quaternion's y component. Default value 0.
+    * @param {Number} [z] The quaternion's z component. Default value 0.
+    * @param {Number} [w] The quaternion's w component. Default value 1.
+    */
+    /**
+     * @field
+     * @type Number
+     * @name pc.Quat#x
+     * @description The x component of the quaternion.
+     * @example
+     * var quat = new pc.Quat();
+     *
+     * // Get x
+     * var x = quat.x;
+     *
+     * // Set x
+     * quat.x = 0;
+     */
+    /**
+     * @field
+     * @type Number
+     * @name pc.Quat#y
+     * @description The y component of the quaternion.
+     * @example
+     * var quat = new pc.Quat();
+     *
+     * // Get y
+     * var y = quat.y;
+     *
+     * // Set y
+     * quat.y = 0;
+     */
+    /**
+     * @field
+     * @type Number
+     * @name pc.Quat#z
+     * @description The z component of the quaternion.
+     * @example
+     * var quat = new pc.Quat();
+     *
+     * // Get z
+     * var z = quat.z;
+     *
+     * // Set z
+     * quat.z = 0;
+     */
+    /**
+     * @field
+     * @type Number
+     * @name pc.Quat#w
+     * @description The w component of the quaternion.
+     * @example
+     * var quat = new pc.Quat();
+     *
+     * // Get w
+     * var w = quat.w;
+     *
+     * // Set w
+     * quat.w = 0;
+     */
+    var Quat = function (x, y, z, w) {
+        this.setInitial(x, y, z, w);
+    };
+
+    Quat.prototype = {
+
+        setInitial: function(x, y, z, w) {
+            this.x = (x === undefined) ? 0 : x;
+            this.y = (y === undefined) ? 0 : y;
+            this.z = (z === undefined) ? 0 : z;
+            this.w = (w === undefined) ? 1 : w;
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#clone
+         * @description Returns an identical copy of the specified quaternion.
+         * @returns {pc.Quat} A quaternion containing the result of the cloning.
+         * @example
+         * var q = new pc.Quat(-0.11, -0.15, -0.46, 0.87);
+         * var qclone = q.clone();
+         *
+         * console.log("The result of the cloning is: " + q.toString());
+         */
+        clone: function () {
+            return new pc.Quat(this.x, this.y, this.z, this.w);
+        },
+
+        conjugate: function () {
+            this.x *= -1;
+            this.y *= -1;
+            this.z *= -1;
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#copy
+         * @description Copies the contents of a source quaternion to a destination quaternion.
+         * @param {pc.Quat} rhs The quaternion to be copied.
+         * @returns {pc.Quat} Self for chaining.
+         * @example
+         * var src = new pc.Quat();
+         * var dst = new pc.Quat();
+         * dst.copy(src, src);
+         * console.log("The two quaternions are " + (src.equals(dst) ? "equal" : "different"));
+         */
+        copy: function (rhs) {
+            this.x = rhs.x;
+            this.y = rhs.y;
+            this.z = rhs.z;
+            this.w = rhs.w;
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#equals
+         * @description Reports whether two quaternions are equal.
+         * @returns {Boolean} true if the quaternions are equal and false otherwise.
+         * @example
+         * var a = new pc.Quat();
+         * var b = new pc.Quat();
+         * console.log("The two quaternions are " + (a.equals(b) ? "equal" : "different"));
+         */
+        equals: function (that) {
+            return ((this.x === that.x) && (this.y === that.y) && (this.z === that.z) && (this.w === that.w));
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#getEulerAngles
+         * @description Converts the supplied quaternion to Euler angles.
+         * @param {pc.Vec3} [eulers] The 3-dimensional vector to receive the Euler angles.
+         * @returns {pc.Vec3} The 3-dimensional vector holding the Euler angles that
+         * correspond to the supplied quaternion.
+         */
+        getEulerAngles: function (eulers) {
+            var x, y, z, qx, qy, qz, qw, a2;
+
+            eulers = (eulers === undefined) ? new pc.Vec3() : eulers;
+
+            qx = this.x;
+            qy = this.y;
+            qz = this.z;
+            qw = this.w;
+
+            a2 = 2 * (qw * qy - qx * qz);
+            if (a2 <= -0.99999) {
+                x = 2 * Math.atan2(qx, qw);
+                y = -Math.PI / 2;
+                z = 0;
+            } else if (a2 >= 0.99999) {
+                x = 2 * Math.atan2(qx, qw);
+                y = Math.PI / 2;
+                z = 0;
+            } else {
+                x = Math.atan2(2 * (qw * qx + qy * qz), 1 - 2 * (qx * qx + qy * qy));
+                y = Math.asin(a2);
+                z = Math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz));
+            }
+
+            return eulers.set(x, y, z).scale(pc.math.RAD_TO_DEG);
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#invert
+         * @description Generates the inverse of the specified quaternion.
+         * @returns {pc.Quat} Self for chaining.
+         * @example
+         * // Create a quaternion rotated 180 degrees around the y-axis
+         * var rot = new pc.Quat().setFromEulerAngles(0, 180, 0);
+         *
+         * // Invert in place
+         * rot.invert();
+         */
+        invert: function () {
+            return this.conjugate().normalize();
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#length
+         * @description Returns the magnitude of the specified quaternion.
+         * @returns {Number} The magnitude of the specified quaternion.
+         * @example
+         * var q = new pc.Quat(0, 0, 0, 5);
+         * var len = q.length();
+         * // Should output 5
+         * console.log("The length of the quaternion is: " + len);
+         */
+        length: function () {
+            var x, y, z, w;
+
+            x = this.x;
+            y = this.y;
+            z = this.z;
+            w = this.w;
+
+            return Math.sqrt(x * x + y * y + z * z + w * w);
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#lengthSq
+         * @description Returns the magnitude squared of the specified quaternion.
+         * @returns {Number} The magnitude of the specified quaternion.
+         * @example
+         * var q = new pc.Quat(3, 4, 0);
+         * var lenSq = q.lengthSq();
+         * // Should output 25
+         * console.log("The length squared of the quaternion is: " + lenSq);
+         */
+        lengthSq: function () {
+            var x, y, z, w;
+            return x * x + y * y + z * z + w * w;
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#mul
+         * @description Returns the result of multiplying the specified quaternions together.
+         * @param {pc.Quat} rhs The quaternion used as the second multiplicand of the operation.
+         * @returns {pc.Quat} Self for chaining.
+         * @example
+         * var a = new pc.Quat().setFromEulerAngles(0, 30, 0);
+         * var b = new pc.Quat().setFromEulerAngles(0, 60, 0);
+         *
+         * // a becomes a 90 degree rotation around the Y axis
+         * // In other words, a = a * b
+         * a.mul(b);
+         *
+         * console.log("The result of the multiplication is: " a.toString());
+         */
+        mul: function (rhs) {
+            var q1x, q1y, q1z, q1w, q2x, q2y, q2z, q2w;
+
+            q1x = this.x;
+            q1y = this.y;
+            q1z = this.z;
+            q1w = this.w;
+
+            q2x = rhs.x;
+            q2y = rhs.y;
+            q2z = rhs.z;
+            q2w = rhs.w;
+
+            this.x = q1w * q2x + q1x * q2w + q1y * q2z - q1z * q2y;
+            this.y = q1w * q2y + q1y * q2w + q1z * q2x - q1x * q2z;
+            this.z = q1w * q2z + q1z * q2w + q1x * q2y - q1y * q2x;
+            this.w = q1w * q2w - q1x * q2x - q1y * q2y - q1z * q2z;
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#mul2
+         * @description Returns the result of multiplying the specified quaternions together.
+         * @param {pc.Quat} lhs The quaternion used as the first multiplicand of the operation.
+         * @param {pc.Quat} rhs The quaternion used as the second multiplicand of the operation.
+         * @returns {pc.Quat} Self for chaining.
+         * @example
+         * var a = new pc.Quat().setFromEulerAngles(0, 30, 0);
+         * var b = new pc.Quat().setFromEulerAngles(0, 60, 0);
+         * var r = new pc.Quat();
+         *
+         * // r is set to a 90 degree rotation around the Y axis
+         * // In other words, r = a * b
+         * r.mul2(a, b);
+         *
+         * console.log("The result of the multiplication is: " r.toString());
+         */
+        mul2: function (lhs, rhs) {
+            var q1x, q1y, q1z, q1w, q2x, q2y, q2z, q2w;
+
+            q1x = lhs.x;
+            q1y = lhs.y;
+            q1z = lhs.z;
+            q1w = lhs.w;
+
+            q2x = rhs.x;
+            q2y = rhs.y;
+            q2z = rhs.z;
+            q2w = rhs.w;
+
+            this.x = q1w * q2x + q1x * q2w + q1y * q2z - q1z * q2y;
+            this.y = q1w * q2y + q1y * q2w + q1z * q2x - q1x * q2z;
+            this.z = q1w * q2z + q1z * q2w + q1x * q2y - q1y * q2x;
+            this.w = q1w * q2w - q1x * q2x - q1y * q2y - q1z * q2z;
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#normalize
+         * @description Returns the specified quaternion converted in place to a unit quaternion.
+         * @returns {pc.Quat} The result of the normalization.
+         * @example
+         * var v = new pc.Quat(0, 0, 0, 5);
+         *
+         * v.normalize();
+         *
+         * // Should output 0, 0, 0, 1
+         * console.log("The result of the vector normalization is: " + v.toString());
+         */
+        normalize: function () {
+            var len = this.length();
+            if (len === 0) {
+                this.x = this.y = this.z = 0;
+                this.w = 1;
+            } else {
+                len = 1 / len;
+                this.x *= len;
+                this.y *= len;
+                this.z *= len;
+                this.w *= len;
+            }
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#set
+         * @description Sets the specified quaternion to the supplied numerical values.
+         * @param {Number} x The x component of the quaternion.
+         * @param {Number} y The y component of the quaternion.
+         * @param {Number} z The z component of the quaternion.
+         * @param {Number} w The w component of the quaternion.
+         * @example
+         * var q = new pc.Quat();
+         * q.set(1, 0, 0, 0);
+         *
+         * // Should output 1, 0, 0, 0
+         * console.log("The result of the vector set is: " + q.toString());
+         */
+        set: function (x, y, z, w) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.w = w;
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#setFromAxisAngle
+         * @description Sets a quaternion from an angular rotation around an axis.
+         * @param {pc.Vec3} axis World space axis around which to rotate.
+         * @param {Number} angle Angle to rotate around the given axis in degrees.
+         * @returns {pc.Quat} Self for chaining.
+         * @example
+         * var q = new pc.Quat();
+         * q.setFromAxisAngle(pc.Vec3.UP, 90);
+         */
+        setFromAxisAngle: function (axis, angle) {
+            var sa, ca;
+
+            angle *= 0.5 * pc.math.DEG_TO_RAD;
+
+            sa = Math.sin(angle);
+            ca = Math.cos(angle);
+
+            this.x = sa * axis.x;
+            this.y = sa * axis.y;
+            this.z = sa * axis.z;
+            this.w = ca;
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#setFromEulerAngles
+         * @description Sets a quaternion from Euler angles specified in XYZ order.
+         * @param {Number} ex Angle to rotate around X axis in degrees.
+         * @param {Number} ey Angle to rotate around Y axis in degrees.
+         * @param {Number} ez Angle to rotate around Z axis in degrees.
+         * @returns {pc.Quat} Self for chaining.
+         * @example
+         * var q = new pc.Quat();
+         * q.setFromEulerAngles(45, 90, 180);
+         */
+        setFromEulerAngles: function (ex, ey, ez) {
+            var sx, cx, sy, cy, sz, cz, halfToRad;
+
+            halfToRad = 0.5 * pc.math.DEG_TO_RAD;
+            ex *= halfToRad;
+            ey *= halfToRad;
+            ez *= halfToRad;
+
+            sx = Math.sin(ex);
+            cx = Math.cos(ex);
+            sy = Math.sin(ey);
+            cy = Math.cos(ey);
+            sz = Math.sin(ez);
+            cz = Math.cos(ez);
+
+            this.x = sx * cy * cz - cx * sy * sz;
+            this.y = cx * sy * cz + sx * cy * sz;
+            this.z = cx * cy * sz - sx * sy * cz;
+            this.w = cx * cy * cz + sx * sy * sz;
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#setFromMat4
+         * @description Converts the specified 4x4 matrix to a quaternion. Note that since
+         * a quaternion is purely a representation for orientation, only the translational part
+         * of the matrix is lost.
+         * @param {pc.Mat4} m The 4x4 matrix to convert.
+         * @returns {pc.Quat} Self for chaining.
+         * @example
+         * // Create a 4x4 rotation matrix of 180 degrees around the y-axis
+         * var rot = new pc.Mat4().setFromAxisAngle(pc.Vec3.UP, 180);
+         *
+         * // Convert to a quaternion
+         * var q = new pc.Quat().setFromMat4(rot);
+         */
+        setFromMat4: function (m) {
+            var m00, m01, m02, m10, m11, m12, m20, m21, m22,
+                tr, s, rs, lx, ly, lz;
+
+            m = m.data;
+
+            // Cache matrix values for super-speed
+            m00 = m[0];
+            m01 = m[1];
+            m02 = m[2];
+            m10 = m[4];
+            m11 = m[5];
+            m12 = m[6];
+            m20 = m[8];
+            m21 = m[9];
+            m22 = m[10];
+
+            // Remove the scale from the matrix
+            lx = 1 / Math.sqrt(m00 * m00 + m01 * m01 + m02 * m02);
+            ly = 1 / Math.sqrt(m10 * m10 + m11 * m11 + m12 * m12);
+            lz = 1 / Math.sqrt(m20 * m20 + m21 * m21 + m22 * m22);
+
+            m00 *= lx;
+            m01 *= lx;
+            m02 *= lx;
+            m10 *= ly;
+            m11 *= ly;
+            m12 *= ly;
+            m20 *= lz;
+            m21 *= lz;
+            m22 *= lz;
+
+            // http://www.cs.ucr.edu/~vbz/resources/quatut.pdf
+
+            tr = m00 + m11 + m22;
+            if (tr >= 0) {
+                s = Math.sqrt(tr + 1);
+                this.w = s * 0.5;
+                s = 0.5 / s;
+                this.x = (m12 - m21) * s;
+                this.y = (m20 - m02) * s;
+                this.z = (m01 - m10) * s;
+            } else {
+                if (m00 > m11) {
+                    if (m00 > m22) {
+                        // XDiagDomMatrix
+                        rs = (m00 - (m11 + m22)) + 1;
+                        rs = Math.sqrt(rs);
+
+                        this.x = rs * 0.5;
+                        rs = 0.5 / rs;
+                        this.w = (m12 - m21) * rs;
+                        this.y = (m01 + m10) * rs;
+                        this.z = (m02 + m20) * rs;
+                    } else {
+                        // ZDiagDomMatrix
+                        rs = (m22 - (m00 + m11)) + 1;
+                        rs = Math.sqrt(rs);
+
+                        this.z = rs * 0.5;
+                        rs = 0.5 / rs;
+                        this.w = (m01 - m10) * rs;
+                        this.x = (m20 + m02) * rs;
+                        this.y = (m21 + m12) * rs;
+                    }
+                } else if (m11 > m22) {
+                    // YDiagDomMatrix
+                    rs = (m11 - (m22 + m00)) + 1;
+                    rs = Math.sqrt(rs);
+
+                    this.y = rs * 0.5;
+                    rs = 0.5 / rs;
+                    this.w = (m20 - m02) * rs;
+                    this.z = (m12 + m21) * rs;
+                    this.x = (m10 + m01) * rs;
+                } else {
+                    // ZDiagDomMatrix
+                    rs = (m22 - (m00 + m11)) + 1;
+                    rs = Math.sqrt(rs);
+
+                    this.z = rs * 0.5;
+                    rs = 0.5 / rs;
+                    this.w = (m01 - m10) * rs;
+                    this.x = (m20 + m02) * rs;
+                    this.y = (m21 + m12) * rs;
+                }
+            }
+
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#slerp
+         * @description Performs a spherical interpolation between two quaternions. The result of
+         * the interpolation is written to the quaternion calling the function.
+         * @param {pc.Quat} lhs The quaternion to interpolate from.
+         * @param {pc.Quat} rhs The quaternion to interpolate to.
+         * @param {Number} alpha The value controlling the interpolation in relation to the two input
+         * quaternions. The value is in the range 0 to 1, 0 generating q1, 1 generating q2 and anything
+         * in between generating a spherical interpolation between the two.
+         * @returns {pc.Quat} Self for chaining.
+         * @example
+         * var q1 = new pc.Quat(-0.11,-0.15,-0.46,0.87);
+         * var q2 = new pc.Quat(-0.21,-0.21,-0.67,0.68);
+         *
+         * var result;
+         * result = new pc.Quat().slerp(q1, q2, 0);   // Return q1
+         * result = new pc.Quat().slerp(q1, q2, 0.5); // Return the midpoint interpolant
+         * result = new pc.Quat().slerp(q1, q2, 1);   // Return q2
+         */
+        slerp: function (lhs, rhs, alpha) {
+            // Algorithm sourced from:
+            // http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
+            var lx, ly, lz, lw, rx, ry, rz, rw;
+            lx = lhs.x;
+            ly = lhs.y;
+            lz = lhs.z;
+            lw = lhs.w;
+            rx = rhs.x;
+            ry = rhs.y;
+            rz = rhs.z;
+            rw = rhs.w;
+
+            // Calculate angle between them.
+            var cosHalfTheta = lw * rw + lx * rx + ly * ry + lz * rz;
+
+            if (cosHalfTheta < 0) {
+                rw = -rw;
+                rx = -rx;
+                ry = -ry;
+                rz = -rz;
+                cosHalfTheta = -cosHalfTheta;
+            }
+
+            // If lhs == rhs or lhs == -rhs then theta == 0 and we can return lhs
+            if (Math.abs(cosHalfTheta) >= 1) {
+                this.w = lw;
+                this.x = lx;
+                this.y = ly;
+                this.z = lz;
+                return this;
+            }
+
+            // Calculate temporary values.
+            var halfTheta = Math.acos(cosHalfTheta);
+            var sinHalfTheta = Math.sqrt(1 - cosHalfTheta * cosHalfTheta);
+
+            // If theta = 180 degrees then result is not fully defined
+            // we could rotate around any axis normal to qa or qb
+            if (Math.abs(sinHalfTheta) < 0.001) {
+                this.w = (lw * 0.5 + rw * 0.5);
+                this.x = (lx * 0.5 + rx * 0.5);
+                this.y = (ly * 0.5 + ry * 0.5);
+                this.z = (lz * 0.5 + rz * 0.5);
+                return this;
+            }
+
+            var ratioA = Math.sin((1 - alpha) * halfTheta) / sinHalfTheta;
+            var ratioB = Math.sin(alpha * halfTheta) / sinHalfTheta;
+
+            // Calculate Quaternion.
+            this.w = (lw * ratioA + rw * ratioB);
+            this.x = (lx * ratioA + rx * ratioB);
+            this.y = (ly * ratioA + ry * ratioB);
+            this.z = (lz * ratioA + rz * ratioB);
+            return this;
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#transformVector
+         * @description Transforms a 3-dimensional vector by the specified quaternion.
+         * @param {pc.Vec3} vec The 3-dimensional vector to be transformed.
+         * @param {pc.Vec3} [res] An optional 3-dimensional vector to receive the result of the transformation.
+         * @returns {pc.Vec3} The input vector v transformed by the current instance.
+         * @example
+         * // Create a 3-dimensional vector
+         * var v = new pc.Vec3(1, 2, 3);
+         *
+         * // Create a 4x4 rotation matrix
+         * var q = new pc.Quat().setFromEulerAngles(10, 20, 30);
+         *
+         * var tv = q.transformVector(v);
+         */
+        transformVector: function (vec, res) {
+            if (res === undefined) {
+                res = new pc.Vec3();
+            }
+
+            var x = vec.x, y = vec.y, z = vec.z;
+            var qx = this.x, qy = this.y, qz = this.z, qw = this.w;
+
+            // calculate quat * vec
+            var ix = qw * x + qy * z - qz * y;
+            var iy = qw * y + qz * x - qx * z;
+            var iz = qw * z + qx * y - qy * x;
+            var iw = -qx * x - qy * y - qz * z;
+
+            // calculate result * inverse quat
+            res.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+            res.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+            res.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+
+            return res;
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#toString
+         * @description Converts the quaternion to string form.
+         * @returns {String} The quaternion in string form.
+         * @example
+         * var v = new pc.Quat(0, 0, 0, 1);
+         * // Should output '[0, 0, 0, 1]'
+         * console.log(v.toString());
+         */
+        toString: function () {
+            return "[" + this.x + ", " + this.y + ", " + this.z + ", " + this.w + "]";
+        },
+
+        /**
+         * @function
+         * @name pc.Quat#setLookAt
+         * @description Modifies the quaternion representing the rotation to look at the specified target.
+         * @returns {pc.Quat} The look rotation quaternion.
+         */
+        setLookAt: function (target, up) {
+            var m = new pc.Mat4().setLookAt(pc.Vec3.ZERO, target.clone().scale(-1), up);
+            this.setFromMat4(m);
+
+            return this;
+        }
+    };
+
+    /**
+     * @field
+     * @static
+     * @readonly
+     * @type pc.Quat
+     * @name pc.Quat.IDENTITY
+     * @description A constant quaternion set to [0, 0, 0, 1] (the identity).
+     */
+    Object.defineProperty(Quat, 'IDENTITY', {
+        get: (function () {
+            var identity = new Quat();
+            return function () {
+                return identity;
+            };
+        }())
+    });
+
+    /**
+     * @field
+     * @static
+     * @readonly
+     * @type pc.Quat
+     * @name pc.Quat.ZERO
+     * @description A constant quaternion set to [0, 0, 0, 0].
+     */
+    Object.defineProperty(Quat, 'ZERO', {
+        get: (function () {
+            var zero = new Quat(0, 0, 0, 0);
+            return function () {
+                return zero;
+            };
+        }())
+    });
+
+    return {
+        Quat: Quat
+    };
+}()));
+
 Goblin.Matrix3 = (function() {
 	var prototype = pc.Mat3.prototype;
 
@@ -2703,6 +3447,109 @@ Goblin.Matrix3 = (function() {
         m[6] = 0;
         m[7] = 0;
         m[8] = 0;
+	};
+
+	Object.defineProperty(prototype, 'e00', {
+		get: function() {
+			return this.data[0];
+		},
+		set: function(v) {
+			this.data[0] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e01', {
+		get: function() {
+			return this.data[1];
+		},
+		set: function(v) {
+			this.data[1] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e02', {
+		get: function() {
+			return this.data[2];
+		},
+		set: function(v) {
+			this.data[2] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e10', {
+		get: function() {
+			return this.data[3];
+		},
+		set: function(v) {
+			this.data[3] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e11', {
+		get: function() {
+			return this.data[4];
+		},
+		set: function(v) {
+			this.data[4] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e12', {
+		get: function() {
+			return this.data[5];
+		},
+		set: function(v) {
+			this.data[5] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e20', {
+		get: function() {
+			return this.data[6];
+		},
+		set: function(v) {
+			this.data[6] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e21', {
+		get: function() {
+			return this.data[7];
+		},
+		set: function(v) {
+			this.data[7] = v;
+		}
+	});
+	Object.defineProperty(prototype, 'e22', {
+		get: function() {
+			return this.data[8];
+		},
+		set: function(v) {
+			this.data[8] = v;
+		}
+	});
+
+	return pc.Mat3;
+}());
+Goblin.Matrix4 = (function() {
+	var prototype = pc.Mat4.prototype;
+	prototype.identity = prototype.setIdentity;
+	prototype.multiply = prototype.mul;
+
+	prototype.setInitial = function() {
+		var m = this.data;
+        m[0] = 0;
+        m[1] = 0;
+        m[2] = 0;
+        m[3] = 0;
+
+        m[4] = 0;
+        m[5] = 0;
+        m[6] = 0;
+        m[7] = 0;
+
+        m[8] = 0;
+        m[9] = 0;
+        m[10] = 0;
+        m[11] = 0;
+
+        m[12] = 0;
+        m[13] = 0;
+        m[14] = 0;
+        m[15] = 0;
 	};
 
 	Object.defineProperty(prototype, 'e00', {
@@ -2834,147 +3681,26 @@ Goblin.Matrix3 = (function() {
 		}
 	});
 
-	return pc.Mat3;
-}());
-Goblin.Matrix4 = (function() {
-
-	prototype.identity = prototype.setIdentity;
-	prototype.transformVector3Into = prototype.transformVector;
-	prototype.multiply = prototype.mul;
-
-	prototype.setInitial = function() {
-		var m = this.data;
-        m[0] = 0;
-        m[1] = 0;
-        m[2] = 0;
-        m[3] = 0;
-
-        m[4] = 0;
-        m[5] = 0;
-        m[6] = 0;
-        m[7] = 0;
-
-        m[8] = 0;
-        m[9] = 0;
-        m[10] = 0;
-        m[11] = 0;
-
-        m[12] = 0;
-        m[13] = 0;
-        m[14] = 0;
-        m[15] = 0;
-	};
-
-	Object.defineProperty(prototype, 'e00', {
-		get: function() {
-			return this.data[0];
-		},
-		set: function(v) {
-			this.data[0] = v;
-		}
-	});
-	Object.defineProperty(prototype, 'e01', {
-		get: function() {
-			return this.data[1];
-		},
-		set: function(v) {
-			this.data[1] = v;
-		}
-	});
-	Object.defineProperty(prototype, 'e02', {
-		get: function() {
-			return this.data[2];
-		},
-		set: function(v) {
-			this.data[2] = v;
-		}
-	});
-	Object.defineProperty(prototype, 'e10', {
-		get: function() {
-			return this.data[3];
-		},
-		set: function(v) {
-			this.data[3] = v;
-		}
-	});
-	Object.defineProperty(prototype, 'e11', {
-		get: function() {
-			return this.data[4];
-		},
-		set: function(v) {
-			this.data[4] = v;
-		}
-	});
-	Object.defineProperty(prototype, 'e12', {
-		get: function() {
-			return this.data[5];
-		},
-		set: function(v) {
-			this.data[5] = v;
-		}
-	});
-	Object.defineProperty(prototype, 'e20', {
-		get: function() {
-			return this.data[6];
-		},
-		set: function(v) {
-			this.data[6] = v;
-		}
-	});
-	Object.defineProperty(prototype, 'e21', {
-		get: function() {
-			return this.data[7];
-		},
-		set: function(v) {
-			this.data[7] = v;
-		}
-	});
-	Object.defineProperty(prototype, 'e22', {
-		get: function() {
-			return this.data[8];
-		},
-		set: function(v) {
-			this.data[8] = v;
-		}
-	});
-
 	return pc.Mat4;
 }());
 
-Goblin.Quaternion = function( x, y, z, w ) {
-	this.x = x != null ? x : 0;
-	this.y = y != null ? y : 0;
-	this.z = z != null ? z : 0;
-	this.w = w != null ? w : 1;
-	this.normalize();
-};
-
-Goblin.Quaternion.prototype = {
-	set: function( x, y, z, w ) {
-		this.x = x;
-		this.y = y;
-		this.z = z;
-		this.w = w;
-	},
-
-	multiply: function( q ) {
-		var x = this.x, y = this.y, z = this.z, w = this.w,
-			qx = q.x, qy = q.y, qz = q.z, qw = q.w;
-
-		this.x = x * qw + w * qx + y * qz - z * qy;
-		this.y = y * qw + w * qy + z * qx - x * qz;
-		this.z = z * qw + w * qz + x * qy - y * qx;
-		this.w = w * qw - x * qx - y * qy - z * qz;
-	},
-
-	multiplyQuaternions: function( a, b ) {
-		this.x = a.x * b.w + a.w * b.x + a.y * b.z - a.z * b.y;
-		this.y = a.y * b.w + a.w * b.y + a.z * b.x - a.x * b.z;
-		this.z = a.z * b.w + a.w * b.z + a.x * b.y - a.y * b.x;
-		this.w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z;
-	},
-
-	normalize: function() {
+Goblin.Quaternion = (function() {
+	var prototype = pc.Quat.prototype;
+	prototype.multiply = prototype.mul;
+	prototype.multiplyQuaternions = prototype.mul2;
+	prototype.transformVector3Into = prototype.transformVector;
+	
+	prototype.transformVector3 = function( v ) {
+		return this.transformVector( v, v );
+	};
+	prototype.setInitial = function( x, y, z, w ) {
+		this.x = x != null ? x : 0;
+		this.y = y != null ? y : 0;
+		this.z = z != null ? z : 0;
+		this.w = w != null ? w : 1;
+		this.normalize();
+	};
+	prototype.normalize = function() {
 		var x = this.x, y = this.y, z = this.z, w = this.w,
 			length = Math.sqrt( x * x + y * y + z * z + w * w );
 
@@ -2987,55 +3713,13 @@ Goblin.Quaternion.prototype = {
 			this.z *= length;
 			this.w *= length;
 		}
-	},
+	};
+	prototype.invertQuaternion = function( q ) {
+		return this.copy(q).invert();
+	};
 
-	invertQuaternion: function( q ) {
-		var x = q.x, y = q.y, z = q.z, w = q.w,
-			dot = x * x + y * y + z * z + w * w;
-
-		if ( dot === 0 ) {
-			this.x = this.y = this.z = this.w = 0;
-		} else {
-			var inv_dot = -1 / dot;
-			this.x = q.x * inv_dot;
-			this.y = q.y *  inv_dot;
-			this.z = q.z *  inv_dot;
-			this.w = q.w *  -inv_dot;
-		}
-	},
-
-	transformVector3: function( v ) {
-		var x = v.x, y = v.y, z = v.z,
-			qx = this.x, qy = this.y, qz = this.z, qw = this.w,
-
-		// calculate quat * vec
-			ix = qw * x + qy * z - qz * y,
-			iy = qw * y + qz * x - qx * z,
-			iz = qw * z + qx * y - qy * x,
-			iw = -qx * x - qy * y - qz * z;
-
-		// calculate result * inverse quat
-		v.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
-		v.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
-		v.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
-	},
-
-	transformVector3Into: function( v, dest ) {
-		var x = v.x, y = v.y, z = v.z,
-			qx = this.x, qy = this.y, qz = this.z, qw = this.w,
-
-		// calculate quat * vec
-			ix = qw * x + qy * z - qz * y,
-			iy = qw * y + qz * x - qx * z,
-			iz = qw * z + qx * y - qy * x,
-			iw = -qx * x - qy * y - qz * z;
-
-		// calculate result * inverse quat
-		dest.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
-		dest.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
-		dest.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
-	}
-};
+	return pc.Quat;
+}());
 Goblin.Vector3 = (function() {
 	var prototype = pc.Vec3.prototype;
 
@@ -4286,6 +4970,864 @@ Goblin.BasicBroadphase.prototype.rayIntersect = function( start, end ) {
 		}
 	};
 })();
+Goblin.Constraint = function() {
+	this.active = true;
+
+	this.object_a = null;
+
+	this.object_b = null;
+
+	this.rows = [];
+
+	this.factor = 1;
+
+	this.last_impulse = new Goblin.Vector3();
+
+	this.breaking_threshold = 0;
+
+	this.listeners = {};
+};
+Goblin.EventEmitter.apply( Goblin.Constraint );
+
+Goblin.Constraint.prototype.deactivate = function() {
+	this.active = false;
+	this.emit( 'deactivate' );
+};
+
+Goblin.Constraint.prototype.update = function(){};
+Goblin.ConstraintRow = function() {
+	this.jacobian = new Float64Array( 12 );
+	this.B = new Float64Array( 12 ); // `B` is the jacobian multiplied by the objects' inverted mass & inertia tensors
+	this.D = 0; // Length of the jacobian
+
+	this.lower_limit = -Infinity;
+	this.upper_limit = Infinity;
+
+	this.bias = 0;
+	this.multiplier = 0;
+	this.multiplier_cached = 0;
+	this.eta = 0;
+	this.eta_row = new Float64Array( 12 );
+};
+
+Goblin.ConstraintRow.prototype.computeB = function( constraint ) {
+	var invmass;
+
+	if ( constraint.object_a != null && constraint.object_a._mass !== Infinity ) {
+		invmass = constraint.object_a._mass_inverted;
+
+		this.B[0] = invmass * this.jacobian[0] * constraint.object_a.linear_factor.x;
+		this.B[1] = invmass * this.jacobian[1] * constraint.object_a.linear_factor.y;
+		this.B[2] = invmass * this.jacobian[2] * constraint.object_a.linear_factor.z;
+
+		_tmp_vec3_1.x = this.jacobian[3];
+		_tmp_vec3_1.y = this.jacobian[4];
+		_tmp_vec3_1.z = this.jacobian[5];
+		constraint.object_a.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
+		this.B[3] = _tmp_vec3_1.x * constraint.object_a.angular_factor.x;
+		this.B[4] = _tmp_vec3_1.y * constraint.object_a.angular_factor.y;
+		this.B[5] = _tmp_vec3_1.z * constraint.object_a.angular_factor.z;
+	} else {
+		this.B[0] = this.B[1] = this.B[2] = 0;
+		this.B[3] = this.B[4] = this.B[5] = 0;
+	}
+
+	if ( constraint.object_b != null && constraint.object_b._mass !== Infinity ) {
+		invmass = constraint.object_b._mass_inverted;
+		this.B[6] = invmass * this.jacobian[6] * constraint.object_b.linear_factor.x;
+		this.B[7] = invmass * this.jacobian[7] * constraint.object_b.linear_factor.y;
+		this.B[8] = invmass * this.jacobian[8] * constraint.object_b.linear_factor.z;
+
+		_tmp_vec3_1.x = this.jacobian[9];
+		_tmp_vec3_1.y = this.jacobian[10];
+		_tmp_vec3_1.z = this.jacobian[11];
+		constraint.object_b.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
+		this.B[9] = _tmp_vec3_1.x * constraint.object_b.linear_factor.x;
+		this.B[10] = _tmp_vec3_1.y * constraint.object_b.linear_factor.y;
+		this.B[11] = _tmp_vec3_1.z * constraint.object_b.linear_factor.z;
+	} else {
+		this.B[6] = this.B[7] = this.B[8] = 0;
+		this.B[9] = this.B[10] = this.B[11] = 0;
+	}
+};
+
+Goblin.ConstraintRow.prototype.computeD = function() {
+	this.D = (
+		this.jacobian[0] * this.B[0] +
+		this.jacobian[1] * this.B[1] +
+		this.jacobian[2] * this.B[2] +
+		this.jacobian[3] * this.B[3] +
+		this.jacobian[4] * this.B[4] +
+		this.jacobian[5] * this.B[5] +
+		this.jacobian[6] * this.B[6] +
+		this.jacobian[7] * this.B[7] +
+		this.jacobian[8] * this.B[8] +
+		this.jacobian[9] * this.B[9] +
+		this.jacobian[10] * this.B[10] +
+		this.jacobian[11] * this.B[11]
+	);
+};
+
+Goblin.ConstraintRow.prototype.computeEta = function( constraint, time_delta ) {
+	var invmass,
+		inverse_time_delta = 1 / time_delta;
+
+	if ( constraint.object_a == null || constraint.object_a._mass === Infinity ) {
+		this.eta_row[0] = this.eta_row[1] = this.eta_row[2] = this.eta_row[3] = this.eta_row[4] = this.eta_row[5] = 0;
+	} else {
+		invmass = constraint.object_a._mass_inverted;
+
+		this.eta_row[0] = ( constraint.object_a.linear_velocity.x + ( invmass * constraint.object_a.accumulated_force.x ) ) * inverse_time_delta;
+		this.eta_row[1] = ( constraint.object_a.linear_velocity.y + ( invmass * constraint.object_a.accumulated_force.y ) ) * inverse_time_delta;
+		this.eta_row[2] = ( constraint.object_a.linear_velocity.z + ( invmass * constraint.object_a.accumulated_force.z ) ) * inverse_time_delta;
+
+		_tmp_vec3_1.copy( constraint.object_a.accumulated_torque );
+		constraint.object_a.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
+		this.eta_row[3] = ( constraint.object_a.angular_velocity.x + _tmp_vec3_1.x ) * inverse_time_delta;
+		this.eta_row[4] = ( constraint.object_a.angular_velocity.y + _tmp_vec3_1.y ) * inverse_time_delta;
+		this.eta_row[5] = ( constraint.object_a.angular_velocity.z + _tmp_vec3_1.z ) * inverse_time_delta;
+	}
+
+	if ( constraint.object_b == null || constraint.object_b._mass === Infinity ) {
+		this.eta_row[6] = this.eta_row[7] = this.eta_row[8] = this.eta_row[9] = this.eta_row[10] = this.eta_row[11] = 0;
+	} else {
+		invmass = constraint.object_b._mass_inverted;
+
+		this.eta_row[6] = ( constraint.object_b.linear_velocity.x + ( invmass * constraint.object_b.accumulated_force.x ) ) * inverse_time_delta;
+		this.eta_row[7] = ( constraint.object_b.linear_velocity.y + ( invmass * constraint.object_b.accumulated_force.y ) ) * inverse_time_delta;
+		this.eta_row[8] = ( constraint.object_b.linear_velocity.z + ( invmass * constraint.object_b.accumulated_force.z ) ) * inverse_time_delta;
+
+		_tmp_vec3_1.copy( constraint.object_b.accumulated_torque );
+		constraint.object_b.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
+		this.eta_row[9] = ( constraint.object_b.angular_velocity.x + _tmp_vec3_1.x ) * inverse_time_delta;
+		this.eta_row[10] = ( constraint.object_b.angular_velocity.y + _tmp_vec3_1.y ) * inverse_time_delta;
+		this.eta_row[11] = ( constraint.object_b.angular_velocity.z + _tmp_vec3_1.z ) * inverse_time_delta;
+	}
+
+	var jdotv = this.jacobian[0] * this.eta_row[0] +
+		this.jacobian[1] * this.eta_row[1] +
+		this.jacobian[2] * this.eta_row[2] +
+		this.jacobian[3] * this.eta_row[3] +
+		this.jacobian[4] * this.eta_row[4] +
+		this.jacobian[5] * this.eta_row[5] +
+		this.jacobian[6] * this.eta_row[6] +
+		this.jacobian[7] * this.eta_row[7] +
+		this.jacobian[8] * this.eta_row[8] +
+		this.jacobian[9] * this.eta_row[9] +
+		this.jacobian[10] * this.eta_row[10] +
+		this.jacobian[11] * this.eta_row[11];
+
+	this.eta = ( this.bias * inverse_time_delta ) - jdotv;
+};
+Goblin.ContactConstraint = function() {
+	Goblin.Constraint.call( this );
+
+	this.contact = null;
+};
+Goblin.ContactConstraint.prototype = Object.create( Goblin.Constraint.prototype );
+
+Goblin.ContactConstraint.prototype.buildFromContact = function( contact ) {
+	this.object_a = contact.object_a;
+	this.object_b = contact.object_b;
+	this.contact = contact;
+
+	var self = this;
+	var onDestroy = function() {
+		this.removeListener( 'destroy', onDestroy );
+		self.deactivate();
+	};
+	this.contact.addListener( 'destroy', onDestroy );
+
+	var row = this.rows[0] || Goblin.ObjectPool.getObject( 'ConstraintRow' );
+	row.lower_limit = 0;
+	row.upper_limit = Infinity;
+	this.rows[0] = row;
+
+	this.update();
+};
+
+Goblin.ContactConstraint.prototype.update = function() {
+	var row = this.rows[0];
+
+	if ( this.object_a == null || this.object_a._mass === Infinity ) {
+		row.jacobian[0] = row.jacobian[1] = row.jacobian[2] = 0;
+		row.jacobian[3] = row.jacobian[4] = row.jacobian[5] = 0;
+	} else {
+		row.jacobian[0] = -this.contact.contact_normal.x;
+		row.jacobian[1] = -this.contact.contact_normal.y;
+		row.jacobian[2] = -this.contact.contact_normal.z;
+
+		_tmp_vec3_1.subtractVectors( this.contact.contact_point, this.contact.object_a.position );
+		_tmp_vec3_1.cross( this.contact.contact_normal );
+		row.jacobian[3] = -_tmp_vec3_1.x;
+		row.jacobian[4] = -_tmp_vec3_1.y;
+		row.jacobian[5] = -_tmp_vec3_1.z;
+	}
+
+	if ( this.object_b == null || this.object_b._mass === Infinity ) {
+		row.jacobian[6] = row.jacobian[7] = row.jacobian[8] = 0;
+		row.jacobian[9] = row.jacobian[10] = row.jacobian[11] = 0;
+	} else {
+		row.jacobian[6] = this.contact.contact_normal.x;
+		row.jacobian[7] = this.contact.contact_normal.y;
+		row.jacobian[8] = this.contact.contact_normal.z;
+
+		_tmp_vec3_1.subtractVectors( this.contact.contact_point, this.contact.object_b.position );
+		_tmp_vec3_1.cross( this.contact.contact_normal );
+		row.jacobian[9] = _tmp_vec3_1.x;
+		row.jacobian[10] = _tmp_vec3_1.y;
+		row.jacobian[11] = _tmp_vec3_1.z;
+	}
+
+	// Pre-calc error
+	row.bias = 0;
+
+	// Apply restitution
+	var velocity_along_normal = 0;
+	if ( this.object_a._mass !== Infinity ) {
+		this.object_a.getVelocityInLocalPoint( this.contact.contact_point_in_a, _tmp_vec3_1 );
+		velocity_along_normal += _tmp_vec3_1.dot( this.contact.contact_normal );
+	}
+	if ( this.object_b._mass !== Infinity ) {
+		this.object_b.getVelocityInLocalPoint( this.contact.contact_point_in_b, _tmp_vec3_1 );
+		velocity_along_normal -= _tmp_vec3_1.dot( this.contact.contact_normal );
+	}
+
+	// Add restitution to bias
+	row.bias += velocity_along_normal * this.contact.restitution;
+};
+Goblin.FrictionConstraint = function() {
+	Goblin.Constraint.call( this );
+
+	this.contact = null;
+};
+Goblin.FrictionConstraint.prototype = Object.create( Goblin.Constraint.prototype );
+
+Goblin.FrictionConstraint.prototype.buildFromContact = function( contact ) {
+	this.rows[0] = this.rows[0] || Goblin.ObjectPool.getObject( 'ConstraintRow' );
+	this.rows[1] = this.rows[1] || Goblin.ObjectPool.getObject( 'ConstraintRow' );
+
+	this.object_a = contact.object_a;
+	this.object_b = contact.object_b;
+	this.contact = contact;
+
+	var self = this;
+	var onDestroy = function() {
+		this.removeListener( 'destroy', onDestroy );
+		self.deactivate();
+	};
+	this.contact.addListener( 'destroy', onDestroy );
+
+	this.update();
+};
+
+Goblin.FrictionConstraint.prototype.update = (function(){
+	var rel_a = new Goblin.Vector3(),
+		rel_b = new Goblin.Vector3(),
+		u1 = new Goblin.Vector3(),
+		u2 = new Goblin.Vector3();
+
+	return function updateFrictionConstraint() {
+		var row_1 = this.rows[0],
+			row_2 = this.rows[1];
+
+		// Find the contact point relative to object_a and object_b
+		rel_a.subtractVectors( this.contact.contact_point, this.object_a.position );
+		rel_b.subtractVectors( this.contact.contact_point, this.object_b.position );
+
+		this.contact.contact_normal.findOrthogonal( u1, u2 );
+
+		if ( this.object_a == null || this.object_a._mass === Infinity ) {
+			row_1.jacobian[0] = row_1.jacobian[1] = row_1.jacobian[2] = 0;
+			row_1.jacobian[3] = row_1.jacobian[4] = row_1.jacobian[5] = 0;
+			row_2.jacobian[0] = row_2.jacobian[1] = row_2.jacobian[2] = 0;
+			row_2.jacobian[3] = row_2.jacobian[4] = row_2.jacobian[5] = 0;
+		} else {
+			row_1.jacobian[0] = -u1.x;
+			row_1.jacobian[1] = -u1.y;
+			row_1.jacobian[2] = -u1.z;
+
+			_tmp_vec3_1.crossVectors( rel_a, u1 );
+			row_1.jacobian[3] = -_tmp_vec3_1.x;
+			row_1.jacobian[4] = -_tmp_vec3_1.y;
+			row_1.jacobian[5] = -_tmp_vec3_1.z;
+
+			row_2.jacobian[0] = -u2.x;
+			row_2.jacobian[1] = -u2.y;
+			row_2.jacobian[2] = -u2.z;
+
+			_tmp_vec3_1.crossVectors( rel_a, u2 );
+			row_2.jacobian[3] = -_tmp_vec3_1.x;
+			row_2.jacobian[4] = -_tmp_vec3_1.y;
+			row_2.jacobian[5] = -_tmp_vec3_1.z;
+		}
+
+		if ( this.object_b == null || this.object_b._mass === Infinity ) {
+			row_1.jacobian[6] = row_1.jacobian[7] = row_1.jacobian[8] = 0;
+			row_1.jacobian[9] = row_1.jacobian[10] = row_1.jacobian[11] = 0;
+			row_2.jacobian[6] = row_2.jacobian[7] = row_2.jacobian[8] = 0;
+			row_2.jacobian[9] = row_2.jacobian[10] = row_2.jacobian[11] = 0;
+		} else {
+			row_1.jacobian[6] = u1.x;
+			row_1.jacobian[7] = u1.y;
+			row_1.jacobian[8] = u1.z;
+
+			_tmp_vec3_1.crossVectors( rel_b, u1 );
+			row_1.jacobian[9] = _tmp_vec3_1.x;
+			row_1.jacobian[10] = _tmp_vec3_1.y;
+			row_1.jacobian[11] = _tmp_vec3_1.z;
+
+			row_2.jacobian[6] = u2.x;
+			row_2.jacobian[7] = u2.y;
+			row_2.jacobian[8] = u2.z;
+
+			_tmp_vec3_1.crossVectors( rel_b, u2 );
+			row_2.jacobian[9] = _tmp_vec3_1.x;
+			row_2.jacobian[10] = _tmp_vec3_1.y;
+			row_2.jacobian[11] = _tmp_vec3_1.z;
+		}
+
+		// Find total velocity between the two bodies along the contact normal
+		this.object_a.getVelocityInLocalPoint( this.contact.contact_point_in_a, _tmp_vec3_1 );
+
+		// Include accumulated forces
+		if ( this.object_a._mass !== Infinity ) {
+			// accumulated linear velocity
+			_tmp_vec3_1.scaleVector( this.object_a.accumulated_force, 1 / this.object_a._mass );
+			_tmp_vec3_1.add( this.object_a.linear_velocity );
+
+			// accumulated angular velocity
+			this.object_a.inverseInertiaTensorWorldFrame.transformVector3Into( this.object_a.accumulated_torque, _tmp_vec3_3 );
+			_tmp_vec3_3.add( this.object_a.angular_velocity );
+
+			_tmp_vec3_3.cross( this.contact.contact_point_in_a );
+			_tmp_vec3_1.add( _tmp_vec3_3 );
+			_tmp_vec3_1.scale( this.object_a._mass );
+		} else {
+			_tmp_vec3_1.set( 0, 0, 0 );
+		}
+
+		var limit = this.contact.friction * 25;
+		if ( limit < 0 ) {
+			limit = 0;
+		}
+		row_1.lower_limit = row_2.lower_limit = -limit;
+		row_1.upper_limit = row_2.upper_limit = limit;
+
+		row_1.bias = row_2.bias = 0;
+
+		this.rows[0] = row_1;
+		this.rows[1] = row_2;
+	};
+})();
+Goblin.HingeConstraint = function( object_a, hinge_a, point_a, object_b, point_b ) {
+	Goblin.Constraint.call( this );
+
+	this.object_a = object_a;
+	this.hinge_a = hinge_a;
+	this.point_a = point_a;
+
+	this.object_b = object_b || null;
+	this.point_b = new Goblin.Vector3();
+	this.hinge_b = new Goblin.Vector3();
+	if ( this.object_b != null ) {
+		this.object_a.rotation.transformVector3Into( this.hinge_a, this.hinge_b );
+		_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
+		_tmp_quat4_1.transformVector3( this.hinge_b );
+
+		this.point_b = point_b;
+	} else {
+		this.object_a.updateDerived(); // Ensure the body's transform is correct
+		this.object_a.rotation.transformVector3Into( this.hinge_a, this.hinge_b );
+		this.object_a.transform.transformVector3Into( this.point_a, this.point_b );
+	}
+
+	this.erp = 0.1;
+
+	// Create rows
+	// rows 0,1,2 are the same as point constraint and constrain the objects' positions
+	// rows 3,4 introduce the rotational constraints which constrains angular velocity orthogonal to the hinge axis
+	for ( var i = 0; i < 5; i++ ) {
+		this.rows[i] = Goblin.ObjectPool.getObject( 'ConstraintRow' );
+		this.rows[i].lower_limit = -Infinity;
+		this.rows[i].upper_limit = Infinity;
+		this.rows[i].bias = 0;
+
+		this.rows[i].jacobian[0] = this.rows[i].jacobian[1] = this.rows[i].jacobian[2] =
+			this.rows[i].jacobian[3] = this.rows[i].jacobian[4] = this.rows[i].jacobian[5] =
+			this.rows[i].jacobian[6] = this.rows[i].jacobian[7] = this.rows[i].jacobian[8] =
+			this.rows[i].jacobian[9] = this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = 0;
+	}
+};
+Goblin.HingeConstraint.prototype = Object.create( Goblin.Constraint.prototype );
+
+Goblin.HingeConstraint.prototype.update = (function(){
+	var r1 = new Goblin.Vector3(),
+		r2 = new Goblin.Vector3(),
+		t1 = new Goblin.Vector3(),
+		t2 = new Goblin.Vector3(),
+		world_axis = new Goblin.Vector3();
+
+	return function( time_delta ) {
+		this.object_a.rotation.transformVector3Into( this.hinge_a, world_axis );
+
+		this.object_a.transform.transformVector3Into( this.point_a, _tmp_vec3_1 );
+		r1.subtractVectors( _tmp_vec3_1, this.object_a.position );
+
+		// 0,1,2 are positional, same as PointConstraint
+		this.rows[0].jacobian[0] = -1;
+		this.rows[0].jacobian[1] = 0;
+		this.rows[0].jacobian[2] = 0;
+		this.rows[0].jacobian[3] = 0;
+		this.rows[0].jacobian[4] = -r1.z;
+		this.rows[0].jacobian[5] = r1.y;
+
+		this.rows[1].jacobian[0] = 0;
+		this.rows[1].jacobian[1] = -1;
+		this.rows[1].jacobian[2] = 0;
+		this.rows[1].jacobian[3] = r1.z;
+		this.rows[1].jacobian[4] = 0;
+		this.rows[1].jacobian[5] = -r1.x;
+
+		this.rows[2].jacobian[0] = 0;
+		this.rows[2].jacobian[1] = 0;
+		this.rows[2].jacobian[2] = -1;
+		this.rows[2].jacobian[3] = -r1.y;
+		this.rows[2].jacobian[4] = r1.x;
+		this.rows[2].jacobian[5] = 0;
+
+		// 3,4 are rotational, constraining motion orthogonal to axis
+		world_axis.findOrthogonal( t1, t2 );
+		this.rows[3].jacobian[3] = -t1.x;
+		this.rows[3].jacobian[4] = -t1.y;
+		this.rows[3].jacobian[5] = -t1.z;
+
+		this.rows[4].jacobian[3] = -t2.x;
+		this.rows[4].jacobian[4] = -t2.y;
+		this.rows[4].jacobian[5] = -t2.z;
+
+		if ( this.object_b != null ) {
+			this.object_b.transform.transformVector3Into( this.point_b, _tmp_vec3_2 );
+			r2.subtractVectors( _tmp_vec3_2, this.object_b.position );
+
+			// 0,1,2 are positional, same as PointConstraint
+			this.rows[0].jacobian[6] = 1;
+			this.rows[0].jacobian[7] = 0;
+			this.rows[0].jacobian[8] = 0;
+			this.rows[0].jacobian[9] = 0;
+			this.rows[0].jacobian[10] = r2.z;
+			this.rows[0].jacobian[11] = -r2.y;
+
+			this.rows[1].jacobian[6] = 0;
+			this.rows[1].jacobian[7] = 1;
+			this.rows[1].jacobian[8] = 0;
+			this.rows[1].jacobian[9] = -r2.z;
+			this.rows[1].jacobian[10] = 0;
+			this.rows[1].jacobian[11] = r2.x;
+
+			this.rows[2].jacobian[6] = 0;
+			this.rows[2].jacobian[7] = 0;
+			this.rows[2].jacobian[8] = 1;
+			this.rows[2].jacobian[9] = r2.y;
+			this.rows[2].jacobian[10] = -r2.z;
+			this.rows[2].jacobian[11] = 0;
+
+			// 3,4 are rotational, constraining motion orthogonal to axis
+			this.rows[3].jacobian[9] = t1.x;
+			this.rows[3].jacobian[10] = t1.y;
+			this.rows[3].jacobian[11] = t1.z;
+
+			this.rows[4].jacobian[9] = t2.x;
+			this.rows[4].jacobian[10] = t2.y;
+			this.rows[4].jacobian[11] = t2.z;
+		} else {
+			_tmp_vec3_2.copy( this.point_b );
+		}
+
+		// Linear error correction
+		_tmp_vec3_3.subtractVectors( _tmp_vec3_1, _tmp_vec3_2 );
+		_tmp_vec3_3.scale( this.erp / time_delta );
+		this.rows[0].bias = _tmp_vec3_3.x;
+		this.rows[1].bias = _tmp_vec3_3.y;
+		this.rows[2].bias = _tmp_vec3_3.z;
+
+		// Angular error correction
+		if (this.object_b != null) {
+			this.object_a.rotation.transformVector3Into(this.hinge_a, _tmp_vec3_1);
+			this.object_b.rotation.transformVector3Into(this.hinge_b, _tmp_vec3_2);
+			_tmp_vec3_1.cross(_tmp_vec3_2);
+			this.rows[3].bias = -_tmp_vec3_1.dot(t1);
+			this.rows[4].bias = -_tmp_vec3_1.dot(t2);
+		} else {
+			this.rows[3].bias = this.rows[4].bias = 0;
+		}
+	};
+})( );
+Goblin.PointConstraint = function( object_a, point_a, object_b, point_b ) {
+	Goblin.Constraint.call( this );
+
+	this.object_a = object_a;
+	this.point_a = point_a;
+
+	this.object_b = object_b || null;
+	if ( this.object_b != null ) {
+		this.point_b = point_b;
+	} else {
+		this.point_b = new Goblin.Vector3();
+		this.object_a.updateDerived(); // Ensure the body's transform is correct
+		this.object_a.transform.transformVector3Into( this.point_a, this.point_b );
+	}
+
+	this.erp = 0.1;
+
+	// Create rows
+	for ( var i = 0; i < 3; i++ ) {
+		this.rows[i] = Goblin.ObjectPool.getObject( 'ConstraintRow' );
+		this.rows[i].lower_limit = -Infinity;
+		this.rows[i].upper_limit = Infinity;
+		this.rows[i].bias = 0;
+
+		this.rows[i].jacobian[6] = this.rows[i].jacobian[7] = this.rows[i].jacobian[8] =
+			this.rows[i].jacobian[9] = this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = 0;
+	}
+};
+Goblin.PointConstraint.prototype = Object.create( Goblin.Constraint.prototype );
+
+Goblin.PointConstraint.prototype.update = (function(){
+	var r1 = new Goblin.Vector3(),
+		r2 = new Goblin.Vector3();
+
+	return function( time_delta ) {
+		this.object_a.transform.transformVector3Into( this.point_a, _tmp_vec3_1 );
+		r1.subtractVectors( _tmp_vec3_1, this.object_a.position );
+
+		this.rows[0].jacobian[0] = -1;
+		this.rows[0].jacobian[1] = 0;
+		this.rows[0].jacobian[2] = 0;
+		this.rows[0].jacobian[3] = 0;
+		this.rows[0].jacobian[4] = -r1.z;
+		this.rows[0].jacobian[5] = r1.y;
+
+		this.rows[1].jacobian[0] = 0;
+		this.rows[1].jacobian[1] = -1;
+		this.rows[1].jacobian[2] = 0;
+		this.rows[1].jacobian[3] = r1.z;
+		this.rows[1].jacobian[4] = 0;
+		this.rows[1].jacobian[5] = -r1.x;
+
+		this.rows[2].jacobian[0] = 0;
+		this.rows[2].jacobian[1] = 0;
+		this.rows[2].jacobian[2] = -1;
+		this.rows[2].jacobian[3] = -r1.y;
+		this.rows[2].jacobian[4] = r1.x;
+		this.rows[2].jacobian[5] = 0;
+
+		if ( this.object_b != null ) {
+			this.object_b.transform.transformVector3Into( this.point_b, _tmp_vec3_2 );
+			r2.subtractVectors( _tmp_vec3_2, this.object_b.position );
+
+			this.rows[0].jacobian[6] = 1;
+			this.rows[0].jacobian[7] = 0;
+			this.rows[0].jacobian[8] = 0;
+			this.rows[0].jacobian[9] = 0;
+			this.rows[0].jacobian[10] = r2.z;
+			this.rows[0].jacobian[11] = -r2.y;
+
+			this.rows[1].jacobian[6] = 0;
+			this.rows[1].jacobian[7] = 1;
+			this.rows[1].jacobian[8] = 0;
+			this.rows[1].jacobian[9] = -r2.z;
+			this.rows[1].jacobian[10] = 0;
+			this.rows[1].jacobian[11] = r2.x;
+
+			this.rows[2].jacobian[6] = 0;
+			this.rows[2].jacobian[7] = 0;
+			this.rows[2].jacobian[8] = 1;
+			this.rows[2].jacobian[9] = r2.y;
+			this.rows[2].jacobian[10] = -r2.z;
+			this.rows[2].jacobian[11] = 0;
+		} else {
+			_tmp_vec3_2.copy( this.point_b );
+		}
+
+		_tmp_vec3_3.subtractVectors( _tmp_vec3_1, _tmp_vec3_2 );
+		_tmp_vec3_3.scale( this.erp / time_delta );
+		this.rows[0].bias = _tmp_vec3_3.x;
+		this.rows[1].bias = _tmp_vec3_3.y;
+		this.rows[2].bias = _tmp_vec3_3.z;
+	};
+})( );
+Goblin.SliderConstraint = function( object_a, axis, object_b ) {
+	Goblin.Constraint.call( this );
+
+	this.object_a = object_a;
+	this.axis = axis;
+	this.object_b = object_b;
+
+	// Find the initial distance between the two objects in object_a's local frame
+	this.position_error = new Goblin.Vector3();
+	this.position_error.subtractVectors( this.object_b.position, this.object_a.position );
+	_tmp_quat4_1.invertQuaternion( this.object_a.rotation );
+	_tmp_quat4_1.transformVector3( this.position_error );
+
+	this.rotation_difference = new Goblin.Quaternion();
+	if ( this.object_b != null ) {
+		_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
+		this.rotation_difference.multiplyQuaternions( _tmp_quat4_1, this.object_a.rotation );
+	}
+
+	this.erp = 0.1;
+
+	// First two rows constrain the linear velocities orthogonal to `axis`
+	// Rows three through five constrain angular velocities
+	for ( var i = 0; i < 5; i++ ) {
+		this.rows[i] = Goblin.ObjectPool.getObject( 'ConstraintRow' );
+		this.rows[i].lower_limit = -Infinity;
+		this.rows[i].upper_limit = Infinity;
+		this.rows[i].bias = 0;
+
+		this.rows[i].jacobian[0] = this.rows[i].jacobian[1] = this.rows[i].jacobian[2] =
+			this.rows[i].jacobian[3] = this.rows[i].jacobian[4] = this.rows[i].jacobian[5] =
+			this.rows[i].jacobian[6] = this.rows[i].jacobian[7] = this.rows[i].jacobian[8] =
+			this.rows[i].jacobian[9] = this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = 0;
+	}
+};
+Goblin.SliderConstraint.prototype = Object.create( Goblin.Constraint.prototype );
+
+Goblin.SliderConstraint.prototype.update = (function(){
+	var _axis = new Goblin.Vector3(),
+		n1 = new Goblin.Vector3(),
+		n2 = new Goblin.Vector3();
+
+	return function( time_delta ) {
+		// `axis` is in object_a's local frame, convert to world
+		this.object_a.rotation.transformVector3Into( this.axis, _axis );
+
+		// Find two vectors that are orthogonal to `axis`
+		_axis.findOrthogonal( n1, n2 );
+
+		this._updateLinearConstraints( time_delta, n1, n2 );
+		this._updateAngularConstraints( time_delta, n1, n2 );
+	};
+})();
+
+Goblin.SliderConstraint.prototype._updateLinearConstraints = function( time_delta, n1, n2 ) {
+	var c = new Goblin.Vector3();
+	c.subtractVectors( this.object_b.position, this.object_a.position );
+	//c.scale( 0.5 );
+
+	var cx = new Goblin.Vector3( );
+
+	// first linear constraint
+	cx.crossVectors( c, n1 );
+	this.rows[0].jacobian[0] = -n1.x;
+	this.rows[0].jacobian[1] = -n1.y;
+	this.rows[0].jacobian[2] = -n1.z;
+	//this.rows[0].jacobian[3] = -cx[0];
+	//this.rows[0].jacobian[4] = -cx[1];
+	//this.rows[0].jacobian[5] = -cx[2];
+
+	this.rows[0].jacobian[6] = n1.x;
+	this.rows[0].jacobian[7] = n1.y;
+	this.rows[0].jacobian[8] = n1.z;
+	this.rows[0].jacobian[9] = 0;
+	this.rows[0].jacobian[10] = 0;
+	this.rows[0].jacobian[11] = 0;
+
+	// second linear constraint
+	cx.crossVectors( c, n2 );
+	this.rows[1].jacobian[0] = -n2.x;
+	this.rows[1].jacobian[1] = -n2.y;
+	this.rows[1].jacobian[2] = -n2.z;
+	//this.rows[1].jacobian[3] = -cx[0];
+	//this.rows[1].jacobian[4] = -cx[1];
+	//this.rows[1].jacobian[5] = -cx[2];
+
+	this.rows[1].jacobian[6] = n2.x;
+	this.rows[1].jacobian[7] = n2.y;
+	this.rows[1].jacobian[8] = n2.z;
+	this.rows[1].jacobian[9] = 0;
+	this.rows[1].jacobian[10] = 0;
+	this.rows[1].jacobian[11] = 0;
+
+	// linear constraint error
+	//c.scale( 2  );
+	this.object_a.rotation.transformVector3Into( this.position_error, _tmp_vec3_1 );
+	_tmp_vec3_2.subtractVectors( c, _tmp_vec3_1 );
+	_tmp_vec3_2.scale( this.erp / time_delta  );
+	this.rows[0].bias = -n1.dot( _tmp_vec3_2 );
+	this.rows[1].bias = -n2.dot( _tmp_vec3_2 );
+};
+
+Goblin.SliderConstraint.prototype._updateAngularConstraints = function( time_delta, n1, n2, axis ) {
+	this.rows[2].jacobian[3] = this.rows[3].jacobian[4] = this.rows[4].jacobian[5] = -1;
+	this.rows[2].jacobian[9] = this.rows[3].jacobian[10] = this.rows[4].jacobian[11] = 1;
+
+	_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
+	_tmp_quat4_1.multiply( this.object_a.rotation );
+
+	_tmp_quat4_2.invertQuaternion( this.rotation_difference );
+	_tmp_quat4_2.multiply( _tmp_quat4_1 );
+	// _tmp_quat4_2 is now the rotational error that needs to be corrected
+
+	var error = new Goblin.Vector3();
+	error.x = _tmp_quat4_2.x;
+	error.y = _tmp_quat4_2.y;
+	error.z = _tmp_quat4_2.z;
+	error.scale( this.erp / time_delta  );
+
+	//this.rows[2].bias = error[0];
+	//this.rows[3].bias = error[1];
+	//this.rows[4].bias = error[2];
+};
+Goblin.WeldConstraint = function( object_a, point_a, object_b, point_b ) {
+	Goblin.Constraint.call( this );
+
+	this.object_a = object_a;
+	this.point_a = point_a;
+
+	this.object_b = object_b || null;
+	this.point_b = point_b || null;
+
+	this.rotation_difference = new Goblin.Quaternion();
+	if ( this.object_b != null ) {
+		_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
+		this.rotation_difference.multiplyQuaternions( _tmp_quat4_1, this.object_a.rotation );
+	}
+
+	this.erp = 0.1;
+
+	// Create translation constraint rows
+	for ( var i = 0; i < 3; i++ ) {
+		this.rows[i] = Goblin.ObjectPool.getObject( 'ConstraintRow' );
+		this.rows[i].lower_limit = -Infinity;
+		this.rows[i].upper_limit = Infinity;
+		this.rows[i].bias = 0;
+
+		if ( this.object_b == null ) {
+			this.rows[i].jacobian[0] = this.rows[i].jacobian[1] = this.rows[i].jacobian[2] =
+				this.rows[i].jacobian[4] = this.rows[i].jacobian[5] = this.rows[i].jacobian[6] =
+				this.rows[i].jacobian[7] = this.rows[i].jacobian[8] = this.rows[i].jacobian[9] =
+				this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = this.rows[i].jacobian[12] = 0;
+			this.rows[i].jacobian[i] = 1;
+		}
+	}
+
+	// Create rotation constraint rows
+	for ( i = 3; i < 6; i++ ) {
+		this.rows[i] = Goblin.ObjectPool.getObject( 'ConstraintRow' );
+		this.rows[i].lower_limit = -Infinity;
+		this.rows[i].upper_limit = Infinity;
+		this.rows[i].bias = 0;
+
+		if ( this.object_b == null ) {
+			this.rows[i].jacobian[0] = this.rows[i].jacobian[1] = this.rows[i].jacobian[2] =
+				this.rows[i].jacobian[4] = this.rows[i].jacobian[5] = this.rows[i].jacobian[6] =
+				this.rows[i].jacobian[7] = this.rows[i].jacobian[8] = this.rows[i].jacobian[9] =
+				this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = this.rows[i].jacobian[12] = 0;
+			this.rows[i].jacobian[i] = 1;
+		} else {
+			this.rows[i].jacobian[0] = this.rows[i].jacobian[1] = this.rows[i].jacobian[2] = 0;
+			this.rows[i].jacobian[3] = this.rows[i].jacobian[4] = this.rows[i].jacobian[5] = 0;
+			this.rows[i].jacobian[ i ] = -1;
+
+			this.rows[i].jacobian[6] = this.rows[i].jacobian[7] = this.rows[i].jacobian[8] = 0;
+			this.rows[i].jacobian[9] = this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = 0;
+			this.rows[i].jacobian[ i + 6 ] = 1;
+		}
+	}
+};
+Goblin.WeldConstraint.prototype = Object.create( Goblin.Constraint.prototype );
+
+Goblin.WeldConstraint.prototype.update = (function(){
+	var r1 = new Goblin.Vector3(),
+		r2 = new Goblin.Vector3();
+
+	return function( time_delta ) {
+		if ( this.object_b == null ) {
+			// No need to update the constraint, all motion is already constrained
+			return;
+		}
+
+		this.object_a.transform.transformVector3Into( this.point_a, _tmp_vec3_1 );
+		r1.subtractVectors( _tmp_vec3_1, this.object_a.position );
+
+		this.rows[0].jacobian[0] = -1;
+		this.rows[0].jacobian[1] = 0;
+		this.rows[0].jacobian[2] = 0;
+		this.rows[0].jacobian[3] = 0;
+		this.rows[0].jacobian[4] = -r1.z;
+		this.rows[0].jacobian[5] = r1.y;
+
+		this.rows[1].jacobian[0] = 0;
+		this.rows[1].jacobian[1] = -1;
+		this.rows[1].jacobian[2] = 0;
+		this.rows[1].jacobian[3] = r1.z;
+		this.rows[1].jacobian[4] = 0;
+		this.rows[1].jacobian[5] = -r1.x;
+
+		this.rows[2].jacobian[0] = 0;
+		this.rows[2].jacobian[1] = 0;
+		this.rows[2].jacobian[2] = -1;
+		this.rows[2].jacobian[3] = -r1.y;
+		this.rows[2].jacobian[4] = r1.x;
+		this.rows[2].jacobian[5] = 0;
+
+		if ( this.object_b != null ) {
+			this.object_b.transform.transformVector3Into( this.point_b, _tmp_vec3_2 );
+			r2.subtractVectors( _tmp_vec3_2, this.object_b.position );
+
+			this.rows[0].jacobian[6] = 1;
+			this.rows[0].jacobian[7] = 0;
+			this.rows[0].jacobian[8] = 0;
+			this.rows[0].jacobian[9] = 0;
+			this.rows[0].jacobian[10] = r2.z;
+			this.rows[0].jacobian[11] = -r2.y;
+
+			this.rows[1].jacobian[6] = 0;
+			this.rows[1].jacobian[7] = 1;
+			this.rows[1].jacobian[8] = 0;
+			this.rows[1].jacobian[9] = -r2.z;
+			this.rows[1].jacobian[10] = 0;
+			this.rows[1].jacobian[11] = r2.x;
+
+			this.rows[2].jacobian[6] = 0;
+			this.rows[2].jacobian[7] = 0;
+			this.rows[2].jacobian[8] = 1;
+			this.rows[2].jacobian[9] = r2.y;
+			this.rows[2].jacobian[10] = -r2.x;
+			this.rows[2].jacobian[11] = 0;
+		} else {
+			_tmp_vec3_2.copy( this.point_b );
+		}
+
+		var error = new Goblin.Vector3();
+
+		// Linear correction
+		error.subtractVectors( _tmp_vec3_1, _tmp_vec3_2 );
+		error.scale( this.erp / time_delta  );
+		this.rows[0].bias = error.x;
+		this.rows[1].bias = error.y;
+		this.rows[2].bias = error.z;
+
+		// Rotation correction
+		_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
+		_tmp_quat4_1.multiply( this.object_a.rotation );
+
+		_tmp_quat4_2.invertQuaternion( this.rotation_difference );
+		_tmp_quat4_2.multiply( _tmp_quat4_1 );
+		// _tmp_quat4_2 is now the rotational error that needs to be corrected
+
+		error.x = _tmp_quat4_2.x;
+		error.y = _tmp_quat4_2.y;
+		error.z = _tmp_quat4_2.z;
+		error.scale( this.erp / time_delta );
+
+		this.rows[3].bias = error.x;
+		this.rows[4].bias = error.y;
+		this.rows[5].bias = error.z;
+	};
+})( );
 Goblin.BoxSphere = function( object_a, object_b ) {
 	var sphere = object_a.shape instanceof Goblin.SphereShape ? object_a : object_b,
 		box = object_a.shape instanceof Goblin.SphereShape ? object_b : object_a,
@@ -5522,864 +7064,6 @@ Goblin.TriangleTriangle = function( tri_a, tri_b ) {
 	return null;
 };
 
-Goblin.Constraint = function() {
-	this.active = true;
-
-	this.object_a = null;
-
-	this.object_b = null;
-
-	this.rows = [];
-
-	this.factor = 1;
-
-	this.last_impulse = new Goblin.Vector3();
-
-	this.breaking_threshold = 0;
-
-	this.listeners = {};
-};
-Goblin.EventEmitter.apply( Goblin.Constraint );
-
-Goblin.Constraint.prototype.deactivate = function() {
-	this.active = false;
-	this.emit( 'deactivate' );
-};
-
-Goblin.Constraint.prototype.update = function(){};
-Goblin.ConstraintRow = function() {
-	this.jacobian = new Float64Array( 12 );
-	this.B = new Float64Array( 12 ); // `B` is the jacobian multiplied by the objects' inverted mass & inertia tensors
-	this.D = 0; // Length of the jacobian
-
-	this.lower_limit = -Infinity;
-	this.upper_limit = Infinity;
-
-	this.bias = 0;
-	this.multiplier = 0;
-	this.multiplier_cached = 0;
-	this.eta = 0;
-	this.eta_row = new Float64Array( 12 );
-};
-
-Goblin.ConstraintRow.prototype.computeB = function( constraint ) {
-	var invmass;
-
-	if ( constraint.object_a != null && constraint.object_a._mass !== Infinity ) {
-		invmass = constraint.object_a._mass_inverted;
-
-		this.B[0] = invmass * this.jacobian[0] * constraint.object_a.linear_factor.x;
-		this.B[1] = invmass * this.jacobian[1] * constraint.object_a.linear_factor.y;
-		this.B[2] = invmass * this.jacobian[2] * constraint.object_a.linear_factor.z;
-
-		_tmp_vec3_1.x = this.jacobian[3];
-		_tmp_vec3_1.y = this.jacobian[4];
-		_tmp_vec3_1.z = this.jacobian[5];
-		constraint.object_a.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
-		this.B[3] = _tmp_vec3_1.x * constraint.object_a.angular_factor.x;
-		this.B[4] = _tmp_vec3_1.y * constraint.object_a.angular_factor.y;
-		this.B[5] = _tmp_vec3_1.z * constraint.object_a.angular_factor.z;
-	} else {
-		this.B[0] = this.B[1] = this.B[2] = 0;
-		this.B[3] = this.B[4] = this.B[5] = 0;
-	}
-
-	if ( constraint.object_b != null && constraint.object_b._mass !== Infinity ) {
-		invmass = constraint.object_b._mass_inverted;
-		this.B[6] = invmass * this.jacobian[6] * constraint.object_b.linear_factor.x;
-		this.B[7] = invmass * this.jacobian[7] * constraint.object_b.linear_factor.y;
-		this.B[8] = invmass * this.jacobian[8] * constraint.object_b.linear_factor.z;
-
-		_tmp_vec3_1.x = this.jacobian[9];
-		_tmp_vec3_1.y = this.jacobian[10];
-		_tmp_vec3_1.z = this.jacobian[11];
-		constraint.object_b.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
-		this.B[9] = _tmp_vec3_1.x * constraint.object_b.linear_factor.x;
-		this.B[10] = _tmp_vec3_1.y * constraint.object_b.linear_factor.y;
-		this.B[11] = _tmp_vec3_1.z * constraint.object_b.linear_factor.z;
-	} else {
-		this.B[6] = this.B[7] = this.B[8] = 0;
-		this.B[9] = this.B[10] = this.B[11] = 0;
-	}
-};
-
-Goblin.ConstraintRow.prototype.computeD = function() {
-	this.D = (
-		this.jacobian[0] * this.B[0] +
-		this.jacobian[1] * this.B[1] +
-		this.jacobian[2] * this.B[2] +
-		this.jacobian[3] * this.B[3] +
-		this.jacobian[4] * this.B[4] +
-		this.jacobian[5] * this.B[5] +
-		this.jacobian[6] * this.B[6] +
-		this.jacobian[7] * this.B[7] +
-		this.jacobian[8] * this.B[8] +
-		this.jacobian[9] * this.B[9] +
-		this.jacobian[10] * this.B[10] +
-		this.jacobian[11] * this.B[11]
-	);
-};
-
-Goblin.ConstraintRow.prototype.computeEta = function( constraint, time_delta ) {
-	var invmass,
-		inverse_time_delta = 1 / time_delta;
-
-	if ( constraint.object_a == null || constraint.object_a._mass === Infinity ) {
-		this.eta_row[0] = this.eta_row[1] = this.eta_row[2] = this.eta_row[3] = this.eta_row[4] = this.eta_row[5] = 0;
-	} else {
-		invmass = constraint.object_a._mass_inverted;
-
-		this.eta_row[0] = ( constraint.object_a.linear_velocity.x + ( invmass * constraint.object_a.accumulated_force.x ) ) * inverse_time_delta;
-		this.eta_row[1] = ( constraint.object_a.linear_velocity.y + ( invmass * constraint.object_a.accumulated_force.y ) ) * inverse_time_delta;
-		this.eta_row[2] = ( constraint.object_a.linear_velocity.z + ( invmass * constraint.object_a.accumulated_force.z ) ) * inverse_time_delta;
-
-		_tmp_vec3_1.copy( constraint.object_a.accumulated_torque );
-		constraint.object_a.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
-		this.eta_row[3] = ( constraint.object_a.angular_velocity.x + _tmp_vec3_1.x ) * inverse_time_delta;
-		this.eta_row[4] = ( constraint.object_a.angular_velocity.y + _tmp_vec3_1.y ) * inverse_time_delta;
-		this.eta_row[5] = ( constraint.object_a.angular_velocity.z + _tmp_vec3_1.z ) * inverse_time_delta;
-	}
-
-	if ( constraint.object_b == null || constraint.object_b._mass === Infinity ) {
-		this.eta_row[6] = this.eta_row[7] = this.eta_row[8] = this.eta_row[9] = this.eta_row[10] = this.eta_row[11] = 0;
-	} else {
-		invmass = constraint.object_b._mass_inverted;
-
-		this.eta_row[6] = ( constraint.object_b.linear_velocity.x + ( invmass * constraint.object_b.accumulated_force.x ) ) * inverse_time_delta;
-		this.eta_row[7] = ( constraint.object_b.linear_velocity.y + ( invmass * constraint.object_b.accumulated_force.y ) ) * inverse_time_delta;
-		this.eta_row[8] = ( constraint.object_b.linear_velocity.z + ( invmass * constraint.object_b.accumulated_force.z ) ) * inverse_time_delta;
-
-		_tmp_vec3_1.copy( constraint.object_b.accumulated_torque );
-		constraint.object_b.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
-		this.eta_row[9] = ( constraint.object_b.angular_velocity.x + _tmp_vec3_1.x ) * inverse_time_delta;
-		this.eta_row[10] = ( constraint.object_b.angular_velocity.y + _tmp_vec3_1.y ) * inverse_time_delta;
-		this.eta_row[11] = ( constraint.object_b.angular_velocity.z + _tmp_vec3_1.z ) * inverse_time_delta;
-	}
-
-	var jdotv = this.jacobian[0] * this.eta_row[0] +
-		this.jacobian[1] * this.eta_row[1] +
-		this.jacobian[2] * this.eta_row[2] +
-		this.jacobian[3] * this.eta_row[3] +
-		this.jacobian[4] * this.eta_row[4] +
-		this.jacobian[5] * this.eta_row[5] +
-		this.jacobian[6] * this.eta_row[6] +
-		this.jacobian[7] * this.eta_row[7] +
-		this.jacobian[8] * this.eta_row[8] +
-		this.jacobian[9] * this.eta_row[9] +
-		this.jacobian[10] * this.eta_row[10] +
-		this.jacobian[11] * this.eta_row[11];
-
-	this.eta = ( this.bias * inverse_time_delta ) - jdotv;
-};
-Goblin.ContactConstraint = function() {
-	Goblin.Constraint.call( this );
-
-	this.contact = null;
-};
-Goblin.ContactConstraint.prototype = Object.create( Goblin.Constraint.prototype );
-
-Goblin.ContactConstraint.prototype.buildFromContact = function( contact ) {
-	this.object_a = contact.object_a;
-	this.object_b = contact.object_b;
-	this.contact = contact;
-
-	var self = this;
-	var onDestroy = function() {
-		this.removeListener( 'destroy', onDestroy );
-		self.deactivate();
-	};
-	this.contact.addListener( 'destroy', onDestroy );
-
-	var row = this.rows[0] || Goblin.ObjectPool.getObject( 'ConstraintRow' );
-	row.lower_limit = 0;
-	row.upper_limit = Infinity;
-	this.rows[0] = row;
-
-	this.update();
-};
-
-Goblin.ContactConstraint.prototype.update = function() {
-	var row = this.rows[0];
-
-	if ( this.object_a == null || this.object_a._mass === Infinity ) {
-		row.jacobian[0] = row.jacobian[1] = row.jacobian[2] = 0;
-		row.jacobian[3] = row.jacobian[4] = row.jacobian[5] = 0;
-	} else {
-		row.jacobian[0] = -this.contact.contact_normal.x;
-		row.jacobian[1] = -this.contact.contact_normal.y;
-		row.jacobian[2] = -this.contact.contact_normal.z;
-
-		_tmp_vec3_1.subtractVectors( this.contact.contact_point, this.contact.object_a.position );
-		_tmp_vec3_1.cross( this.contact.contact_normal );
-		row.jacobian[3] = -_tmp_vec3_1.x;
-		row.jacobian[4] = -_tmp_vec3_1.y;
-		row.jacobian[5] = -_tmp_vec3_1.z;
-	}
-
-	if ( this.object_b == null || this.object_b._mass === Infinity ) {
-		row.jacobian[6] = row.jacobian[7] = row.jacobian[8] = 0;
-		row.jacobian[9] = row.jacobian[10] = row.jacobian[11] = 0;
-	} else {
-		row.jacobian[6] = this.contact.contact_normal.x;
-		row.jacobian[7] = this.contact.contact_normal.y;
-		row.jacobian[8] = this.contact.contact_normal.z;
-
-		_tmp_vec3_1.subtractVectors( this.contact.contact_point, this.contact.object_b.position );
-		_tmp_vec3_1.cross( this.contact.contact_normal );
-		row.jacobian[9] = _tmp_vec3_1.x;
-		row.jacobian[10] = _tmp_vec3_1.y;
-		row.jacobian[11] = _tmp_vec3_1.z;
-	}
-
-	// Pre-calc error
-	row.bias = 0;
-
-	// Apply restitution
-	var velocity_along_normal = 0;
-	if ( this.object_a._mass !== Infinity ) {
-		this.object_a.getVelocityInLocalPoint( this.contact.contact_point_in_a, _tmp_vec3_1 );
-		velocity_along_normal += _tmp_vec3_1.dot( this.contact.contact_normal );
-	}
-	if ( this.object_b._mass !== Infinity ) {
-		this.object_b.getVelocityInLocalPoint( this.contact.contact_point_in_b, _tmp_vec3_1 );
-		velocity_along_normal -= _tmp_vec3_1.dot( this.contact.contact_normal );
-	}
-
-	// Add restitution to bias
-	row.bias += velocity_along_normal * this.contact.restitution;
-};
-Goblin.FrictionConstraint = function() {
-	Goblin.Constraint.call( this );
-
-	this.contact = null;
-};
-Goblin.FrictionConstraint.prototype = Object.create( Goblin.Constraint.prototype );
-
-Goblin.FrictionConstraint.prototype.buildFromContact = function( contact ) {
-	this.rows[0] = this.rows[0] || Goblin.ObjectPool.getObject( 'ConstraintRow' );
-	this.rows[1] = this.rows[1] || Goblin.ObjectPool.getObject( 'ConstraintRow' );
-
-	this.object_a = contact.object_a;
-	this.object_b = contact.object_b;
-	this.contact = contact;
-
-	var self = this;
-	var onDestroy = function() {
-		this.removeListener( 'destroy', onDestroy );
-		self.deactivate();
-	};
-	this.contact.addListener( 'destroy', onDestroy );
-
-	this.update();
-};
-
-Goblin.FrictionConstraint.prototype.update = (function(){
-	var rel_a = new Goblin.Vector3(),
-		rel_b = new Goblin.Vector3(),
-		u1 = new Goblin.Vector3(),
-		u2 = new Goblin.Vector3();
-
-	return function updateFrictionConstraint() {
-		var row_1 = this.rows[0],
-			row_2 = this.rows[1];
-
-		// Find the contact point relative to object_a and object_b
-		rel_a.subtractVectors( this.contact.contact_point, this.object_a.position );
-		rel_b.subtractVectors( this.contact.contact_point, this.object_b.position );
-
-		this.contact.contact_normal.findOrthogonal( u1, u2 );
-
-		if ( this.object_a == null || this.object_a._mass === Infinity ) {
-			row_1.jacobian[0] = row_1.jacobian[1] = row_1.jacobian[2] = 0;
-			row_1.jacobian[3] = row_1.jacobian[4] = row_1.jacobian[5] = 0;
-			row_2.jacobian[0] = row_2.jacobian[1] = row_2.jacobian[2] = 0;
-			row_2.jacobian[3] = row_2.jacobian[4] = row_2.jacobian[5] = 0;
-		} else {
-			row_1.jacobian[0] = -u1.x;
-			row_1.jacobian[1] = -u1.y;
-			row_1.jacobian[2] = -u1.z;
-
-			_tmp_vec3_1.crossVectors( rel_a, u1 );
-			row_1.jacobian[3] = -_tmp_vec3_1.x;
-			row_1.jacobian[4] = -_tmp_vec3_1.y;
-			row_1.jacobian[5] = -_tmp_vec3_1.z;
-
-			row_2.jacobian[0] = -u2.x;
-			row_2.jacobian[1] = -u2.y;
-			row_2.jacobian[2] = -u2.z;
-
-			_tmp_vec3_1.crossVectors( rel_a, u2 );
-			row_2.jacobian[3] = -_tmp_vec3_1.x;
-			row_2.jacobian[4] = -_tmp_vec3_1.y;
-			row_2.jacobian[5] = -_tmp_vec3_1.z;
-		}
-
-		if ( this.object_b == null || this.object_b._mass === Infinity ) {
-			row_1.jacobian[6] = row_1.jacobian[7] = row_1.jacobian[8] = 0;
-			row_1.jacobian[9] = row_1.jacobian[10] = row_1.jacobian[11] = 0;
-			row_2.jacobian[6] = row_2.jacobian[7] = row_2.jacobian[8] = 0;
-			row_2.jacobian[9] = row_2.jacobian[10] = row_2.jacobian[11] = 0;
-		} else {
-			row_1.jacobian[6] = u1.x;
-			row_1.jacobian[7] = u1.y;
-			row_1.jacobian[8] = u1.z;
-
-			_tmp_vec3_1.crossVectors( rel_b, u1 );
-			row_1.jacobian[9] = _tmp_vec3_1.x;
-			row_1.jacobian[10] = _tmp_vec3_1.y;
-			row_1.jacobian[11] = _tmp_vec3_1.z;
-
-			row_2.jacobian[6] = u2.x;
-			row_2.jacobian[7] = u2.y;
-			row_2.jacobian[8] = u2.z;
-
-			_tmp_vec3_1.crossVectors( rel_b, u2 );
-			row_2.jacobian[9] = _tmp_vec3_1.x;
-			row_2.jacobian[10] = _tmp_vec3_1.y;
-			row_2.jacobian[11] = _tmp_vec3_1.z;
-		}
-
-		// Find total velocity between the two bodies along the contact normal
-		this.object_a.getVelocityInLocalPoint( this.contact.contact_point_in_a, _tmp_vec3_1 );
-
-		// Include accumulated forces
-		if ( this.object_a._mass !== Infinity ) {
-			// accumulated linear velocity
-			_tmp_vec3_1.scaleVector( this.object_a.accumulated_force, 1 / this.object_a._mass );
-			_tmp_vec3_1.add( this.object_a.linear_velocity );
-
-			// accumulated angular velocity
-			this.object_a.inverseInertiaTensorWorldFrame.transformVector3Into( this.object_a.accumulated_torque, _tmp_vec3_3 );
-			_tmp_vec3_3.add( this.object_a.angular_velocity );
-
-			_tmp_vec3_3.cross( this.contact.contact_point_in_a );
-			_tmp_vec3_1.add( _tmp_vec3_3 );
-			_tmp_vec3_1.scale( this.object_a._mass );
-		} else {
-			_tmp_vec3_1.set( 0, 0, 0 );
-		}
-
-		var limit = this.contact.friction * 25;
-		if ( limit < 0 ) {
-			limit = 0;
-		}
-		row_1.lower_limit = row_2.lower_limit = -limit;
-		row_1.upper_limit = row_2.upper_limit = limit;
-
-		row_1.bias = row_2.bias = 0;
-
-		this.rows[0] = row_1;
-		this.rows[1] = row_2;
-	};
-})();
-Goblin.HingeConstraint = function( object_a, hinge_a, point_a, object_b, point_b ) {
-	Goblin.Constraint.call( this );
-
-	this.object_a = object_a;
-	this.hinge_a = hinge_a;
-	this.point_a = point_a;
-
-	this.object_b = object_b || null;
-	this.point_b = new Goblin.Vector3();
-	this.hinge_b = new Goblin.Vector3();
-	if ( this.object_b != null ) {
-		this.object_a.rotation.transformVector3Into( this.hinge_a, this.hinge_b );
-		_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
-		_tmp_quat4_1.transformVector3( this.hinge_b );
-
-		this.point_b = point_b;
-	} else {
-		this.object_a.updateDerived(); // Ensure the body's transform is correct
-		this.object_a.rotation.transformVector3Into( this.hinge_a, this.hinge_b );
-		this.object_a.transform.transformVector3Into( this.point_a, this.point_b );
-	}
-
-	this.erp = 0.1;
-
-	// Create rows
-	// rows 0,1,2 are the same as point constraint and constrain the objects' positions
-	// rows 3,4 introduce the rotational constraints which constrains angular velocity orthogonal to the hinge axis
-	for ( var i = 0; i < 5; i++ ) {
-		this.rows[i] = Goblin.ObjectPool.getObject( 'ConstraintRow' );
-		this.rows[i].lower_limit = -Infinity;
-		this.rows[i].upper_limit = Infinity;
-		this.rows[i].bias = 0;
-
-		this.rows[i].jacobian[0] = this.rows[i].jacobian[1] = this.rows[i].jacobian[2] =
-			this.rows[i].jacobian[3] = this.rows[i].jacobian[4] = this.rows[i].jacobian[5] =
-			this.rows[i].jacobian[6] = this.rows[i].jacobian[7] = this.rows[i].jacobian[8] =
-			this.rows[i].jacobian[9] = this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = 0;
-	}
-};
-Goblin.HingeConstraint.prototype = Object.create( Goblin.Constraint.prototype );
-
-Goblin.HingeConstraint.prototype.update = (function(){
-	var r1 = new Goblin.Vector3(),
-		r2 = new Goblin.Vector3(),
-		t1 = new Goblin.Vector3(),
-		t2 = new Goblin.Vector3(),
-		world_axis = new Goblin.Vector3();
-
-	return function( time_delta ) {
-		this.object_a.rotation.transformVector3Into( this.hinge_a, world_axis );
-
-		this.object_a.transform.transformVector3Into( this.point_a, _tmp_vec3_1 );
-		r1.subtractVectors( _tmp_vec3_1, this.object_a.position );
-
-		// 0,1,2 are positional, same as PointConstraint
-		this.rows[0].jacobian[0] = -1;
-		this.rows[0].jacobian[1] = 0;
-		this.rows[0].jacobian[2] = 0;
-		this.rows[0].jacobian[3] = 0;
-		this.rows[0].jacobian[4] = -r1.z;
-		this.rows[0].jacobian[5] = r1.y;
-
-		this.rows[1].jacobian[0] = 0;
-		this.rows[1].jacobian[1] = -1;
-		this.rows[1].jacobian[2] = 0;
-		this.rows[1].jacobian[3] = r1.z;
-		this.rows[1].jacobian[4] = 0;
-		this.rows[1].jacobian[5] = -r1.x;
-
-		this.rows[2].jacobian[0] = 0;
-		this.rows[2].jacobian[1] = 0;
-		this.rows[2].jacobian[2] = -1;
-		this.rows[2].jacobian[3] = -r1.y;
-		this.rows[2].jacobian[4] = r1.x;
-		this.rows[2].jacobian[5] = 0;
-
-		// 3,4 are rotational, constraining motion orthogonal to axis
-		world_axis.findOrthogonal( t1, t2 );
-		this.rows[3].jacobian[3] = -t1.x;
-		this.rows[3].jacobian[4] = -t1.y;
-		this.rows[3].jacobian[5] = -t1.z;
-
-		this.rows[4].jacobian[3] = -t2.x;
-		this.rows[4].jacobian[4] = -t2.y;
-		this.rows[4].jacobian[5] = -t2.z;
-
-		if ( this.object_b != null ) {
-			this.object_b.transform.transformVector3Into( this.point_b, _tmp_vec3_2 );
-			r2.subtractVectors( _tmp_vec3_2, this.object_b.position );
-
-			// 0,1,2 are positional, same as PointConstraint
-			this.rows[0].jacobian[6] = 1;
-			this.rows[0].jacobian[7] = 0;
-			this.rows[0].jacobian[8] = 0;
-			this.rows[0].jacobian[9] = 0;
-			this.rows[0].jacobian[10] = r2.z;
-			this.rows[0].jacobian[11] = -r2.y;
-
-			this.rows[1].jacobian[6] = 0;
-			this.rows[1].jacobian[7] = 1;
-			this.rows[1].jacobian[8] = 0;
-			this.rows[1].jacobian[9] = -r2.z;
-			this.rows[1].jacobian[10] = 0;
-			this.rows[1].jacobian[11] = r2.x;
-
-			this.rows[2].jacobian[6] = 0;
-			this.rows[2].jacobian[7] = 0;
-			this.rows[2].jacobian[8] = 1;
-			this.rows[2].jacobian[9] = r2.y;
-			this.rows[2].jacobian[10] = -r2.z;
-			this.rows[2].jacobian[11] = 0;
-
-			// 3,4 are rotational, constraining motion orthogonal to axis
-			this.rows[3].jacobian[9] = t1.x;
-			this.rows[3].jacobian[10] = t1.y;
-			this.rows[3].jacobian[11] = t1.z;
-
-			this.rows[4].jacobian[9] = t2.x;
-			this.rows[4].jacobian[10] = t2.y;
-			this.rows[4].jacobian[11] = t2.z;
-		} else {
-			_tmp_vec3_2.copy( this.point_b );
-		}
-
-		// Linear error correction
-		_tmp_vec3_3.subtractVectors( _tmp_vec3_1, _tmp_vec3_2 );
-		_tmp_vec3_3.scale( this.erp / time_delta );
-		this.rows[0].bias = _tmp_vec3_3.x;
-		this.rows[1].bias = _tmp_vec3_3.y;
-		this.rows[2].bias = _tmp_vec3_3.z;
-
-		// Angular error correction
-		if (this.object_b != null) {
-			this.object_a.rotation.transformVector3Into(this.hinge_a, _tmp_vec3_1);
-			this.object_b.rotation.transformVector3Into(this.hinge_b, _tmp_vec3_2);
-			_tmp_vec3_1.cross(_tmp_vec3_2);
-			this.rows[3].bias = -_tmp_vec3_1.dot(t1);
-			this.rows[4].bias = -_tmp_vec3_1.dot(t2);
-		} else {
-			this.rows[3].bias = this.rows[4].bias = 0;
-		}
-	};
-})( );
-Goblin.PointConstraint = function( object_a, point_a, object_b, point_b ) {
-	Goblin.Constraint.call( this );
-
-	this.object_a = object_a;
-	this.point_a = point_a;
-
-	this.object_b = object_b || null;
-	if ( this.object_b != null ) {
-		this.point_b = point_b;
-	} else {
-		this.point_b = new Goblin.Vector3();
-		this.object_a.updateDerived(); // Ensure the body's transform is correct
-		this.object_a.transform.transformVector3Into( this.point_a, this.point_b );
-	}
-
-	this.erp = 0.1;
-
-	// Create rows
-	for ( var i = 0; i < 3; i++ ) {
-		this.rows[i] = Goblin.ObjectPool.getObject( 'ConstraintRow' );
-		this.rows[i].lower_limit = -Infinity;
-		this.rows[i].upper_limit = Infinity;
-		this.rows[i].bias = 0;
-
-		this.rows[i].jacobian[6] = this.rows[i].jacobian[7] = this.rows[i].jacobian[8] =
-			this.rows[i].jacobian[9] = this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = 0;
-	}
-};
-Goblin.PointConstraint.prototype = Object.create( Goblin.Constraint.prototype );
-
-Goblin.PointConstraint.prototype.update = (function(){
-	var r1 = new Goblin.Vector3(),
-		r2 = new Goblin.Vector3();
-
-	return function( time_delta ) {
-		this.object_a.transform.transformVector3Into( this.point_a, _tmp_vec3_1 );
-		r1.subtractVectors( _tmp_vec3_1, this.object_a.position );
-
-		this.rows[0].jacobian[0] = -1;
-		this.rows[0].jacobian[1] = 0;
-		this.rows[0].jacobian[2] = 0;
-		this.rows[0].jacobian[3] = 0;
-		this.rows[0].jacobian[4] = -r1.z;
-		this.rows[0].jacobian[5] = r1.y;
-
-		this.rows[1].jacobian[0] = 0;
-		this.rows[1].jacobian[1] = -1;
-		this.rows[1].jacobian[2] = 0;
-		this.rows[1].jacobian[3] = r1.z;
-		this.rows[1].jacobian[4] = 0;
-		this.rows[1].jacobian[5] = -r1.x;
-
-		this.rows[2].jacobian[0] = 0;
-		this.rows[2].jacobian[1] = 0;
-		this.rows[2].jacobian[2] = -1;
-		this.rows[2].jacobian[3] = -r1.y;
-		this.rows[2].jacobian[4] = r1.x;
-		this.rows[2].jacobian[5] = 0;
-
-		if ( this.object_b != null ) {
-			this.object_b.transform.transformVector3Into( this.point_b, _tmp_vec3_2 );
-			r2.subtractVectors( _tmp_vec3_2, this.object_b.position );
-
-			this.rows[0].jacobian[6] = 1;
-			this.rows[0].jacobian[7] = 0;
-			this.rows[0].jacobian[8] = 0;
-			this.rows[0].jacobian[9] = 0;
-			this.rows[0].jacobian[10] = r2.z;
-			this.rows[0].jacobian[11] = -r2.y;
-
-			this.rows[1].jacobian[6] = 0;
-			this.rows[1].jacobian[7] = 1;
-			this.rows[1].jacobian[8] = 0;
-			this.rows[1].jacobian[9] = -r2.z;
-			this.rows[1].jacobian[10] = 0;
-			this.rows[1].jacobian[11] = r2.x;
-
-			this.rows[2].jacobian[6] = 0;
-			this.rows[2].jacobian[7] = 0;
-			this.rows[2].jacobian[8] = 1;
-			this.rows[2].jacobian[9] = r2.y;
-			this.rows[2].jacobian[10] = -r2.z;
-			this.rows[2].jacobian[11] = 0;
-		} else {
-			_tmp_vec3_2.copy( this.point_b );
-		}
-
-		_tmp_vec3_3.subtractVectors( _tmp_vec3_1, _tmp_vec3_2 );
-		_tmp_vec3_3.scale( this.erp / time_delta );
-		this.rows[0].bias = _tmp_vec3_3.x;
-		this.rows[1].bias = _tmp_vec3_3.y;
-		this.rows[2].bias = _tmp_vec3_3.z;
-	};
-})( );
-Goblin.SliderConstraint = function( object_a, axis, object_b ) {
-	Goblin.Constraint.call( this );
-
-	this.object_a = object_a;
-	this.axis = axis;
-	this.object_b = object_b;
-
-	// Find the initial distance between the two objects in object_a's local frame
-	this.position_error = new Goblin.Vector3();
-	this.position_error.subtractVectors( this.object_b.position, this.object_a.position );
-	_tmp_quat4_1.invertQuaternion( this.object_a.rotation );
-	_tmp_quat4_1.transformVector3( this.position_error );
-
-	this.rotation_difference = new Goblin.Quaternion();
-	if ( this.object_b != null ) {
-		_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
-		this.rotation_difference.multiplyQuaternions( _tmp_quat4_1, this.object_a.rotation );
-	}
-
-	this.erp = 0.1;
-
-	// First two rows constrain the linear velocities orthogonal to `axis`
-	// Rows three through five constrain angular velocities
-	for ( var i = 0; i < 5; i++ ) {
-		this.rows[i] = Goblin.ObjectPool.getObject( 'ConstraintRow' );
-		this.rows[i].lower_limit = -Infinity;
-		this.rows[i].upper_limit = Infinity;
-		this.rows[i].bias = 0;
-
-		this.rows[i].jacobian[0] = this.rows[i].jacobian[1] = this.rows[i].jacobian[2] =
-			this.rows[i].jacobian[3] = this.rows[i].jacobian[4] = this.rows[i].jacobian[5] =
-			this.rows[i].jacobian[6] = this.rows[i].jacobian[7] = this.rows[i].jacobian[8] =
-			this.rows[i].jacobian[9] = this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = 0;
-	}
-};
-Goblin.SliderConstraint.prototype = Object.create( Goblin.Constraint.prototype );
-
-Goblin.SliderConstraint.prototype.update = (function(){
-	var _axis = new Goblin.Vector3(),
-		n1 = new Goblin.Vector3(),
-		n2 = new Goblin.Vector3();
-
-	return function( time_delta ) {
-		// `axis` is in object_a's local frame, convert to world
-		this.object_a.rotation.transformVector3Into( this.axis, _axis );
-
-		// Find two vectors that are orthogonal to `axis`
-		_axis.findOrthogonal( n1, n2 );
-
-		this._updateLinearConstraints( time_delta, n1, n2 );
-		this._updateAngularConstraints( time_delta, n1, n2 );
-	};
-})();
-
-Goblin.SliderConstraint.prototype._updateLinearConstraints = function( time_delta, n1, n2 ) {
-	var c = new Goblin.Vector3();
-	c.subtractVectors( this.object_b.position, this.object_a.position );
-	//c.scale( 0.5 );
-
-	var cx = new Goblin.Vector3( );
-
-	// first linear constraint
-	cx.crossVectors( c, n1 );
-	this.rows[0].jacobian[0] = -n1.x;
-	this.rows[0].jacobian[1] = -n1.y;
-	this.rows[0].jacobian[2] = -n1.z;
-	//this.rows[0].jacobian[3] = -cx[0];
-	//this.rows[0].jacobian[4] = -cx[1];
-	//this.rows[0].jacobian[5] = -cx[2];
-
-	this.rows[0].jacobian[6] = n1.x;
-	this.rows[0].jacobian[7] = n1.y;
-	this.rows[0].jacobian[8] = n1.z;
-	this.rows[0].jacobian[9] = 0;
-	this.rows[0].jacobian[10] = 0;
-	this.rows[0].jacobian[11] = 0;
-
-	// second linear constraint
-	cx.crossVectors( c, n2 );
-	this.rows[1].jacobian[0] = -n2.x;
-	this.rows[1].jacobian[1] = -n2.y;
-	this.rows[1].jacobian[2] = -n2.z;
-	//this.rows[1].jacobian[3] = -cx[0];
-	//this.rows[1].jacobian[4] = -cx[1];
-	//this.rows[1].jacobian[5] = -cx[2];
-
-	this.rows[1].jacobian[6] = n2.x;
-	this.rows[1].jacobian[7] = n2.y;
-	this.rows[1].jacobian[8] = n2.z;
-	this.rows[1].jacobian[9] = 0;
-	this.rows[1].jacobian[10] = 0;
-	this.rows[1].jacobian[11] = 0;
-
-	// linear constraint error
-	//c.scale( 2  );
-	this.object_a.rotation.transformVector3Into( this.position_error, _tmp_vec3_1 );
-	_tmp_vec3_2.subtractVectors( c, _tmp_vec3_1 );
-	_tmp_vec3_2.scale( this.erp / time_delta  );
-	this.rows[0].bias = -n1.dot( _tmp_vec3_2 );
-	this.rows[1].bias = -n2.dot( _tmp_vec3_2 );
-};
-
-Goblin.SliderConstraint.prototype._updateAngularConstraints = function( time_delta, n1, n2, axis ) {
-	this.rows[2].jacobian[3] = this.rows[3].jacobian[4] = this.rows[4].jacobian[5] = -1;
-	this.rows[2].jacobian[9] = this.rows[3].jacobian[10] = this.rows[4].jacobian[11] = 1;
-
-	_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
-	_tmp_quat4_1.multiply( this.object_a.rotation );
-
-	_tmp_quat4_2.invertQuaternion( this.rotation_difference );
-	_tmp_quat4_2.multiply( _tmp_quat4_1 );
-	// _tmp_quat4_2 is now the rotational error that needs to be corrected
-
-	var error = new Goblin.Vector3();
-	error.x = _tmp_quat4_2.x;
-	error.y = _tmp_quat4_2.y;
-	error.z = _tmp_quat4_2.z;
-	error.scale( this.erp / time_delta  );
-
-	//this.rows[2].bias = error[0];
-	//this.rows[3].bias = error[1];
-	//this.rows[4].bias = error[2];
-};
-Goblin.WeldConstraint = function( object_a, point_a, object_b, point_b ) {
-	Goblin.Constraint.call( this );
-
-	this.object_a = object_a;
-	this.point_a = point_a;
-
-	this.object_b = object_b || null;
-	this.point_b = point_b || null;
-
-	this.rotation_difference = new Goblin.Quaternion();
-	if ( this.object_b != null ) {
-		_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
-		this.rotation_difference.multiplyQuaternions( _tmp_quat4_1, this.object_a.rotation );
-	}
-
-	this.erp = 0.1;
-
-	// Create translation constraint rows
-	for ( var i = 0; i < 3; i++ ) {
-		this.rows[i] = Goblin.ObjectPool.getObject( 'ConstraintRow' );
-		this.rows[i].lower_limit = -Infinity;
-		this.rows[i].upper_limit = Infinity;
-		this.rows[i].bias = 0;
-
-		if ( this.object_b == null ) {
-			this.rows[i].jacobian[0] = this.rows[i].jacobian[1] = this.rows[i].jacobian[2] =
-				this.rows[i].jacobian[4] = this.rows[i].jacobian[5] = this.rows[i].jacobian[6] =
-				this.rows[i].jacobian[7] = this.rows[i].jacobian[8] = this.rows[i].jacobian[9] =
-				this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = this.rows[i].jacobian[12] = 0;
-			this.rows[i].jacobian[i] = 1;
-		}
-	}
-
-	// Create rotation constraint rows
-	for ( i = 3; i < 6; i++ ) {
-		this.rows[i] = Goblin.ObjectPool.getObject( 'ConstraintRow' );
-		this.rows[i].lower_limit = -Infinity;
-		this.rows[i].upper_limit = Infinity;
-		this.rows[i].bias = 0;
-
-		if ( this.object_b == null ) {
-			this.rows[i].jacobian[0] = this.rows[i].jacobian[1] = this.rows[i].jacobian[2] =
-				this.rows[i].jacobian[4] = this.rows[i].jacobian[5] = this.rows[i].jacobian[6] =
-				this.rows[i].jacobian[7] = this.rows[i].jacobian[8] = this.rows[i].jacobian[9] =
-				this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = this.rows[i].jacobian[12] = 0;
-			this.rows[i].jacobian[i] = 1;
-		} else {
-			this.rows[i].jacobian[0] = this.rows[i].jacobian[1] = this.rows[i].jacobian[2] = 0;
-			this.rows[i].jacobian[3] = this.rows[i].jacobian[4] = this.rows[i].jacobian[5] = 0;
-			this.rows[i].jacobian[ i ] = -1;
-
-			this.rows[i].jacobian[6] = this.rows[i].jacobian[7] = this.rows[i].jacobian[8] = 0;
-			this.rows[i].jacobian[9] = this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = 0;
-			this.rows[i].jacobian[ i + 6 ] = 1;
-		}
-	}
-};
-Goblin.WeldConstraint.prototype = Object.create( Goblin.Constraint.prototype );
-
-Goblin.WeldConstraint.prototype.update = (function(){
-	var r1 = new Goblin.Vector3(),
-		r2 = new Goblin.Vector3();
-
-	return function( time_delta ) {
-		if ( this.object_b == null ) {
-			// No need to update the constraint, all motion is already constrained
-			return;
-		}
-
-		this.object_a.transform.transformVector3Into( this.point_a, _tmp_vec3_1 );
-		r1.subtractVectors( _tmp_vec3_1, this.object_a.position );
-
-		this.rows[0].jacobian[0] = -1;
-		this.rows[0].jacobian[1] = 0;
-		this.rows[0].jacobian[2] = 0;
-		this.rows[0].jacobian[3] = 0;
-		this.rows[0].jacobian[4] = -r1.z;
-		this.rows[0].jacobian[5] = r1.y;
-
-		this.rows[1].jacobian[0] = 0;
-		this.rows[1].jacobian[1] = -1;
-		this.rows[1].jacobian[2] = 0;
-		this.rows[1].jacobian[3] = r1.z;
-		this.rows[1].jacobian[4] = 0;
-		this.rows[1].jacobian[5] = -r1.x;
-
-		this.rows[2].jacobian[0] = 0;
-		this.rows[2].jacobian[1] = 0;
-		this.rows[2].jacobian[2] = -1;
-		this.rows[2].jacobian[3] = -r1.y;
-		this.rows[2].jacobian[4] = r1.x;
-		this.rows[2].jacobian[5] = 0;
-
-		if ( this.object_b != null ) {
-			this.object_b.transform.transformVector3Into( this.point_b, _tmp_vec3_2 );
-			r2.subtractVectors( _tmp_vec3_2, this.object_b.position );
-
-			this.rows[0].jacobian[6] = 1;
-			this.rows[0].jacobian[7] = 0;
-			this.rows[0].jacobian[8] = 0;
-			this.rows[0].jacobian[9] = 0;
-			this.rows[0].jacobian[10] = r2.z;
-			this.rows[0].jacobian[11] = -r2.y;
-
-			this.rows[1].jacobian[6] = 0;
-			this.rows[1].jacobian[7] = 1;
-			this.rows[1].jacobian[8] = 0;
-			this.rows[1].jacobian[9] = -r2.z;
-			this.rows[1].jacobian[10] = 0;
-			this.rows[1].jacobian[11] = r2.x;
-
-			this.rows[2].jacobian[6] = 0;
-			this.rows[2].jacobian[7] = 0;
-			this.rows[2].jacobian[8] = 1;
-			this.rows[2].jacobian[9] = r2.y;
-			this.rows[2].jacobian[10] = -r2.x;
-			this.rows[2].jacobian[11] = 0;
-		} else {
-			_tmp_vec3_2.copy( this.point_b );
-		}
-
-		var error = new Goblin.Vector3();
-
-		// Linear correction
-		error.subtractVectors( _tmp_vec3_1, _tmp_vec3_2 );
-		error.scale( this.erp / time_delta  );
-		this.rows[0].bias = error.x;
-		this.rows[1].bias = error.y;
-		this.rows[2].bias = error.z;
-
-		// Rotation correction
-		_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
-		_tmp_quat4_1.multiply( this.object_a.rotation );
-
-		_tmp_quat4_2.invertQuaternion( this.rotation_difference );
-		_tmp_quat4_2.multiply( _tmp_quat4_1 );
-		// _tmp_quat4_2 is now the rotational error that needs to be corrected
-
-		error.x = _tmp_quat4_2.x;
-		error.y = _tmp_quat4_2.y;
-		error.z = _tmp_quat4_2.z;
-		error.scale( this.erp / time_delta );
-
-		this.rows[3].bias = error.x;
-		this.rows[4].bias = error.y;
-		this.rows[5].bias = error.z;
-	};
-})( );
 /**
 * adds a drag force to associated objects
 *
