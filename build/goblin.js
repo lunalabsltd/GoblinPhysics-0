@@ -495,6 +495,13 @@ Goblin.Quaternion.prototype = {
 		this.w = w;
 	},
 
+	copy: function( q ) {
+		this.x = q.x;
+		this.y = q.y;
+		this.z = q.z;
+		this.w = q.w;
+	},
+
 	multiply: function( q ) {
 		var x = this.x, y = this.y, z = this.z, w = this.w,
 			qx = q.x, qy = q.y, qz = q.z, qw = q.w;
@@ -4196,6 +4203,19 @@ Goblin.BoxShape.prototype.findSupportPoint = function( direction, support_point 
 	} else {
 		support_point.z = this.half_depth;
 	}
+
+    if (Math.abs(direction.x) <= 0.000001) {
+        support_point.x = 0;
+    }
+
+    if (Math.abs(direction.y) <= 0.000001) {
+        support_point.y = 0;
+    }
+
+    if (Math.abs(direction.z) <= 0.000001) {
+        support_point.z = 0;
+    }
+
 };
 
 /**
@@ -4323,7 +4343,7 @@ Goblin.CompoundShape.prototype.getInertiaTensor = function( mass ) {
 		i,
 		child,
 		child_tensor;
-	tensor.identity();
+	//tensor.identity();
 
 	mass /= this.child_shapes.length;
 
@@ -8245,6 +8265,79 @@ Object.defineProperty(
 	}
 );
 
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'linear_factor', {
+	get: function () {
+		return this.getRigidBody().linear_factor;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'angular_factor', {
+	get: function () {
+		return this.getRigidBody().angular_factor;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'inverseInertiaTensorWorldFrame', {
+	get: function () {
+		return this.getRigidBody().inverseInertiaTensorWorldFrame;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'linear_velocity', {
+	get: function () {
+		return this.getRigidBody().linear_velocity;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'angular_velocity', {
+	get: function () {
+		return this.getRigidBody().angular_velocity;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'accumulated_force', {
+	get: function () {
+		return this.getRigidBody().accumulated_force;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'accumulated_torque', {
+	get: function () {
+		return this.getRigidBody().accumulated_torque;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'push_velocity', {
+	get: function () {
+		return this.getRigidBody().push_velocity;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'turn_velocity', {
+	get: function () {
+		return this.getRigidBody().turn_velocity;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'solver_impulse', {
+	get: function () {
+		return this.getRigidBody().solver_impulse;
+	}
+} );
+
+Goblin.RigidBodyProxy.prototype.emit = function () {
+	var body = this.getRigidBody();
+
+	if ( body ) {
+		body.emit.apply( body, arguments );
+	}
+};
+
+Goblin.RigidBodyProxy.prototype.getVelocityInLocalPoint = function( point, out ) {
+	var body = this.getRigidBody();
+	return body.getVelocityInLocalPoint( point, out );
+};
+
 Goblin.RigidBodyProxy.prototype.setFrom = function( parent, shape_data ) {
 	this.parent = parent;
 
@@ -8270,11 +8363,15 @@ Goblin.RigidBodyProxy.prototype.setFrom = function( parent, shape_data ) {
 Goblin.RigidBodyProxy.prototype.findSupportPoint = Goblin.RigidBody.prototype.findSupportPoint;
 
 Goblin.RigidBodyProxy.prototype.getRigidBody = function() {
+	if (this._body) {
+		return this._body;
+	}
+
 	var body = this.parent;
 	while ( body.parent ) {
 		body = this.parent;
 	}
-	return body;
+	return this._body = body;
 };
 /**
  * Manages the physics simulation

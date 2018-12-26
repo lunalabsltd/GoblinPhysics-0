@@ -34,6 +34,79 @@ Object.defineProperty(
 	}
 );
 
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'linear_factor', {
+	get: function () {
+		return this.getRigidBody().linear_factor;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'angular_factor', {
+	get: function () {
+		return this.getRigidBody().angular_factor;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'inverseInertiaTensorWorldFrame', {
+	get: function () {
+		return this.getRigidBody().inverseInertiaTensorWorldFrame;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'linear_velocity', {
+	get: function () {
+		return this.getRigidBody().linear_velocity;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'angular_velocity', {
+	get: function () {
+		return this.getRigidBody().angular_velocity;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'accumulated_force', {
+	get: function () {
+		return this.getRigidBody().accumulated_force;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'accumulated_torque', {
+	get: function () {
+		return this.getRigidBody().accumulated_torque;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'push_velocity', {
+	get: function () {
+		return this.getRigidBody().push_velocity;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'turn_velocity', {
+	get: function () {
+		return this.getRigidBody().turn_velocity;
+	}
+} );
+
+Object.defineProperty( Goblin.RigidBodyProxy.prototype, 'solver_impulse', {
+	get: function () {
+		return this.getRigidBody().solver_impulse;
+	}
+} );
+
+Goblin.RigidBodyProxy.prototype.emit = function () {
+	var body = this.getRigidBody();
+
+	if ( body ) {
+		body.emit.apply( body, arguments );
+	}
+};
+
+Goblin.RigidBodyProxy.prototype.getVelocityInLocalPoint = function( point, out ) {
+	var body = this.getRigidBody();
+	return body.getVelocityInLocalPoint( point, out );
+};
+
 Goblin.RigidBodyProxy.prototype.setFrom = function( parent, shape_data ) {
 	this.parent = parent;
 
@@ -59,9 +132,13 @@ Goblin.RigidBodyProxy.prototype.setFrom = function( parent, shape_data ) {
 Goblin.RigidBodyProxy.prototype.findSupportPoint = Goblin.RigidBody.prototype.findSupportPoint;
 
 Goblin.RigidBodyProxy.prototype.getRigidBody = function() {
+	if (this._body) {
+		return this._body;
+	}
+
 	var body = this.parent;
 	while ( body.parent ) {
 		body = this.parent;
 	}
-	return body;
+	return this._body = body;
 };
