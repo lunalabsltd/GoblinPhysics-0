@@ -95,6 +95,10 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 
 				contact.object_a = parent_a;
 				contact.object_b = parent_b;
+
+				contact.shape_a = proxy.shape;
+				contact.shape_b = other.shape;
+
 				this.addContact( parent_a, parent_b, contact );
 			}
 		}
@@ -143,6 +147,9 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 
                     contact.object_a = object_a;
                     contact.object_b = object_b;
+
+                    contact.shape_a = object_a.shape;
+					contact.shape_b = object_b.shape;
 
                     contact.restitution = ( object_a.restitution + object_b.restitution ) / 2;
                     contact.friction = ( object_a.friction + object_b.friction ) / 2;
@@ -238,8 +245,13 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 							while ( _convex.parent != null ) {
 								_convex = _convex.parent;
 							}
+
 							contact.object_a = _mesh;
 							contact.object_b = _convex;
+
+							contact.shape_a = mesh.shape;
+							contact.shape_b = convex.shape;
+
 							addContact( _mesh, _convex, contact );
 						}
 					} else {
@@ -303,6 +315,14 @@ Goblin.NarrowPhase.prototype.getContact = function( object_a, object_b ) {
 		} else if ( simplex != null ) {
 			contact = Goblin.GjkEpa.EPA( simplex );
 		}
+	}
+
+	// store original shapes that collided on the objects
+	// so that it's possible to deduce which actuall colliders
+	// were involved
+	if ( contact ) {
+		contact.shape_a = object_a.shape;
+		contact.shape_b = object_b.shape;
 	}
 
 	return contact;

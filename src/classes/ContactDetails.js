@@ -24,6 +24,22 @@ Goblin.ContactDetails = function() {
 	this.object_b = null;
 
 	/**
+	 * first shape in the  contact
+	 *
+	 * @property shape_a
+	 * @type {Goblin.Shape}
+	 */
+	this.shape_a = null;
+
+	/**
+	 * second shape in the  contact
+	 *
+	 * @property shape_b
+	 * @type {Goblin.Shape}
+	 */
+	this.shape_b = null;
+
+	/**
 	 * point of contact in world coordinates
 	 *
 	 * @property contact_point
