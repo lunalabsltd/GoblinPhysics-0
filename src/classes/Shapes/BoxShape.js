@@ -79,24 +79,9 @@ Goblin.BoxShape.prototype.findSupportPoint = function( direction, support_point 
 	]
 	*/
 
-	// Calculate the support point in the local frame
-	if ( direction.x < 0 ) {
-		support_point.x = -this.half_width;
-	} else {
-		support_point.x = this.half_width;
-	}
-
-	if ( direction.y < 0 ) {
-		support_point.y = -this.half_height;
-	} else {
-		support_point.y = this.half_height;
-	}
-
-	if ( direction.z < 0 ) {
-		support_point.z = -this.half_depth;
-	} else {
-		support_point.z = this.half_depth;
-	}
+    support_point.x = Math.sign( direction.x ) * this.half_width;
+    support_point.y = Math.sign( direction.y ) * this.half_height;
+    support_point.z = Math.sign( direction.z ) * this.half_depth;
 };
 
 /**
