@@ -80,7 +80,7 @@ Goblin.CapsuleShape.prototype.findSupportPoint = (function(){
 	return function( direction, support_point ) {
 		temp.normalizeVector( direction );
 		support_point.scaleVector( temp, this.radius );
-		support_point.y += direction.y < 0 ? -this.half_height : this.half_height;
+		support_point.y += Math.sing( direction.y ) * this.half_height;
 	};
 })();
 
@@ -145,7 +145,7 @@ Goblin.CapsuleShape.prototype.rayIntersect = (function(){
 				} else if ( end.y <= -this.half_height ) { // segment starts between top and bottom and ends below bottom
 					intersection = getIntersectionFromPoint( start.x, -this.half_height, start.z, start.y + this.half_height );
 				} else { // segment is fully included into capsule side surface
-					return null // segment is fully inside
+					return null; // segment is fully inside
 				}
 			} else if ( c > 0 ) { // segment runs parallel to the capsule and fully outside
 				return null;
