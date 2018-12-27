@@ -120,7 +120,7 @@ Goblin.RigidBody = (function() {
 		 * @type {Number}
 		 * @default 0.1
 		 */
-		this.restitution = 0.1;
+		this.restitution = 0.0;
 
 		/**
 		 * amount of friction this object has
@@ -129,7 +129,7 @@ Goblin.RigidBody = (function() {
 		 * @type {Number}
 		 * @default 0.5
 		 */
-		this.friction = 0.5;
+		this.friction = 0.6;
 
 		/**
 		 * bitmask indicating what collision groups this object belongs to
@@ -244,6 +244,15 @@ Object.defineProperty(
 		}
 	}
 );
+
+/**
+ * Updates bodies' derived values to reflect changes in shape (i.e. new children in compound shape).
+ *
+ * @method updateShapeDerivedValues
+ */
+Goblin.RigidBody.prototype.updateShapeDerivedValues = function () {
+	this.inertiaTensor = this.shape.getInertiaTensor( this._mass );
+};
 
 /**
  * Given `direction`, find the point in this body which is the most extreme in that direction.
