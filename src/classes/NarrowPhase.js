@@ -234,8 +234,13 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 							while ( _mesh.parent != null ) {
 								_mesh = _mesh.parent;
 							}
+							var _convex = convex;
+							while ( _convex.parent != null ) {
+								_convex = _convex.parent;
+							}
 							contact.object_a = _mesh;
-							addContact( _mesh, convex, contact );
+							contact.object_b = _convex;
+							addContact( _mesh, _convex, contact );
 						}
 					} else {
 						pending_nodes.push( node.left, node.right );
