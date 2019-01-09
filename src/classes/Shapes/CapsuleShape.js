@@ -80,7 +80,7 @@ Goblin.CapsuleShape.prototype.findSupportPoint = (function(){
 	return function( direction, support_point ) {
 		temp.normalizeVector( direction );
 		support_point.scaleVector( temp, this.radius );
-		support_point.y += Math.sing( direction.y ) * this.half_height;
+		support_point.y += Math.sign( direction.y ) * this.half_height;
 	};
 })();
 
