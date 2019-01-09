@@ -3277,6 +3277,7 @@ Goblin.ConstraintRow = function() {
 	this.bias = 0;
 	this.multiplier = 0;
 	this.multiplier_cached = 0;
+	this.gamma = 1;
 	this.eta = 0;
 	this.eta_row = new Float64Array( 12 );
 };
@@ -8274,7 +8275,7 @@ Goblin.IterativeSolver.prototype.solveConstraints = function() {
 				row.multiplier = Math.max(
 					row.lower_limit,
 					Math.min(
-						multiplier_target,
+						multiplier_target * row.gamma,
 						row.upper_limit
 					)
 				);
