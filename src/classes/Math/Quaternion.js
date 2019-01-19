@@ -6,8 +6,6 @@ Goblin.Quaternion = function( x, y, z, w ) {
 	this.normalize();
 };
 
-Goblin.Quaternion.IDENTITY = new Goblin.Quaternion();
-
 Goblin.Quaternion.prototype = {
 	set: function( x, y, z, w ) {
 		this.x = x;
@@ -220,3 +218,5 @@ Goblin.Quaternion.prototype = {
 		);
 	}
 };
+
+Goblin.Quaternion.IDENTITY = new Goblin.Quaternion();

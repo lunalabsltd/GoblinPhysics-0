@@ -274,12 +274,15 @@ Goblin.Matrix4.prototype = {
 		this.e33 = m.e33;
 	},
 
-	getTranslation: function () {
-        return new Goblin.Vector3( this.e03, this.e13, this.e23 );
+	getTranslation: function (result) {
+		result = result || new Goblin.Vector3();
+		result.set( this.e03, this.e13, this.e23 );
+
+        return result;
     },
 
-    getRotation: function () {
-        var rotation = new Goblin.Quaternion();
+    getRotation: function (rotation) {
+        rotation = rotation || new Goblin.Quaternion();
         rotation.setFromMat4( this );
 
         return rotation;
@@ -742,6 +745,8 @@ Goblin.Quaternion.prototype = {
 		);
 	}
 };
+
+Goblin.Quaternion.IDENTITY = new Goblin.Quaternion();
 Goblin.Vector3 = function( x, y, z ) {
 	this.x = x || 0;
 	this.y = y || 0;
@@ -765,10 +770,6 @@ Goblin.Vector3.prototype = {
 		this.x += v.x;
 		this.y += v.y;
 		this.z += v.z;
-	},
-
-	toString: function () {
-		return '(' + this.x + ', ' + this.y + ', ' + this.z + ')';
 	},
 
 	addVectors: function( a, b ) {
@@ -894,7 +895,9 @@ var _tmp_vec3_1 = new Goblin.Vector3(),
 	_tmp_quat4_2 = new Goblin.Quaternion(),
 
 	_tmp_mat3_1 = new Goblin.Matrix3(),
-	_tmp_mat3_2 = new Goblin.Matrix3();
+	_tmp_mat3_2 = new Goblin.Matrix3(),
+
+    _tmp_mat4_1 = new Goblin.Matrix4();
 Goblin.EventEmitter = function(){};
 
 Goblin.EventEmitter.prototype = {
@@ -1001,15 +1004,6 @@ Goblin.RigidBody = (function() {
 		 * @default [ 0, 0, 0 ]
 		 */
 		this.position = new Goblin.Vector3();
-
-		/**
-		 * the rigid body's center of mass in body local space
-		 *
-		 * @property position
-		 * @type {vec3}
-		 * @default [ 0, 0, 0 ]
-		 */
-		this.center = new Goblin.Vector3();
 
 		/**
 		 * rotation of the rigid body
@@ -1184,6 +1178,11 @@ Goblin.RigidBody = (function() {
 		 */
 		this.accumulated_torque = new Goblin.Vector3();
 
+		/**
+		 * World transform of the body (which might differ from center-of-mass transform)
+		 */
+		this._world_transform = new Goblin.Matrix4();
+
 		// Used by the constraint solver to determine what impulse needs to be added to the body
 		this.push_velocity = new Goblin.Vector3();
 		this.turn_velocity = new Goblin.Vector3();
@@ -1215,27 +1214,24 @@ Object.defineProperty(
 Goblin.RigidBody.prototype.setTransform = function ( transform ) {
 	this.transform.copy( transform );
 
-	var com = new Goblin.Matrix4();
-	com.makeTransform( new Goblin.Quaternion(), this.center_of_mass );
-	this.transform.multiply( com );
+	_tmp_mat4_1.makeTransform( Goblin.Quaternion.IDENTITY, this.center_of_mass );
+	this.transform.multiply( _tmp_mat4_1 );
 
-	this.position.copy( this.transform.getTranslation() );
-	this.rotation.copy( this.transform.getRotation() );
+	this.transform.getTranslation( this.position );
+	this.transform.getRotation( this.rotation );
 };
 
 Goblin.RigidBody.prototype.getTransform = function () {
 	this.updateDerived();
 
-	var transform = new Goblin.Matrix4();
-	transform.copy( this.transform );
+	this._world_transform.copy( this.transform );
 
-	var com = new Goblin.Matrix4();
-	com.makeTransform( new Goblin.Quaternion(), this.center_of_mass );
-	com.invert();
+	_tmp_mat4_1.makeTransform( Goblin.Quaternion.IDENTITY, this.center_of_mass );
+	_tmp_mat4_1.invert();
 
-	transform.multiply( com );
+	this._world_transform.multiply( _tmp_mat4_1 );
 
-	return transform;
+	return this._world_transform;
 };
 
 /**
@@ -1312,6 +1308,8 @@ Goblin.RigidBody.prototype.rayIntersect = (function(){
 	};
 })();
 
+Goblin.RigidBody.ANGULAR_MOTION_THRESHOLD = (0.25 * 3.14159254);
+
 /**
  * Updates the rigid body's position, velocity, and acceleration
  *
@@ -1342,51 +1340,35 @@ Goblin.RigidBody.prototype.integrate = function( timestep ) {
 	this.position.add( _tmp_vec3_1 );
 
 	// Update rotation
-	// _tmp_quat4_1.x = this.angular_velocity.x * timestep;
-	// _tmp_quat4_1.y = this.angular_velocity.y * timestep;
-	// _tmp_quat4_1.z = this.angular_velocity.z * timestep;
-	// _tmp_quat4_1.w = 0;
+	_tmp_vec3_1.copy( this.angular_velocity );
+	var fAngle = Math.sqrt( _tmp_vec3_1.length() );
 
-	// _tmp_quat4_1.multiply( this.rotation );
-
-	// var half_dt = 0.5;
-	// this.rotation.x += half_dt * _tmp_quat4_1.x;
-	// this.rotation.y += half_dt * _tmp_quat4_1.y;
-	// this.rotation.z += half_dt * _tmp_quat4_1.z;
-	// this.rotation.w += half_dt * _tmp_quat4_1.w;
-	// this.rotation.normalize();
-
-	{
-		var BT_GPU_ANGULAR_MOTION_THRESHOLD = (0.25 * 3.14159254);
-		var angVel = new pc.Vec3().copy( this.angular_velocity );
-
-		var fAngle = Math.sqrt( angVel.length() );
-
-		//limit the angular motion
-		if (fAngle * timestep > BT_GPU_ANGULAR_MOTION_THRESHOLD) {
-			fAngle = BT_GPU_ANGULAR_MOTION_THRESHOLD / timestep;
-		}
-
-		if (fAngle < 0.001) {
-			// use Taylor's expansions of sync function
-			angVel.scale(0.5 * timestep - (timestep * timestep * timestep) * 0.020833333333 * fAngle * fAngle);
-		} else {
-			// sync(fAngle) = sin(c*fAngle)/t
-			angVel.scale( Math.sin(0.5 * fAngle * timestep) / fAngle );
-		}
-
-		var dorn = new pc.Quat();
-		dorn.x = angVel.x;
-		dorn.y = angVel.y;
-		dorn.z = angVel.z;
-		dorn.w = Math.cos( fAngle * timestep * 0.5 );
-		
-		var predictedOrn = new pc.Quat().mul2( dorn, this.rotation );
-		predictedOrn.normalize();
-
-		this.rotation.copy( predictedOrn );
+	// limit the angular motion per time step
+	if (fAngle * timestep > Goblin.RigidBody.ANGULAR_MOTION_THRESHOLD) {
+		fAngle = Goblin.RigidBody.ANGULAR_MOTION_THRESHOLD / timestep;
 	}
 
+	// choose integration based on angular value
+	if (fAngle < 0.001) {
+		// use Taylor's expansions of sync function
+		_tmp_vec3_1.scale(0.5 * timestep - (timestep * timestep * timestep) * 0.020833333333 * fAngle * fAngle);
+	} else {
+		// sync(fAngle) = sin(c*fAngle)/t
+		_tmp_vec3_1.scale( Math.sin(0.5 * fAngle * timestep) / fAngle );
+	}
+
+	// compose rotational quaternion
+	_tmp_quat4_1.x = _tmp_vec3_1.x;
+	_tmp_quat4_1.y = _tmp_vec3_1.y;
+	_tmp_quat4_1.z = _tmp_vec3_1.z;
+	_tmp_quat4_1.w = Math.cos( fAngle * timestep * 0.5 );
+	
+	// rotate the body
+	_tmp_quat4_1.multiply( this.rotation );
+	_tmp_quat4_1.normalize();
+
+	this.rotation.copy( _tmp_quat4_1 );
+	
 	// Clear accumulated forces
 	this.accumulated_force.x = this.accumulated_force.y = this.accumulated_force.z = 0;
 	this.accumulated_torque.x = this.accumulated_torque.y = this.accumulated_torque.z = 0;
@@ -3425,83 +3407,6 @@ Goblin.TriangleTriangle = function( tri_a, tri_b ) {
 	return null;
 };
 
-/**
-* adds a drag force to associated objects
-*
-* @class DragForce
-* @extends ForceGenerator
-* @constructor
-*/
-Goblin.DragForce = function( drag_coefficient, squared_drag_coefficient ) {
-	/**
-	* drag coefficient
-	*
-	* @property drag_coefficient
-	* @type {Number}
-	* @default 0
-	*/
-	this.drag_coefficient = drag_coefficient || 0;
-
-	/**
-	* drag coefficient
-	*
-	* @property drag_coefficient
-	* @type {Number}
-	* @default 0
-	*/
-	this.squared_drag_coefficient = squared_drag_coefficient || 0;
-
-	/**
-	* whether or not the force generator is enabled
-	*
-	* @property enabled
-	* @type {Boolean}
-	* @default true
-	*/
-	this.enabled = true;
-
-	/**
-	* array of objects affected by the generator
-	*
-	* @property affected
-	* @type {Array}
-	* @default []
-	* @private
-	*/
-	this.affected = [];
-};
-Goblin.DragForce.prototype.enable = Goblin.ForceGenerator.prototype.enable;
-Goblin.DragForce.prototype.disable = Goblin.ForceGenerator.prototype.disable;
-Goblin.DragForce.prototype.affect = Goblin.ForceGenerator.prototype.affect;
-Goblin.DragForce.prototype.unaffect = Goblin.ForceGenerator.prototype.unaffect;
-/**
-* applies force to the associated objects
-*
-* @method applyForce
-*/
-Goblin.DragForce.prototype.applyForce = function() {
-	if ( !this.enabled ) {
-		return;
-	}
-
-	var i, affected_count, object, drag,
-		force = _tmp_vec3_1;
-
-	for ( i = 0, affected_count = this.affected.length; i < affected_count; i++ ) {
-		object = this.affected[i];
-
-		force.copy( object.linear_velocity );
-
-		// Calculate the total drag coefficient.
-		drag = force.length();
-		drag = ( this.drag_coefficient * drag ) + ( this.squared_drag_coefficient * drag * drag );
-
-		// Calculate the final force and apply it.
-		force.normalize();
-		force.scale( -drag );
-		object.applyForce( force  );
-	}
-};
 Goblin.Constraint = (function() {
 	var constraint_count = 0;
 
@@ -4547,6 +4452,83 @@ Goblin.WeldConstraint.prototype.update = (function(){
 		this.rows[5].bias = error.z;
 	};
 })( );
+/**
+* adds a drag force to associated objects
+*
+* @class DragForce
+* @extends ForceGenerator
+* @constructor
+*/
+Goblin.DragForce = function( drag_coefficient, squared_drag_coefficient ) {
+	/**
+	* drag coefficient
+	*
+	* @property drag_coefficient
+	* @type {Number}
+	* @default 0
+	*/
+	this.drag_coefficient = drag_coefficient || 0;
+
+	/**
+	* drag coefficient
+	*
+	* @property drag_coefficient
+	* @type {Number}
+	* @default 0
+	*/
+	this.squared_drag_coefficient = squared_drag_coefficient || 0;
+
+	/**
+	* whether or not the force generator is enabled
+	*
+	* @property enabled
+	* @type {Boolean}
+	* @default true
+	*/
+	this.enabled = true;
+
+	/**
+	* array of objects affected by the generator
+	*
+	* @property affected
+	* @type {Array}
+	* @default []
+	* @private
+	*/
+	this.affected = [];
+};
+Goblin.DragForce.prototype.enable = Goblin.ForceGenerator.prototype.enable;
+Goblin.DragForce.prototype.disable = Goblin.ForceGenerator.prototype.disable;
+Goblin.DragForce.prototype.affect = Goblin.ForceGenerator.prototype.affect;
+Goblin.DragForce.prototype.unaffect = Goblin.ForceGenerator.prototype.unaffect;
+/**
+* applies force to the associated objects
+*
+* @method applyForce
+*/
+Goblin.DragForce.prototype.applyForce = function() {
+	if ( !this.enabled ) {
+		return;
+	}
+
+	var i, affected_count, object, drag,
+		force = _tmp_vec3_1;
+
+	for ( i = 0, affected_count = this.affected.length; i < affected_count; i++ ) {
+		object = this.affected[i];
+
+		force.copy( object.linear_velocity );
+
+		// Calculate the total drag coefficient.
+		drag = force.length();
+		drag = ( this.drag_coefficient * drag ) + ( this.squared_drag_coefficient * drag * drag );
+
+		// Calculate the final force and apply it.
+		force.normalize();
+		force.scale( -drag );
+		object.applyForce( force  );
+	}
+};
 Goblin.RayIntersection = function() {
 	this.object = null;
 	this.point = new Goblin.Vector3();
@@ -9306,10 +9288,6 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
         time_delta -= max_step;
 
 		this.emit( 'stepStart', this.ticks, delta );
-
-		for ( i = 0, loop_count = this.rigid_bodies.length; i < loop_count; i++ ) {
-			
-		}
 
 		// Apply gravity
         for ( i = 0, loop_count = this.rigid_bodies.length; i < loop_count; i++ ) {
