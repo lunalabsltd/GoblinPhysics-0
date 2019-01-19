@@ -89,9 +89,9 @@ Goblin.ConstraintRow.prototype.computeB = function( constraint ) {
 		_tmp_vec3_1.y = this.jacobian[10];
 		_tmp_vec3_1.z = this.jacobian[11];
 		constraint.object_b.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
-		this.B[9] = _tmp_vec3_1.x * constraint.object_b.linear_factor.x;
-		this.B[10] = _tmp_vec3_1.y * constraint.object_b.linear_factor.y;
-		this.B[11] = _tmp_vec3_1.z * constraint.object_b.linear_factor.z;
+		this.B[9] = _tmp_vec3_1.x * constraint.object_b.angular_factor.x;
+		this.B[10] = _tmp_vec3_1.y * constraint.object_b.angular_factor.y;
+		this.B[11] = _tmp_vec3_1.z * constraint.object_b.angular_factor.z;
 	} else {
 		this.B[6] = this.B[7] = this.B[8] = 0;
 		this.B[9] = this.B[10] = this.B[11] = 0;
