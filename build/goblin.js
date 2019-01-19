@@ -274,6 +274,17 @@ Goblin.Matrix4.prototype = {
 		this.e33 = m.e33;
 	},
 
+	getTranslation: function () {
+        return new Goblin.Vector3( this.e03, this.e13, this.e23 );
+    },
+
+    getRotation: function () {
+        var rotation = new Goblin.Quaternion();
+        rotation.setFromMat4( this );
+
+        return rotation;
+    },
+
 	makeTransform: function( rotation, translation ) {
 		// Setup rotation
 		var x2 = rotation.x + rotation.x,
@@ -479,6 +490,38 @@ Goblin.Matrix4.prototype = {
 		this.e33 = b0*a03 + b1*a13 + b2*a23 + b3*a33;
 	}
 };
+
+Object.defineProperty( Goblin.Matrix4.prototype, 'data', {
+	
+	/**
+	 * FIXME EN-77 to remove the below
+	 * Gets the matrix data as float array.
+	 */
+	get: function () {
+		return [
+			this.e00,
+			this.e10,
+			this.e20,
+			this.e30,
+
+			this.e01,
+			this.e11,
+			this.e21,
+			this.e31,
+
+			this.e02,
+			this.e12,
+			this.e22,
+			this.e32,
+
+			this.e03,
+			this.e13,
+			this.e23,
+			this.e33
+		];
+	}
+
+} );
 Goblin.Quaternion = function( x, y, z, w ) {
 	this.x = x != null ? x : 0;
 	this.y = y != null ? y : 0;
@@ -500,6 +543,10 @@ Goblin.Quaternion.prototype = {
 		this.y = q.y;
 		this.z = q.z;
 		this.w = q.w;
+	},
+
+	toString: function () {
+		return '(' + this.x + ', ' + this.y + ', ' + this.z + ', ' + this.w + ')';
 	},
 
 	multiply: function( q ) {
@@ -581,6 +628,95 @@ Goblin.Quaternion.prototype = {
 		dest.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
 	},
 
+	setFromMat4: function (m) {
+        var m00, m01, m02, m10, m11, m12, m20, m21, m22,
+            tr, s, rs, lx, ly, lz;
+
+        // Cache matrix values for super-speed
+        m00 = m.e00;
+        m01 = m.e10;
+        m02 = m.e20;
+        m10 = m.e01;
+        m11 = m.e11;
+        m12 = m.e21;
+        m20 = m.e02;
+        m21 = m.e12;
+        m22 = m.e22;
+
+        // Remove the scale from the matrix
+        lx = 1 / Math.sqrt(m00 * m00 + m01 * m01 + m02 * m02);
+        ly = 1 / Math.sqrt(m10 * m10 + m11 * m11 + m12 * m12);
+        lz = 1 / Math.sqrt(m20 * m20 + m21 * m21 + m22 * m22);
+
+        m00 *= lx;
+        m01 *= lx;
+        m02 *= lx;
+        m10 *= ly;
+        m11 *= ly;
+        m12 *= ly;
+        m20 *= lz;
+        m21 *= lz;
+        m22 *= lz;
+
+        // http://www.cs.ucr.edu/~vbz/resources/quatut.pdf
+
+        tr = m00 + m11 + m22;
+        if (tr >= 0) {
+            s = Math.sqrt(tr + 1);
+            this.w = s * 0.5;
+            s = 0.5 / s;
+            this.x = (m12 - m21) * s;
+            this.y = (m20 - m02) * s;
+            this.z = (m01 - m10) * s;
+        } else {
+            if (m00 > m11) {
+                if (m00 > m22) {
+                    // XDiagDomMatrix
+                    rs = (m00 - (m11 + m22)) + 1;
+                    rs = Math.sqrt(rs);
+
+                    this.x = rs * 0.5;
+                    rs = 0.5 / rs;
+                    this.w = (m12 - m21) * rs;
+                    this.y = (m01 + m10) * rs;
+                    this.z = (m02 + m20) * rs;
+                } else {
+                    // ZDiagDomMatrix
+                    rs = (m22 - (m00 + m11)) + 1;
+                    rs = Math.sqrt(rs);
+
+                    this.z = rs * 0.5;
+                    rs = 0.5 / rs;
+                    this.w = (m01 - m10) * rs;
+                    this.x = (m20 + m02) * rs;
+                    this.y = (m21 + m12) * rs;
+                }
+            } else if (m11 > m22) {
+                // YDiagDomMatrix
+                rs = (m11 - (m22 + m00)) + 1;
+                rs = Math.sqrt(rs);
+
+                this.y = rs * 0.5;
+                rs = 0.5 / rs;
+                this.w = (m20 - m02) * rs;
+                this.z = (m12 + m21) * rs;
+                this.x = (m10 + m01) * rs;
+            } else {
+                // ZDiagDomMatrix
+                rs = (m22 - (m00 + m11)) + 1;
+                rs = Math.sqrt(rs);
+
+                this.z = rs * 0.5;
+                rs = 0.5 / rs;
+                this.w = (m01 - m10) * rs;
+                this.x = (m20 + m02) * rs;
+                this.y = (m21 + m12) * rs;
+            }
+        }
+
+        return this;
+    },
+
 	angleBetween: function( q ) {
 		/*_tmp_quat4_1.invertQuaternion( this );
 		_tmp_quat4_1.multiply( q );
@@ -629,6 +765,10 @@ Goblin.Vector3.prototype = {
 		this.x += v.x;
 		this.y += v.y;
 		this.z += v.z;
+	},
+
+	toString: function () {
+		return '(' + this.x + ', ' + this.y + ', ' + this.z + ')';
 	},
 
 	addVectors: function( a, b ) {
@@ -863,6 +1003,15 @@ Goblin.RigidBody = (function() {
 		this.position = new Goblin.Vector3();
 
 		/**
+		 * the rigid body's center of mass in body local space
+		 *
+		 * @property position
+		 * @type {vec3}
+		 * @default [ 0, 0, 0 ]
+		 */
+		this.center = new Goblin.Vector3();
+
+		/**
 		 * rotation of the rigid body
 		 *
 		 * @type {quat4}
@@ -996,6 +1145,14 @@ Goblin.RigidBody = (function() {
 		this.angular_factor = new Goblin.Vector3( 1, 1, 1 );
 
 		/**
+		 * Position of center of mass for this body
+		 *
+		 * @property center_of_mass
+		 * @type {Goblin.Vector3}
+		 */
+		this.center_of_mass = new Goblin.Vector3( 0, 0, 0 );
+
+		/**
 		 * the world to which the rigid body has been added,
 		 * this is set when the rigid body is added to a world
 		 *
@@ -1050,10 +1207,36 @@ Object.defineProperty(
 		set: function( n ) {
 			this._mass = n;
 			this._mass_inverted = 1 / n;
-			this.inertiaTensor = this.shape.getInertiaTensor( n );
+			this.updateShapeDerivedValues();
 		}
 	}
 );
+
+Goblin.RigidBody.prototype.setTransform = function ( transform ) {
+	this.transform.copy( transform );
+
+	var com = new Goblin.Matrix4();
+	com.makeTransform( new Goblin.Quaternion(), this.center_of_mass );
+	this.transform.multiply( com );
+
+	this.position.copy( this.transform.getTranslation() );
+	this.rotation.copy( this.transform.getRotation() );
+};
+
+Goblin.RigidBody.prototype.getTransform = function () {
+	this.updateDerived();
+
+	var transform = new Goblin.Matrix4();
+	transform.copy( this.transform );
+
+	var com = new Goblin.Matrix4();
+	com.makeTransform( new Goblin.Quaternion(), this.center_of_mass );
+	com.invert();
+
+	transform.multiply( com );
+
+	return transform;
+};
 
 /**
  * Updates bodies' derived values to reflect changes in shape (i.e. new children in compound shape).
@@ -1061,7 +1244,18 @@ Object.defineProperty(
  * @method updateShapeDerivedValues
  */
 Goblin.RigidBody.prototype.updateShapeDerivedValues = function () {
+	if ( !this.shape.center_of_mass ) {
+		this.inertiaTensor = this.shape.getInertiaTensor( this._mass );
+		return;
+	}
+
+	this.shape.updateCenterOfMass();
+
 	this.inertiaTensor = this.shape.getInertiaTensor( this._mass );
+
+	this.position.subtract( this.center_of_mass );
+	this.center_of_mass.copy( this.shape.center_of_mass );
+	this.position.add( this.center_of_mass );
 };
 
 /**
@@ -1148,19 +1342,50 @@ Goblin.RigidBody.prototype.integrate = function( timestep ) {
 	this.position.add( _tmp_vec3_1 );
 
 	// Update rotation
-	_tmp_quat4_1.x = this.angular_velocity.x * timestep;
-	_tmp_quat4_1.y = this.angular_velocity.y * timestep;
-	_tmp_quat4_1.z = this.angular_velocity.z * timestep;
-	_tmp_quat4_1.w = 0;
+	// _tmp_quat4_1.x = this.angular_velocity.x * timestep;
+	// _tmp_quat4_1.y = this.angular_velocity.y * timestep;
+	// _tmp_quat4_1.z = this.angular_velocity.z * timestep;
+	// _tmp_quat4_1.w = 0;
 
-	_tmp_quat4_1.multiply( this.rotation );
+	// _tmp_quat4_1.multiply( this.rotation );
 
-	var half_dt = 0.5;
-	this.rotation.x += half_dt * _tmp_quat4_1.x;
-	this.rotation.y += half_dt * _tmp_quat4_1.y;
-	this.rotation.z += half_dt * _tmp_quat4_1.z;
-	this.rotation.w += half_dt * _tmp_quat4_1.w;
-	this.rotation.normalize();
+	// var half_dt = 0.5;
+	// this.rotation.x += half_dt * _tmp_quat4_1.x;
+	// this.rotation.y += half_dt * _tmp_quat4_1.y;
+	// this.rotation.z += half_dt * _tmp_quat4_1.z;
+	// this.rotation.w += half_dt * _tmp_quat4_1.w;
+	// this.rotation.normalize();
+
+	{
+		var BT_GPU_ANGULAR_MOTION_THRESHOLD = (0.25 * 3.14159254);
+		var angVel = new pc.Vec3().copy( this.angular_velocity );
+
+		var fAngle = Math.sqrt( angVel.length() );
+
+		//limit the angular motion
+		if (fAngle * timestep > BT_GPU_ANGULAR_MOTION_THRESHOLD) {
+			fAngle = BT_GPU_ANGULAR_MOTION_THRESHOLD / timestep;
+		}
+
+		if (fAngle < 0.001) {
+			// use Taylor's expansions of sync function
+			angVel.scale(0.5 * timestep - (timestep * timestep * timestep) * 0.020833333333 * fAngle * fAngle);
+		} else {
+			// sync(fAngle) = sin(c*fAngle)/t
+			angVel.scale( Math.sin(0.5 * fAngle * timestep) / fAngle );
+		}
+
+		var dorn = new pc.Quat();
+		dorn.x = angVel.x;
+		dorn.y = angVel.y;
+		dorn.z = angVel.z;
+		dorn.w = Math.cos( fAngle * timestep * 0.5 );
+		
+		var predictedOrn = new pc.Quat().mul2( dorn, this.rotation );
+		predictedOrn.normalize();
+
+		this.rotation.copy( predictedOrn );
+	}
 
 	// Clear accumulated forces
 	this.accumulated_force.x = this.accumulated_force.y = this.accumulated_force.z = 0;
@@ -1233,8 +1458,8 @@ Goblin.RigidBody.prototype.applyForceAtWorldPoint = function( force, point ) {
  * @param point {vec3} local frame coordinates where force originates
  */
 Goblin.RigidBody.prototype.applyForceAtLocalPoint = function( force, point ) {
-	this.transform.transformVector3Into( point, _tmp_vec3_1 );
-	this.applyForceAtWorldPoint( force, _tmp_vec3_1 );
+	this.transform.transformVector3Into( point, _tmp_vec3_2 );
+	this.applyForceAtWorldPoint( force, _tmp_vec3_2 );
 };
 
 Goblin.RigidBody.prototype.getVelocityInLocalPoint = function( point, out ) {
@@ -3200,6 +3425,83 @@ Goblin.TriangleTriangle = function( tri_a, tri_b ) {
 	return null;
 };
 
+/**
+* adds a drag force to associated objects
+*
+* @class DragForce
+* @extends ForceGenerator
+* @constructor
+*/
+Goblin.DragForce = function( drag_coefficient, squared_drag_coefficient ) {
+	/**
+	* drag coefficient
+	*
+	* @property drag_coefficient
+	* @type {Number}
+	* @default 0
+	*/
+	this.drag_coefficient = drag_coefficient || 0;
+
+	/**
+	* drag coefficient
+	*
+	* @property drag_coefficient
+	* @type {Number}
+	* @default 0
+	*/
+	this.squared_drag_coefficient = squared_drag_coefficient || 0;
+
+	/**
+	* whether or not the force generator is enabled
+	*
+	* @property enabled
+	* @type {Boolean}
+	* @default true
+	*/
+	this.enabled = true;
+
+	/**
+	* array of objects affected by the generator
+	*
+	* @property affected
+	* @type {Array}
+	* @default []
+	* @private
+	*/
+	this.affected = [];
+};
+Goblin.DragForce.prototype.enable = Goblin.ForceGenerator.prototype.enable;
+Goblin.DragForce.prototype.disable = Goblin.ForceGenerator.prototype.disable;
+Goblin.DragForce.prototype.affect = Goblin.ForceGenerator.prototype.affect;
+Goblin.DragForce.prototype.unaffect = Goblin.ForceGenerator.prototype.unaffect;
+/**
+* applies force to the associated objects
+*
+* @method applyForce
+*/
+Goblin.DragForce.prototype.applyForce = function() {
+	if ( !this.enabled ) {
+		return;
+	}
+
+	var i, affected_count, object, drag,
+		force = _tmp_vec3_1;
+
+	for ( i = 0, affected_count = this.affected.length; i < affected_count; i++ ) {
+		object = this.affected[i];
+
+		force.copy( object.linear_velocity );
+
+		// Calculate the total drag coefficient.
+		drag = force.length();
+		drag = ( this.drag_coefficient * drag ) + ( this.squared_drag_coefficient * drag * drag );
+
+		// Calculate the final force and apply it.
+		force.normalize();
+		force.scale( -drag );
+		object.applyForce( force  );
+	}
+};
 Goblin.Constraint = (function() {
 	var constraint_count = 0;
 
@@ -3357,9 +3659,9 @@ Goblin.ConstraintRow.prototype.computeB = function( constraint ) {
 		_tmp_vec3_1.y = this.jacobian[10];
 		_tmp_vec3_1.z = this.jacobian[11];
 		constraint.object_b.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
-		this.B[9] = _tmp_vec3_1.x * constraint.object_b.linear_factor.x;
-		this.B[10] = _tmp_vec3_1.y * constraint.object_b.linear_factor.y;
-		this.B[11] = _tmp_vec3_1.z * constraint.object_b.linear_factor.z;
+		this.B[9] = _tmp_vec3_1.x * constraint.object_b.angular_factor.x;
+		this.B[10] = _tmp_vec3_1.y * constraint.object_b.angular_factor.y;
+		this.B[11] = _tmp_vec3_1.z * constraint.object_b.angular_factor.z;
 	} else {
 		this.B[6] = this.B[7] = this.B[8] = 0;
 		this.B[9] = this.B[10] = this.B[11] = 0;
@@ -4245,83 +4547,6 @@ Goblin.WeldConstraint.prototype.update = (function(){
 		this.rows[5].bias = error.z;
 	};
 })( );
-/**
-* adds a drag force to associated objects
-*
-* @class DragForce
-* @extends ForceGenerator
-* @constructor
-*/
-Goblin.DragForce = function( drag_coefficient, squared_drag_coefficient ) {
-	/**
-	* drag coefficient
-	*
-	* @property drag_coefficient
-	* @type {Number}
-	* @default 0
-	*/
-	this.drag_coefficient = drag_coefficient || 0;
-
-	/**
-	* drag coefficient
-	*
-	* @property drag_coefficient
-	* @type {Number}
-	* @default 0
-	*/
-	this.squared_drag_coefficient = squared_drag_coefficient || 0;
-
-	/**
-	* whether or not the force generator is enabled
-	*
-	* @property enabled
-	* @type {Boolean}
-	* @default true
-	*/
-	this.enabled = true;
-
-	/**
-	* array of objects affected by the generator
-	*
-	* @property affected
-	* @type {Array}
-	* @default []
-	* @private
-	*/
-	this.affected = [];
-};
-Goblin.DragForce.prototype.enable = Goblin.ForceGenerator.prototype.enable;
-Goblin.DragForce.prototype.disable = Goblin.ForceGenerator.prototype.disable;
-Goblin.DragForce.prototype.affect = Goblin.ForceGenerator.prototype.affect;
-Goblin.DragForce.prototype.unaffect = Goblin.ForceGenerator.prototype.unaffect;
-/**
-* applies force to the associated objects
-*
-* @method applyForce
-*/
-Goblin.DragForce.prototype.applyForce = function() {
-	if ( !this.enabled ) {
-		return;
-	}
-
-	var i, affected_count, object, drag,
-		force = _tmp_vec3_1;
-
-	for ( i = 0, affected_count = this.affected.length; i < affected_count; i++ ) {
-		object = this.affected[i];
-
-		force.copy( object.linear_velocity );
-
-		// Calculate the total drag coefficient.
-		drag = force.length();
-		drag = ( this.drag_coefficient * drag ) + ( this.squared_drag_coefficient * drag * drag );
-
-		// Calculate the final force and apply it.
-		force.normalize();
-		force.scale( -drag );
-		object.applyForce( force  );
-	}
-};
 Goblin.RayIntersection = function() {
 	this.object = null;
 	this.point = new Goblin.Vector3();
@@ -4844,6 +5069,11 @@ Goblin.CompoundShape = function() {
 	this.child_shapes = [];
 
 	this.aabb = new Goblin.AABB();
+
+	// holds shape's center
+	this.center_of_mass = new Goblin.Vector3();
+	this.center_of_mass_override = null;
+
 	this.calculateLocalAABB( this.aabb );
 };
 
@@ -4857,7 +5087,29 @@ Goblin.CompoundShape = function() {
  */
 Goblin.CompoundShape.prototype.addChildShape = function( shape, position, rotation ) {
 	this.child_shapes.push( new Goblin.CompoundShapeChild( shape, position, rotation ) );
+	this.updateCenterOfMass();
 	this.calculateLocalAABB( this.aabb );
+};
+
+Goblin.CompoundShape.prototype.updateCenterOfMass = function () {
+	var i;
+
+	if ( this.center_of_mass_override ) {
+		this.center_of_mass.copy( this.center_of_mass_override );
+	} else {
+		this.center_of_mass.set( 0, 0, 0 );
+
+		for( i = 0; i < this.child_shapes.length; i++ ) {
+			this.center_of_mass.add( this.child_shapes[ i ].local_position );
+		}
+
+		this.center_of_mass.scale( 1.0 / this.child_shapes.length );
+	}
+
+	for( i = 0; i < this.child_shapes.length; i++ ) {
+		this.child_shapes[ i ].center_of_mass.copy( this.center_of_mass );
+		this.child_shapes[ i ].updateDerived();
+	}
 };
 
 /**
@@ -4885,34 +5137,41 @@ Goblin.CompoundShape.prototype.calculateLocalAABB = function( aabb ) {
 	}
 };
 
-Goblin.CompoundShape.prototype.getInertiaTensor = function( mass ) {
+Goblin.CompoundShape.prototype.computeSteiner = function ( vector, mass, tensor ) {
+	tensor.e00 = mass * -( vector.y * vector.y + vector.z * vector.z );
+	tensor.e10 = mass * vector.x * vector.y;
+	tensor.e20 = mass * vector.x * vector.z;
+
+	tensor.e01 = mass * vector.x * vector.y;
+	tensor.e11 = mass * -( vector.x * vector.x + vector.z * vector.z );
+	tensor.e21 = mass * vector.y * vector.z;
+
+	tensor.e02 = mass * vector.x * vector.z;
+	tensor.e12 = mass * vector.y * vector.z;
+	tensor.e22 = mass * -( vector.x * vector.x + vector.y * vector.y );
+};
+
+Goblin.CompoundShape.prototype.getInertiaTensor = function( _mass ) {
 	var tensor = new Goblin.Matrix3(),
 		j = new Goblin.Matrix3(),
 		i,
 		child,
 		child_tensor;
 
-	mass /= this.child_shapes.length;
+	if ( this.child_shapes.length === 0 ) {
+		return tensor;
+	}
 
-	// Holds center of current tensor
-	_tmp_vec3_1.x = _tmp_vec3_1.y = _tmp_vec3_1.z = 0;
+	var mass = _mass / this.child_shapes.length;
+
+	// our origin is current center
+	_tmp_vec3_1.copy( this.center_of_mass );
 
 	for ( i = 0; i < this.child_shapes.length; i++ ) {
 		child = this.child_shapes[i];
 
-		_tmp_vec3_1.subtract( child.position );
-
-		j.e00 = mass * -( _tmp_vec3_1.y * _tmp_vec3_1.y + _tmp_vec3_1.z * _tmp_vec3_1.z );
-		j.e10 = mass * _tmp_vec3_1.x * _tmp_vec3_1.y;
-		j.e20 = mass * _tmp_vec3_1.x * _tmp_vec3_1.z;
-
-		j.e01 = mass * _tmp_vec3_1.x * _tmp_vec3_1.y;
-		j.e11 = mass * -( _tmp_vec3_1.x * _tmp_vec3_1.x + _tmp_vec3_1.z * _tmp_vec3_1.z );
-		j.e21 = mass * _tmp_vec3_1.y * _tmp_vec3_1.z;
-
-		j.e02 = mass * _tmp_vec3_1.x * _tmp_vec3_1.z;
-		j.e12 = mass * _tmp_vec3_1.y * _tmp_vec3_1.z;
-		j.e22 = mass * -( _tmp_vec3_1.x * _tmp_vec3_1.x + _tmp_vec3_1.y * _tmp_vec3_1.y );
+		_tmp_vec3_1.subtract( child.local_position );
+		this.computeSteiner( _tmp_vec3_1, mass, j );
 
 		_tmp_mat3_1.fromMatrix4( child.transform );
 		child_tensor = child.shape.getInertiaTensor( mass );
@@ -4920,16 +5179,35 @@ Goblin.CompoundShape.prototype.getInertiaTensor = function( mass ) {
 		_tmp_mat3_1.multiply( child_tensor );
 		_tmp_mat3_1.multiply( _tmp_mat3_2 );
 
-		tensor.e00 += _tmp_mat3_1.e00 + j.e00;
-		tensor.e10 += _tmp_mat3_1.e10 + j.e10;
-		tensor.e20 += _tmp_mat3_1.e20 + j.e20;
-		tensor.e01 += _tmp_mat3_1.e01 + j.e01;
-		tensor.e11 += _tmp_mat3_1.e11 + j.e11;
-		tensor.e21 += _tmp_mat3_1.e21 + j.e21;
-		tensor.e02 += _tmp_mat3_1.e02 + j.e02;
-		tensor.e12 += _tmp_mat3_1.e12 + j.e12;
-		tensor.e22 += _tmp_mat3_1.e22 + j.e22;
+		tensor.e00 += _tmp_mat3_1.e00 - j.e00;
+		tensor.e10 += _tmp_mat3_1.e10 - j.e10;
+		tensor.e20 += _tmp_mat3_1.e20 - j.e20;
+		tensor.e01 += _tmp_mat3_1.e01 - j.e01;
+		tensor.e11 += _tmp_mat3_1.e11 - j.e11;
+		tensor.e21 += _tmp_mat3_1.e21 - j.e21;
+		tensor.e02 += _tmp_mat3_1.e02 - j.e02;
+		tensor.e12 += _tmp_mat3_1.e12 - j.e12;
+		tensor.e22 += _tmp_mat3_1.e22 - j.e22;
+
+		_tmp_vec3_1.copy( child.local_position );
 	}
+
+	// move tensor "into" center of mass
+	// because we don't "rotate" the shape around itself,
+	// we only need to do a parallel transfer to get a proper inertia tensor
+	// for the whole shape
+	_tmp_vec3_1.subtract( this.center_of_mass );
+	this.computeSteiner( _tmp_vec3_1, mass, j );
+
+	tensor.e00 += -j.e00;
+	tensor.e10 += -j.e10;
+	tensor.e20 += -j.e20;
+	tensor.e01 += -j.e01;
+	tensor.e11 += -j.e11;
+	tensor.e21 += -j.e21;
+	tensor.e02 += -j.e02;
+	tensor.e12 += -j.e12;
+	tensor.e22 += -j.e22;
 
 	return tensor;
 };
@@ -4981,19 +5259,29 @@ Goblin.CompoundShape.prototype.rayIntersect = (function(){
  * @class CompoundShapeChild
  * @constructor
  */
-Goblin.CompoundShapeChild = function( shape, position, rotation ) {
+Goblin.CompoundShapeChild = function( shape, local_position, rotation ) {
 	this.shape = shape;
 
-	this.position = new Goblin.Vector3( position.x, position.y, position.z );
+	this.local_position = new Goblin.Vector3( local_position.x, local_position.y, local_position.z );
+    this.center_of_mass = new Goblin.Vector3();
+    this.position = new Goblin.Vector3();
 	this.rotation = new Goblin.Quaternion( rotation.x, rotation.y, rotation.z, rotation.w );
 
 	this.transform = new Goblin.Matrix4();
 	this.transform_inverse = new Goblin.Matrix4();
-	this.transform.makeTransform( this.rotation, this.position );
-	this.transform.invertInto( this.transform_inverse );
-
+	
 	this.aabb = new Goblin.AABB();
-	this.aabb.transform( this.shape.aabb, this.transform );
+
+    this.updateDerived();
+};
+
+Goblin.CompoundShapeChild.prototype.updateDerived = function () {
+    this.position.copy( this.local_position );
+    this.position.subtract( this.center_of_mass );
+
+    this.transform.makeTransform( this.rotation, this.position );
+    this.transform.invertInto( this.transform_inverse );
+    this.aabb.transform( this.shape.aabb, this.transform );
 };
 /**
  * @class ConeShape
@@ -9018,6 +9306,10 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
         time_delta -= max_step;
 
 		this.emit( 'stepStart', this.ticks, delta );
+
+		for ( i = 0, loop_count = this.rigid_bodies.length; i < loop_count; i++ ) {
+			
+		}
 
 		// Apply gravity
         for ( i = 0, loop_count = this.rigid_bodies.length; i < loop_count; i++ ) {
