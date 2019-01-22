@@ -3828,630 +3828,6 @@ Goblin.FrictionConstraint.prototype.update = (function(){
 		this.rows[1] = row_2;
 	};
 })();
-Goblin.HingeConstraint = function( object_a, hinge_a, point_a, object_b, point_b ) {
-	Goblin.Constraint.call( this );
-
-	this.object_a = object_a;
-	this.hinge_a = hinge_a;
-	this.point_a = point_a;
-
-	this.initial_quaternion = new Goblin.Quaternion();
-
-	this.object_b = object_b || null;
-	this.point_b = new Goblin.Vector3();
-	this.hinge_b = new Goblin.Vector3();
-	if ( this.object_b != null ) {
-		this.object_a.rotation.transformVector3Into( this.hinge_a, this.hinge_b );
-		_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
-		_tmp_quat4_1.transformVector3( this.hinge_b );
-
-		this.point_b = point_b;
-
-		this.initial_quaternion.multiplyQuaternions( _tmp_quat4_1, this.object_a.rotation );
-	} else {
-		this.object_a.updateDerived(); // Ensure the body's transform is correct
-		this.object_a.rotation.transformVector3Into( this.hinge_a, this.hinge_b );
-		this.object_a.transform.transformVector3Into( this.point_a, this.point_b );
-		this.initial_quaternion.set( this.object_a.rotation.x, this.object_a.rotation.y, this.object_a.rotation.z, this.object_a.rotation.w );
-	}
-
-	this.erp = 0.1;
-
-	// Create rows
-	// rows 0,1,2 are the same as point constraint and constrain the objects' positions
-	// rows 3,4 introduce the rotational constraints which constrains angular velocity orthogonal to the hinge axis
-	for ( var i = 0; i < 5; i++ ) {
-		this.rows[i] = Goblin.ConstraintRow.createConstraintRow();
-	}
-};
-Goblin.HingeConstraint.prototype = Object.create( Goblin.Constraint.prototype );
-
-function removeConstraintLimitRow( constraint ) {
-	if ( constraint.limit.constraint_row != null ) {
-		var row_idx = constraint.rows.indexOf(constraint.limit.constraint_row);
-		constraint.rows.splice(row_idx, 1);
-		constraint.limit.constraint_row = null;
-	}
-}
-
-function removeConstraintMotorRow( constraint ) {
-	if ( constraint.motor.constraint_row != null ) {
-		var row_idx = constraint.rows.indexOf(constraint.motor.constraint_row);
-		constraint.rows.splice(row_idx, 1);
-		constraint.motor.constraint_row = null;
-	}
-}
-
-Goblin.HingeConstraint.prototype.updateLimits = function( world_axis, time_delta ) {
-	if ( this.limit.enabled === false ) {
-		// remove existing `constraint_row` if it was previously set
-		removeConstraintLimitRow( this );
-		return;
-	}
-
-	var separating_angle, correction;
-
-	if ( this.object_b == null ) {
-		// this.initial_quaternion is the original rotation of object_a
-		separating_angle = this.initial_quaternion.signedAngleBetween( this.object_a.rotation, world_axis );
-	} else {
-		// this.initial_quaternion is the original difference in rotation between object_a and object_b (A - B)
-		_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
-		_tmp_quat4_1.multiply( this.object_a.rotation );
-
-		separating_angle = this.initial_quaternion.signedAngleBetween( _tmp_quat4_1, world_axis );
-	}
-
-	if (
-		( this.limit.limit_lower == null || this.limit.limit_lower < separating_angle ) &&
-		( this.limit.limit_upper == null || this.limit.limit_upper > separating_angle )
-	) {
-		// there limit is not violated, ignore
-		removeConstraintLimitRow( this );
-		return;
-	}
-
-	if ( this.limit.limit_lower != null && separating_angle <= this.limit.limit_lower ) {
-		if ( this.limit.constraint_row == null ) {
-			this.limit.createConstraintRow();
-			this.limit.constraint_row.upper_limit = 0;
-			this.rows.push( this.limit.constraint_row );
-		}
-		this.limit.constraint_row.jacobian[3] = -world_axis.x;
-		this.limit.constraint_row.jacobian[4] = -world_axis.y;
-		this.limit.constraint_row.jacobian[5] = -world_axis.z;
-
-		if ( this.object_b != null ) {
-			this.limit.constraint_row.jacobian[9] = world_axis.x;
-			this.limit.constraint_row.jacobian[10] = world_axis.y;
-			this.limit.constraint_row.jacobian[11] = world_axis.z;
-		}
-
-		correction = separating_angle - this.limit.limit_lower;
-		this.limit.constraint_row.bias = correction * this.limit.erp / time_delta;
-	} else if ( this.limit.limit_upper != null && separating_angle >= this.limit.limit_upper ) {
-		if ( this.limit.constraint_row == null ) {
-			this.limit.createConstraintRow();
-			this.limit.constraint_row.lower_limit = 0;
-			this.rows.push( this.limit.constraint_row );
-		}
-		this.limit.constraint_row.jacobian[3] = -world_axis.x;
-		this.limit.constraint_row.jacobian[4] = -world_axis.y;
-		this.limit.constraint_row.jacobian[5] = -world_axis.z;
-
-		if ( this.object_b != null ) {
-			this.limit.constraint_row.jacobian[9] = world_axis.x;
-			this.limit.constraint_row.jacobian[10] = world_axis.y;
-			this.limit.constraint_row.jacobian[11] = world_axis.z;
-		}
-
-		correction = separating_angle - this.limit.limit_upper;
-		this.limit.constraint_row.bias = correction * this.limit.erp / time_delta;
-	}
-};
-
-Goblin.HingeConstraint.prototype.updateMotor = function( world_axis ) {
-	if ( this.motor.enabled === false ) {
-		removeConstraintMotorRow( this );
-		return;
-	}
-
-	if ( this.motor.constraint_row == null ) {
-		this.motor.createConstraintRow();
-		this.rows.push( this.motor.constraint_row );
-		this.motor.constraint_row.jacobian[3] = world_axis.x;
-		this.motor.constraint_row.jacobian[4] = world_axis.y;
-		this.motor.constraint_row.jacobian[5] = world_axis.z;
-
-		if ( this.object_b != null ) {
-			this.motor.constraint_row.jacobian[9] = -world_axis.x;
-			this.motor.constraint_row.jacobian[10] = -world_axis.y;
-			this.motor.constraint_row.jacobian[11] = -world_axis.z;
-		}
-	}
-
-	this.motor.constraint_row.bias = this.motor.max_speed;
-	if ( this.motor.max_speed >= 0 ) {
-		this.motor.constraint_row.lower_limit = 0;
-		this.motor.constraint_row.upper_limit = this.motor.torque;
-	} else {
-		this.motor.constraint_row.lower_limit = -this.motor.torque;
-		this.motor.constraint_row.upper_limit = 0;
-	}
-};
-
-Goblin.HingeConstraint.prototype.update = (function(){
-	var r1 = new Goblin.Vector3(),
-		r2 = new Goblin.Vector3(),
-		t1 = new Goblin.Vector3(),
-		t2 = new Goblin.Vector3(),
-		world_axis = new Goblin.Vector3();
-
-	return function( time_delta ) {
-		this.object_a.rotation.transformVector3Into( this.hinge_a, world_axis );
-
-		this.object_a.transform.transformVector3Into( this.point_a, _tmp_vec3_1 );
-		r1.subtractVectors( _tmp_vec3_1, this.object_a.position );
-
-		// 0,1,2 are positional, same as PointConstraint
-		this.rows[0].jacobian[0] = -1;
-		this.rows[0].jacobian[1] = 0;
-		this.rows[0].jacobian[2] = 0;
-		this.rows[0].jacobian[3] = 0;
-		this.rows[0].jacobian[4] = -r1.z;
-		this.rows[0].jacobian[5] = r1.y;
-
-		this.rows[1].jacobian[0] = 0;
-		this.rows[1].jacobian[1] = -1;
-		this.rows[1].jacobian[2] = 0;
-		this.rows[1].jacobian[3] = r1.z;
-		this.rows[1].jacobian[4] = 0;
-		this.rows[1].jacobian[5] = -r1.x;
-
-		this.rows[2].jacobian[0] = 0;
-		this.rows[2].jacobian[1] = 0;
-		this.rows[2].jacobian[2] = -1;
-		this.rows[2].jacobian[3] = -r1.y;
-		this.rows[2].jacobian[4] = r1.x;
-		this.rows[2].jacobian[5] = 0;
-
-		// 3,4 are rotational, constraining motion orthogonal to axis
-		world_axis.findOrthogonal( t1, t2 );
-		this.rows[3].jacobian[3] = -t1.x;
-		this.rows[3].jacobian[4] = -t1.y;
-		this.rows[3].jacobian[5] = -t1.z;
-
-		this.rows[4].jacobian[3] = -t2.x;
-		this.rows[4].jacobian[4] = -t2.y;
-		this.rows[4].jacobian[5] = -t2.z;
-
-		if ( this.object_b != null ) {
-			this.object_b.transform.transformVector3Into( this.point_b, _tmp_vec3_2 );
-			r2.subtractVectors( _tmp_vec3_2, this.object_b.position );
-
-			// 0,1,2 are positional, same as PointConstraint
-			this.rows[0].jacobian[6] = 1;
-			this.rows[0].jacobian[7] = 0;
-			this.rows[0].jacobian[8] = 0;
-			this.rows[0].jacobian[9] = 0;
-			this.rows[0].jacobian[10] = r2.z;
-			this.rows[0].jacobian[11] = -r2.y;
-
-			this.rows[1].jacobian[6] = 0;
-			this.rows[1].jacobian[7] = 1;
-			this.rows[1].jacobian[8] = 0;
-			this.rows[1].jacobian[9] = -r2.z;
-			this.rows[1].jacobian[10] = 0;
-			this.rows[1].jacobian[11] = r2.x;
-
-			this.rows[2].jacobian[6] = 0;
-			this.rows[2].jacobian[7] = 0;
-			this.rows[2].jacobian[8] = 1;
-			this.rows[2].jacobian[9] = r2.y;
-			this.rows[2].jacobian[10] = -r2.z;
-			this.rows[2].jacobian[11] = 0;
-
-			// 3,4 are rotational, constraining motion orthogonal to axis
-			this.rows[3].jacobian[9] = t1.x;
-			this.rows[3].jacobian[10] = t1.y;
-			this.rows[3].jacobian[11] = t1.z;
-
-			this.rows[4].jacobian[9] = t2.x;
-			this.rows[4].jacobian[10] = t2.y;
-			this.rows[4].jacobian[11] = t2.z;
-		} else {
-			_tmp_vec3_2.copy( this.point_b );
-		}
-
-		// Linear error correction
-		_tmp_vec3_3.subtractVectors( _tmp_vec3_1, _tmp_vec3_2 );
-		_tmp_vec3_3.scale( this.erp / time_delta );
-		this.rows[0].bias = _tmp_vec3_3.x;
-		this.rows[1].bias = _tmp_vec3_3.y;
-		this.rows[2].bias = _tmp_vec3_3.z;
-
-		// Angular error correction
-		if (this.object_b != null) {
-			this.object_a.rotation.transformVector3Into(this.hinge_a, _tmp_vec3_1);
-			this.object_b.rotation.transformVector3Into(this.hinge_b, _tmp_vec3_2);
-			_tmp_vec3_1.cross(_tmp_vec3_2);
-			this.rows[3].bias = -_tmp_vec3_1.dot(t1) * this.erp / time_delta;
-			this.rows[4].bias = -_tmp_vec3_1.dot(t2) * this.erp / time_delta;
-		} else {
-			this.rows[3].bias = this.rows[4].bias = 0;
-		}
-
-		// limits & motor
-		this.updateLimits( world_axis, time_delta );
-		this.updateMotor( world_axis );
-	};
-})( );
-Goblin.PointConstraint = function( object_a, point_a, object_b, point_b ) {
-	Goblin.Constraint.call( this );
-
-	this.object_a = object_a;
-	this.point_a = point_a;
-
-	this.object_b = object_b || null;
-	if ( this.object_b != null ) {
-		this.point_b = point_b;
-	} else {
-		this.point_b = new Goblin.Vector3();
-		this.object_a.updateDerived(); // Ensure the body's transform is correct
-		this.object_a.transform.transformVector3Into( this.point_a, this.point_b );
-	}
-
-	this.erp = 0.1;
-
-	// Create rows
-	for ( var i = 0; i < 3; i++ ) {
-		this.rows[i] = Goblin.ObjectPool.getObject( 'ConstraintRow' );
-		this.rows[i].lower_limit = -Infinity;
-		this.rows[i].upper_limit = Infinity;
-		this.rows[i].bias = 0;
-
-		this.rows[i].jacobian[6] = this.rows[i].jacobian[7] = this.rows[i].jacobian[8] =
-			this.rows[i].jacobian[9] = this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = 0;
-	}
-};
-Goblin.PointConstraint.prototype = Object.create( Goblin.Constraint.prototype );
-
-Goblin.PointConstraint.prototype.update = (function(){
-	var r1 = new Goblin.Vector3(),
-		r2 = new Goblin.Vector3();
-
-	return function( time_delta ) {
-		this.object_a.transform.transformVector3Into( this.point_a, _tmp_vec3_1 );
-		r1.subtractVectors( _tmp_vec3_1, this.object_a.position );
-
-		this.rows[0].jacobian[0] = -1;
-		this.rows[0].jacobian[1] = 0;
-		this.rows[0].jacobian[2] = 0;
-		this.rows[0].jacobian[3] = 0;
-		this.rows[0].jacobian[4] = -r1.z;
-		this.rows[0].jacobian[5] = r1.y;
-
-		this.rows[1].jacobian[0] = 0;
-		this.rows[1].jacobian[1] = -1;
-		this.rows[1].jacobian[2] = 0;
-		this.rows[1].jacobian[3] = r1.z;
-		this.rows[1].jacobian[4] = 0;
-		this.rows[1].jacobian[5] = -r1.x;
-
-		this.rows[2].jacobian[0] = 0;
-		this.rows[2].jacobian[1] = 0;
-		this.rows[2].jacobian[2] = -1;
-		this.rows[2].jacobian[3] = -r1.y;
-		this.rows[2].jacobian[4] = r1.x;
-		this.rows[2].jacobian[5] = 0;
-
-		if ( this.object_b != null ) {
-			this.object_b.transform.transformVector3Into( this.point_b, _tmp_vec3_2 );
-			r2.subtractVectors( _tmp_vec3_2, this.object_b.position );
-
-			this.rows[0].jacobian[6] = 1;
-			this.rows[0].jacobian[7] = 0;
-			this.rows[0].jacobian[8] = 0;
-			this.rows[0].jacobian[9] = 0;
-			this.rows[0].jacobian[10] = r2.z;
-			this.rows[0].jacobian[11] = -r2.y;
-
-			this.rows[1].jacobian[6] = 0;
-			this.rows[1].jacobian[7] = 1;
-			this.rows[1].jacobian[8] = 0;
-			this.rows[1].jacobian[9] = -r2.z;
-			this.rows[1].jacobian[10] = 0;
-			this.rows[1].jacobian[11] = r2.x;
-
-			this.rows[2].jacobian[6] = 0;
-			this.rows[2].jacobian[7] = 0;
-			this.rows[2].jacobian[8] = 1;
-			this.rows[2].jacobian[9] = r2.y;
-			this.rows[2].jacobian[10] = -r2.x;
-			this.rows[2].jacobian[11] = 0;
-		} else {
-			_tmp_vec3_2.copy( this.point_b );
-		}
-
-		_tmp_vec3_3.subtractVectors( _tmp_vec3_1, _tmp_vec3_2 );
-		_tmp_vec3_3.scale( this.erp / time_delta );
-		this.rows[0].bias = _tmp_vec3_3.x;
-		this.rows[1].bias = _tmp_vec3_3.y;
-		this.rows[2].bias = _tmp_vec3_3.z;
-	};
-})( );
-
-Goblin.SliderConstraint = function( object_a, axis, object_b ) {
-	Goblin.Constraint.call( this );
-
-	this.object_a = object_a;
-	this.axis = axis;
-	this.object_b = object_b;
-
-	// Find the initial distance between the two objects in object_a's local frame
-	this.position_error = new Goblin.Vector3();
-	this.position_error.subtractVectors( this.object_b.position, this.object_a.position );
-	_tmp_quat4_1.invertQuaternion( this.object_a.rotation );
-	_tmp_quat4_1.transformVector3( this.position_error );
-
-	this.rotation_difference = new Goblin.Quaternion();
-	if ( this.object_b != null ) {
-		_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
-		this.rotation_difference.multiplyQuaternions( _tmp_quat4_1, this.object_a.rotation );
-	}
-
-	this.erp = 0.1;
-
-	// First two rows constrain the linear velocities orthogonal to `axis`
-	// Rows three through five constrain angular velocities
-	for ( var i = 0; i < 5; i++ ) {
-		this.rows[i] = Goblin.ObjectPool.getObject( 'ConstraintRow' );
-		this.rows[i].lower_limit = -Infinity;
-		this.rows[i].upper_limit = Infinity;
-		this.rows[i].bias = 0;
-
-		this.rows[i].jacobian[0] = this.rows[i].jacobian[1] = this.rows[i].jacobian[2] =
-			this.rows[i].jacobian[3] = this.rows[i].jacobian[4] = this.rows[i].jacobian[5] =
-			this.rows[i].jacobian[6] = this.rows[i].jacobian[7] = this.rows[i].jacobian[8] =
-			this.rows[i].jacobian[9] = this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = 0;
-	}
-};
-Goblin.SliderConstraint.prototype = Object.create( Goblin.Constraint.prototype );
-
-Goblin.SliderConstraint.prototype.update = (function(){
-	var _axis = new Goblin.Vector3(),
-		n1 = new Goblin.Vector3(),
-		n2 = new Goblin.Vector3();
-
-	return function( time_delta ) {
-		// `axis` is in object_a's local frame, convert to world
-		this.object_a.rotation.transformVector3Into( this.axis, _axis );
-
-		// Find two vectors that are orthogonal to `axis`
-		_axis.findOrthogonal( n1, n2 );
-
-		this._updateLinearConstraints( time_delta, n1, n2 );
-		this._updateAngularConstraints( time_delta, n1, n2 );
-	};
-})();
-
-Goblin.SliderConstraint.prototype._updateLinearConstraints = function( time_delta, n1, n2 ) {
-	var c = new Goblin.Vector3();
-	c.subtractVectors( this.object_b.position, this.object_a.position );
-	//c.scale( 0.5 );
-
-	var cx = new Goblin.Vector3( );
-
-	// first linear constraint
-	cx.crossVectors( c, n1 );
-	this.rows[0].jacobian[0] = -n1.x;
-	this.rows[0].jacobian[1] = -n1.y;
-	this.rows[0].jacobian[2] = -n1.z;
-	//this.rows[0].jacobian[3] = -cx[0];
-	//this.rows[0].jacobian[4] = -cx[1];
-	//this.rows[0].jacobian[5] = -cx[2];
-
-	this.rows[0].jacobian[6] = n1.x;
-	this.rows[0].jacobian[7] = n1.y;
-	this.rows[0].jacobian[8] = n1.z;
-	this.rows[0].jacobian[9] = 0;
-	this.rows[0].jacobian[10] = 0;
-	this.rows[0].jacobian[11] = 0;
-
-	// second linear constraint
-	cx.crossVectors( c, n2 );
-	this.rows[1].jacobian[0] = -n2.x;
-	this.rows[1].jacobian[1] = -n2.y;
-	this.rows[1].jacobian[2] = -n2.z;
-	//this.rows[1].jacobian[3] = -cx[0];
-	//this.rows[1].jacobian[4] = -cx[1];
-	//this.rows[1].jacobian[5] = -cx[2];
-
-	this.rows[1].jacobian[6] = n2.x;
-	this.rows[1].jacobian[7] = n2.y;
-	this.rows[1].jacobian[8] = n2.z;
-	this.rows[1].jacobian[9] = 0;
-	this.rows[1].jacobian[10] = 0;
-	this.rows[1].jacobian[11] = 0;
-
-	// linear constraint error
-	//c.scale( 2  );
-	this.object_a.rotation.transformVector3Into( this.position_error, _tmp_vec3_1 );
-	_tmp_vec3_2.subtractVectors( c, _tmp_vec3_1 );
-	_tmp_vec3_2.scale( this.erp / time_delta  );
-	this.rows[0].bias = -n1.dot( _tmp_vec3_2 );
-	this.rows[1].bias = -n2.dot( _tmp_vec3_2 );
-};
-
-Goblin.SliderConstraint.prototype._updateAngularConstraints = function( time_delta, n1, n2, axis ) {
-	this.rows[2].jacobian[3] = this.rows[3].jacobian[4] = this.rows[4].jacobian[5] = -1;
-	this.rows[2].jacobian[9] = this.rows[3].jacobian[10] = this.rows[4].jacobian[11] = 1;
-
-	_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
-	_tmp_quat4_1.multiply( this.object_a.rotation );
-
-	_tmp_quat4_2.invertQuaternion( this.rotation_difference );
-	_tmp_quat4_2.multiply( _tmp_quat4_1 );
-	// _tmp_quat4_2 is now the rotational error that needs to be corrected
-
-	var error = new Goblin.Vector3();
-	error.x = _tmp_quat4_2.x;
-	error.y = _tmp_quat4_2.y;
-	error.z = _tmp_quat4_2.z;
-	error.scale( this.erp / time_delta  );
-
-	//this.rows[2].bias = error[0];
-	//this.rows[3].bias = error[1];
-	//this.rows[4].bias = error[2];
-};
-Goblin.WeldConstraint = function( object_a, point_a, object_b, point_b ) {
-	Goblin.Constraint.call( this );
-
-	this.object_a = object_a;
-	this.point_a = point_a;
-
-	this.object_b = object_b || null;
-	this.point_b = point_b || null;
-
-	this.rotation_difference = new Goblin.Quaternion();
-	if ( this.object_b != null ) {
-		_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
-		this.rotation_difference.multiplyQuaternions( _tmp_quat4_1, this.object_a.rotation );
-	}
-
-	this.erp = 0.1;
-
-	// Create translation constraint rows
-	for ( var i = 0; i < 3; i++ ) {
-		this.rows[i] = Goblin.ObjectPool.getObject( 'ConstraintRow' );
-		this.rows[i].lower_limit = -Infinity;
-		this.rows[i].upper_limit = Infinity;
-		this.rows[i].bias = 0;
-
-		if ( this.object_b == null ) {
-			this.rows[i].jacobian[0] = this.rows[i].jacobian[1] = this.rows[i].jacobian[2] =
-				this.rows[i].jacobian[4] = this.rows[i].jacobian[5] = this.rows[i].jacobian[6] =
-				this.rows[i].jacobian[7] = this.rows[i].jacobian[8] = this.rows[i].jacobian[9] =
-				this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = this.rows[i].jacobian[12] = 0;
-			this.rows[i].jacobian[i] = 1;
-		}
-	}
-
-	// Create rotation constraint rows
-	for ( i = 3; i < 6; i++ ) {
-		this.rows[i] = Goblin.ObjectPool.getObject( 'ConstraintRow' );
-		this.rows[i].lower_limit = -Infinity;
-		this.rows[i].upper_limit = Infinity;
-		this.rows[i].bias = 0;
-
-		if ( this.object_b == null ) {
-			this.rows[i].jacobian[0] = this.rows[i].jacobian[1] = this.rows[i].jacobian[2] =
-				this.rows[i].jacobian[4] = this.rows[i].jacobian[5] = this.rows[i].jacobian[6] =
-				this.rows[i].jacobian[7] = this.rows[i].jacobian[8] = this.rows[i].jacobian[9] =
-				this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = this.rows[i].jacobian[12] = 0;
-			this.rows[i].jacobian[i] = 1;
-		} else {
-			this.rows[i].jacobian[0] = this.rows[i].jacobian[1] = this.rows[i].jacobian[2] = 0;
-			this.rows[i].jacobian[3] = this.rows[i].jacobian[4] = this.rows[i].jacobian[5] = 0;
-			this.rows[i].jacobian[ i ] = -1;
-
-			this.rows[i].jacobian[6] = this.rows[i].jacobian[7] = this.rows[i].jacobian[8] = 0;
-			this.rows[i].jacobian[9] = this.rows[i].jacobian[10] = this.rows[i].jacobian[11] = 0;
-			this.rows[i].jacobian[ i + 6 ] = 1;
-		}
-	}
-};
-Goblin.WeldConstraint.prototype = Object.create( Goblin.Constraint.prototype );
-
-Goblin.WeldConstraint.prototype.update = (function(){
-	var r1 = new Goblin.Vector3(),
-		r2 = new Goblin.Vector3();
-
-	return function( time_delta ) {
-		if ( this.object_b == null ) {
-			// No need to update the constraint, all motion is already constrained
-			return;
-		}
-
-		this.object_a.transform.transformVector3Into( this.point_a, _tmp_vec3_1 );
-		r1.subtractVectors( _tmp_vec3_1, this.object_a.position );
-
-		this.rows[0].jacobian[0] = -1;
-		this.rows[0].jacobian[1] = 0;
-		this.rows[0].jacobian[2] = 0;
-		this.rows[0].jacobian[3] = 0;
-		this.rows[0].jacobian[4] = -r1.z;
-		this.rows[0].jacobian[5] = r1.y;
-
-		this.rows[1].jacobian[0] = 0;
-		this.rows[1].jacobian[1] = -1;
-		this.rows[1].jacobian[2] = 0;
-		this.rows[1].jacobian[3] = r1.z;
-		this.rows[1].jacobian[4] = 0;
-		this.rows[1].jacobian[5] = -r1.x;
-
-		this.rows[2].jacobian[0] = 0;
-		this.rows[2].jacobian[1] = 0;
-		this.rows[2].jacobian[2] = -1;
-		this.rows[2].jacobian[3] = -r1.y;
-		this.rows[2].jacobian[4] = r1.x;
-		this.rows[2].jacobian[5] = 0;
-
-		if ( this.object_b != null ) {
-			this.object_b.transform.transformVector3Into( this.point_b, _tmp_vec3_2 );
-			r2.subtractVectors( _tmp_vec3_2, this.object_b.position );
-
-			this.rows[0].jacobian[6] = 1;
-			this.rows[0].jacobian[7] = 0;
-			this.rows[0].jacobian[8] = 0;
-			this.rows[0].jacobian[9] = 0;
-			this.rows[0].jacobian[10] = r2.z;
-			this.rows[0].jacobian[11] = -r2.y;
-
-			this.rows[1].jacobian[6] = 0;
-			this.rows[1].jacobian[7] = 1;
-			this.rows[1].jacobian[8] = 0;
-			this.rows[1].jacobian[9] = -r2.z;
-			this.rows[1].jacobian[10] = 0;
-			this.rows[1].jacobian[11] = r2.x;
-
-			this.rows[2].jacobian[6] = 0;
-			this.rows[2].jacobian[7] = 0;
-			this.rows[2].jacobian[8] = 1;
-			this.rows[2].jacobian[9] = r2.y;
-			this.rows[2].jacobian[10] = -r2.x;
-			this.rows[2].jacobian[11] = 0;
-		} else {
-			_tmp_vec3_2.copy( this.point_b );
-		}
-
-		var error = new Goblin.Vector3();
-
-		// Linear correction
-		error.subtractVectors( _tmp_vec3_1, _tmp_vec3_2 );
-		error.scale( this.erp / time_delta  );
-		this.rows[0].bias = error.x;
-		this.rows[1].bias = error.y;
-		this.rows[2].bias = error.z;
-
-		// Rotation correction
-		_tmp_quat4_1.invertQuaternion( this.object_b.rotation );
-		_tmp_quat4_1.multiply( this.object_a.rotation );
-
-		_tmp_quat4_2.invertQuaternion( this.rotation_difference );
-		_tmp_quat4_2.multiply( _tmp_quat4_1 );
-		// _tmp_quat4_2 is now the rotational error that needs to be corrected
-
-		error.x = _tmp_quat4_2.x;
-		error.y = _tmp_quat4_2.y;
-		error.z = _tmp_quat4_2.z;
-		error.scale( this.erp / time_delta );
-
-		this.rows[3].bias = error.x;
-		this.rows[4].bias = error.y;
-		this.rows[5].bias = error.z;
-	};
-})( );
 /**
 * adds a drag force to associated objects
 *
@@ -4534,6 +3910,356 @@ Goblin.RayIntersection = function() {
 	this.point = new Goblin.Vector3();
 	this.t = null;
     this.normal = new Goblin.Vector3();
+};
+Goblin.CollisionUtils = {};
+
+Goblin.CollisionUtils.canBodiesCollide = function( object_a, object_b ) {
+	if ( object_a._mass === Infinity && object_b._mass === Infinity ) {
+		// Two static objects aren't considered to be in contact
+		return false;
+	}
+
+	// Check collision masks
+	if ( object_a.collision_mask !== 0 ) {
+		if ( ( object_a.collision_mask & 1 ) === 0 ) {
+			// object_b must not be in a matching group
+			if ( ( object_a.collision_mask & object_b.collision_groups ) !== 0 ) {
+				return false;
+			}
+		} else {
+			// object_b must be in a matching group
+			if ( ( object_a.collision_mask & object_b.collision_groups ) === 0 ) {
+				return false;
+			}
+		}
+	}
+	if ( object_b.collision_mask !== 0 ) {
+		if ( ( object_b.collision_mask & 1 ) === 0 ) {
+			// object_a must not be in a matching group
+			if ( ( object_b.collision_mask & object_a.collision_groups ) !== 0 ) {
+				return false;
+			}
+		} else {
+			// object_a must be in a matching group
+			if ( ( object_b.collision_mask & object_a.collision_groups ) === 0 ) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+};
+/**
+ * Provides methods useful for working with various types of geometries
+ *
+ * @class GeometryMethods
+ * @static
+ */
+Goblin.GeometryMethods = {
+	/**
+	 * determines the location in a triangle closest to a given point
+	 *
+	 * @method findClosestPointInTriangle
+	 * @param {vec3} p point
+	 * @param {vec3} a first triangle vertex
+	 * @param {vec3} b second triangle vertex
+	 * @param {vec3} c third triangle vertex
+	 * @param {vec3} out vector where the result will be stored
+	 */
+	findClosestPointInTriangle: (function() {
+		var ab = new Goblin.Vector3(),
+			ac = new Goblin.Vector3(),
+			_vec = new Goblin.Vector3();
+
+		return function( p, a, b, c, out ) {
+			var v;
+
+			// Check if P in vertex region outside A
+			ab.subtractVectors( b, a );
+			ac.subtractVectors( c, a );
+			_vec.subtractVectors( p, a );
+			var d1 = ab.dot( _vec ),
+				d2 = ac.dot( _vec );
+			if ( d1 <= 0 && d2 <= 0 ) {
+				out.copy( a );
+				return;
+			}
+
+			// Check if P in vertex region outside B
+			_vec.subtractVectors( p, b );
+			var d3 = ab.dot( _vec ),
+				d4 = ac.dot( _vec );
+			if ( d3 >= 0 && d4 <= d3 ) {
+				out.copy( b );
+				return;
+			}
+
+			// Check if P in edge region of AB
+			var vc = d1*d4 - d3*d2;
+			if ( vc <= 0 && d1 >= 0 && d3 <= 0 ) {
+				v = d1 / ( d1 - d3 );
+				out.scaleVector( ab, v );
+				out.add( a );
+				return;
+			}
+
+			// Check if P in vertex region outside C
+			_vec.subtractVectors( p, c );
+			var d5 = ab.dot( _vec ),
+				d6 = ac.dot( _vec );
+			if ( d6 >= 0 && d5 <= d6 ) {
+				out.copy( c );
+				return;
+			}
+
+			// Check if P in edge region of AC
+			var vb = d5*d2 - d1*d6,
+				w;
+			if ( vb <= 0 && d2 >= 0 && d6 <= 0 ) {
+				w = d2 / ( d2 - d6 );
+				out.scaleVector( ac, w );
+				out.add( a );
+				return;
+			}
+
+			// Check if P in edge region of BC
+			var va = d3*d6 - d5*d4;
+			if ( va <= 0 && d4-d3 >= 0 && d5-d6 >= 0 ) {
+				w = (d4 - d3) / ( (d4-d3) + (d5-d6) );
+				out.subtractVectors( c, b );
+				out.scale( w );
+				out.add( b );
+				return;
+			}
+
+			// P inside face region
+			var denom = 1 / ( va + vb + vc );
+			v = vb * denom;
+			w = vc * denom;
+
+
+			// At this point `ab` and `ac` can be recycled and lose meaning to their nomenclature
+
+			ab.scale( v );
+			ab.add( a );
+
+			ac.scale( w );
+
+			out.addVectors( ab, ac );
+		};
+	})(),
+
+	/**
+	 * Finds the Barycentric coordinates of point `p` in the triangle `a`, `b`, `c`
+	 *
+	 * @method findBarycentricCoordinates
+	 * @param p {vec3} point to calculate coordinates of
+	 * @param a {vec3} first point in the triangle
+	 * @param b {vec3} second point in the triangle
+	 * @param c {vec3} third point in the triangle
+	 * @param out {vec3} resulting Barycentric coordinates of point `p`
+	 */
+	findBarycentricCoordinates: function( p, a, b, c, out ) {
+
+		var v0 = new Goblin.Vector3(),
+			v1 = new Goblin.Vector3(),
+			v2 = new Goblin.Vector3();
+
+		v0.subtractVectors( b, a );
+		v1.subtractVectors( c, a );
+		v2.subtractVectors( p, a );
+
+		var d00 = v0.dot( v0 ),
+			d01 = v0.dot( v1 ),
+			d11 = v1.dot( v1 ),
+			d20 = v2.dot( v0 ),
+			d21 = v2.dot( v1 ),
+			denom = d00 * d11 - d01 * d01;
+
+		out.y = ( d11 * d20 - d01 * d21 ) / denom;
+		out.z = ( d00 * d21 - d01 * d20 ) / denom;
+		out.x = 1 - out.y - out.z;
+	},
+
+	/**
+	 * Calculates the distance from point `p` to line `ab`
+	 * @param p {vec3} point to calculate distance to
+	 * @param a {vec3} first point in line
+	 * @param b [vec3] second point in line
+	 * @returns {number}
+	 */
+	findSquaredDistanceFromSegment: (function(){
+		var ab = new Goblin.Vector3(),
+			ap = new Goblin.Vector3(),
+			bp = new Goblin.Vector3();
+
+		return function( p, a, b ) {
+			ab.subtractVectors( a, b );
+			ap.subtractVectors( a, p );
+			bp.subtractVectors( b, p );
+
+			var e = ap.dot( ab );
+			if ( e <= 0 ) {
+				return ap.dot( ap );
+			}
+
+			var f = ab.dot( ab );
+			if ( e >= f ) {
+				return bp.dot( bp );
+			}
+
+			return ap.dot( ap ) - e * e / f;
+		};
+	})(),
+
+	findClosestPointsOnSegments: (function(){
+		var d1 = new Goblin.Vector3(),
+			d2 = new Goblin.Vector3(),
+			r = new Goblin.Vector3(),
+			clamp = function( x, min, max ) {
+				return Math.min( Math.max( x, min ), max );
+			};
+
+		return function( aa, ab, ba, bb, p1, p2 ) {
+			d1.subtractVectors( ab, aa );
+			d2.subtractVectors( bb, ba );
+			r.subtractVectors( aa, ba );
+
+			var a = d1.dot( d1 ),
+				e = d2.dot( d2 ),
+				f = d2.dot( r );
+
+			var s, t;
+
+			if ( a <= Goblin.EPSILON && e <= Goblin.EPSILON ) {
+				// Both segments are degenerate
+				s = t = 0;
+				p1.copy( aa );
+				p2.copy( ba );
+				_tmp_vec3_1.subtractVectors( p1, p2 );
+				return _tmp_vec3_1.dot( _tmp_vec3_1 );
+			}
+
+			if ( a <= Goblin.EPSILON ) {
+				// Only first segment is degenerate
+				s = 0;
+				t = f / e;
+				t = clamp( t, 0, 1 );
+			} else {
+				var c = d1.dot( r );
+				if ( e <= Goblin.EPSILON ) {
+					// Second segment is degenerate
+					t = 0;
+					s = clamp( -c / a, 0, 1 );
+				} else {
+					// Neither segment is degenerate
+					var b = d1.dot( d2 ),
+						denom = a * e - b * b;
+
+					if ( denom !== 0 ) {
+						// Segments aren't parallel
+						s = clamp( ( b * f - c * e ) / denom, 0, 1 );
+					} else {
+						s = 0;
+					}
+
+					// find point on segment2 closest to segment1(s)
+					t = ( b * s + f ) / e;
+
+					// validate t, if it needs clamping then clamp and recompute s
+					if ( t < 0 ) {
+						t = 0;
+						s = clamp( -c / a, 0, 1 );
+					} else if ( t > 1 ) {
+						t = 1;
+						s = clamp( ( b - c ) / a, 0, 1 );
+					}
+				}
+			}
+
+			p1.scaleVector( d1, s );
+			p1.add( aa );
+
+			p2.scaleVector( d2, t );
+			p2.add( ba );
+
+			_tmp_vec3_1.subtractVectors( p1, p2 );
+			return _tmp_vec3_1.dot( _tmp_vec3_1 );
+		};
+	})()
+};
+(function(){
+	Goblin.MinHeap = function( array ) {
+		this.heap = array == null ? [] : array.slice();
+
+		if ( this.heap.length > 0 ) {
+			this.heapify();
+		}
+	};
+	Goblin.MinHeap.prototype = {
+		heapify: function() {
+			var start = ~~( ( this.heap.length - 2 ) / 2 );
+			while ( start >= 0 ) {
+				this.siftUp( start, this.heap.length - 1 );
+				start--;
+			}
+		},
+		siftUp: function( start, end ) {
+			var root = start;
+
+			while ( root * 2 + 1 <= end ) {
+				var child = root * 2 + 1;
+
+				if ( child + 1 <= end && this.heap[child + 1].valueOf() < this.heap[child].valueOf() ) {
+					child++;
+				}
+
+				if ( this.heap[child].valueOf() < this.heap[root].valueOf() ) {
+					var tmp = this.heap[child];
+					this.heap[child] = this.heap[root];
+					this.heap[root] = tmp;
+					root = child;
+				} else {
+					return;
+				}
+			}
+		},
+		push: function( item ) {
+			this.heap.push( item );
+
+			var root = this.heap.length - 1;
+			while ( root !== 0 ) {
+				var parent = ~~( ( root - 1 ) / 2 );
+
+				if ( this.heap[parent].valueOf() > this.heap[root].valueOf() ) {
+					var tmp = this.heap[parent];
+					this.heap[parent] = this.heap[root];
+					this.heap[root] = tmp;
+				}
+
+				root = parent;
+			}
+		},
+		peek: function() {
+			return this.heap.length > 0 ? this.heap[0] : null;
+		},
+		pop: function() {
+			var entry = this.heap[0];
+			this.heap[0] = this.heap[this.heap.length - 1];
+			this.heap.length = this.heap.length - 1;
+			this.siftUp( 0, this.heap.length - 1 );
+
+			return entry;
+		}
+	};
+})();
+Goblin.Utility = {
+	getUid: (function() {
+		var uid = 0;
+		return function() {
+			return uid++;
+		};
+	})()
 };
 /**
  * @class BoxShape
@@ -5266,317 +4992,6 @@ Goblin.CompoundShapeChild.prototype.updateDerived = function () {
     this.aabb.transform( this.shape.aabb, this.transform );
 };
 /**
- * @class ConeShape
- * @param radius {Number} radius of the cylinder
- * @param half_height {Number} half height of the cylinder
- * @constructor
- */
-Goblin.ConeShape = function( radius, half_height ) {
-	/**
-	 * radius of the cylinder
-	 *
-	 * @property radius
-	 * @type {Number}
-	 */
-	this.radius = radius;
-
-	/**
-	 * half height of the cylinder
-	 *
-	 * @property half_height
-	 * @type {Number}
-	 */
-	this.half_height = half_height;
-
-    this.aabb = new Goblin.AABB();
-    this.calculateLocalAABB( this.aabb );
-
-    /**
-     * sin of the cone's angle
-     *
-     * @property _sinagle
-     * @type {Number}
-     * @private
-     */
-	this._sinangle = this.radius / Math.sqrt( this.radius * this.radius + Math.pow( 2 * this.half_height, 2 ) );
-
-    /**
-     * cos of the cone's angle
-     *
-     * @property _cosangle
-     * @type {Number}
-     * @private
-     */
-    this._cosangle = Math.cos( Math.asin( this._sinangle ) );
-};
-
-/**
- * Calculates this shape's local AABB and stores it in the passed AABB object
- *
- * @method calculateLocalAABB
- * @param aabb {AABB}
- */
-Goblin.ConeShape.prototype.calculateLocalAABB = function( aabb ) {
-    aabb.min.x = aabb.min.z = -this.radius;
-    aabb.min.y = -this.half_height;
-
-    aabb.max.x = aabb.max.z = this.radius;
-    aabb.max.y = this.half_height;
-};
-
-Goblin.ConeShape.prototype.getInertiaTensor = function( mass ) {
-	var element = 0.1 * mass * Math.pow( this.half_height * 2, 2 ) + 0.15 * mass * this.radius * this.radius;
-
-	return new Goblin.Matrix3(
-		element, 0, 0,
-		0, 0.3 * mass * this.radius * this.radius, 0,
-		0, 0, element
-	);
-};
-
-/**
- * Given `direction`, find the point in this body which is the most extreme in that direction.
- * This support point is calculated in world coordinates and stored in the second parameter `support_point`
- *
- * @method findSupportPoint
- * @param direction {vec3} direction to use in finding the support point
- * @param support_point {vec3} vec3 variable which will contain the supporting point after calling this method
- */
-Goblin.ConeShape.prototype.findSupportPoint = function( direction, support_point ) {
-	// Calculate the support point in the local frame
-	//var w = direction - ( direction.y )
-	var sigma = Math.sqrt( direction.x * direction.x + direction.z * direction.z );
-
-	if ( direction.y > direction.length() * this._sinangle ) {
-		support_point.x = support_point.z = 0;
-		support_point.y = this.half_height;
-	} else if ( sigma > 0 ) {
-		var r_s = this.radius / sigma;
-		support_point.x = r_s * direction.x;
-		support_point.y = -this.half_height;
-		support_point.z = r_s * direction.z;
-	} else {
-		support_point.x = support_point.z = 0;
-		support_point.y = -this.half_height;
-	}
-};
-
-/**
- * Checks if a ray segment intersects with the shape
- *
- * @method rayIntersect
- * @property start {vec3} start point of the segment
- * @property end {vec3{ end point of the segment
- * @return {RayIntersection|null} if the segment intersects, a RayIntersection is returned, else `null`
- */
-Goblin.ConeShape.prototype.rayIntersect = (function(){
-    var direction = new Goblin.Vector3(),
-        length,
-        p1 = new Goblin.Vector3(),
-        p2 = new Goblin.Vector3(),
-		normal1 = new Goblin.Vector3(),
-		normal2 = new Goblin.Vector3();
-
-    return function( start, end ) {
-        direction.subtractVectors( end, start );
-        length = direction.length();
-        direction.scale( 1 / length  ); // normalize direction
-
-        var t1, t2;
-
-        // Check for intersection with cone base
-		p1.x = p1.y = p1.z = 0;
-        t1 = this._rayIntersectBase( start, end, p1, normal1 );
-
-        // Check for intersection with cone shape
-		p2.x = p2.y = p2.z = 0;
-        t2 = this._rayIntersectCone( start, direction, length, p2, normal2 );
-
-        var intersection;
-
-        if ( !t1 && !t2 ) {
-            return null;
-        } else if ( !t2 || ( t1 &&  t1 < t2 ) ) {
-            intersection = Goblin.ObjectPool.getObject( 'RayIntersection' );
-            intersection.object = this;
-			intersection.t = t1;
-            intersection.point.copy( p1 );
-			intersection.normal.copy( normal1 );
-            return intersection;
-        } else if ( !t1 || ( t2 && t2 < t1 ) ) {
-            intersection = Goblin.ObjectPool.getObject( 'RayIntersection' );
-            intersection.object = this;
-			intersection.t = t2;
-            intersection.point.copy( p2 );
-			intersection.normal.copy( normal2 );
-            return intersection;
-        }
-
-        return null;
-    };
-})();
-
-Goblin.ConeShape.prototype._rayIntersectBase = (function(){
-    var _normal = new Goblin.Vector3( 0, -1, 0 ),
-        ab = new Goblin.Vector3(),
-        _start = new Goblin.Vector3(),
-        _end = new Goblin.Vector3(),
-        t;
-
-    return function( start, end, point, normal ) {
-        _start.x = start.x;
-        _start.y = start.y + this.half_height;
-        _start.z = start.z;
-
-        _end.x = end.x;
-        _end.y = end.y + this.half_height;
-        _end.z = end.z;
-
-        ab.subtractVectors( _end, _start );
-        t = -_normal.dot( _start ) / _normal.dot( ab );
-
-        if ( t < 0 || t > 1 ) {
-            return null;
-        }
-
-        point.scaleVector( ab, t );
-        point.add( start );
-
-        if ( point.x * point.x + point.z * point.z > this.radius * this.radius ) {
-            return null;
-        }
-
-		normal.x = normal.z = 0;
-		normal.y = -1;
-
-        return t * ab.length();
-    };
-})();
-
-/**
- * Checks if a ray segment intersects with the cone definition
- *
- * @method _rayIntersectCone
- * @property start {vec3} start point of the segment
- * @property direction {vec3} normalized direction vector of the segment, from `start`
- * @property length {Number} segment length
- * @property point {vec3} (out) location of intersection
- * @private
- * @return {vec3|null} if the segment intersects, point where the segment intersects the cone, else `null`
- */
-Goblin.ConeShape.prototype._rayIntersectCone = (function(){
-    var _point = new Goblin.Vector3();
-
-    return function( start, direction, length, point, normal ) {
-        var A = new Goblin.Vector3( 0, -1, 0 );
-
-        var AdD = A.dot( direction ),
-            cosSqr = this._cosangle * this._cosangle;
-
-        var E = new Goblin.Vector3();
-        E.x = start.x;
-        E.y = start.y - this.half_height;
-        E.z = start.z;
-
-        var AdE = A.dot( E ),
-            DdE = direction.dot( E ),
-            EdE = E.dot( E ),
-            c2 = AdD * AdD - cosSqr,
-            c1 = AdD * AdE - cosSqr * DdE,
-            c0 = AdE * AdE - cosSqr * EdE,
-            dot, t, tmin = null;
-
-        if ( Math.abs( c2 ) >= Goblin.EPSILON ) {
-            var discr = c1 * c1 - c0 * c2;
-			if ( discr < -Goblin.EPSILON ) {
-                return null;
-            } else if ( discr > Goblin.EPSILON ) {
-                var root = Math.sqrt( discr ),
-                    invC2 = 1 / c2;
-
-                t = ( -c1 - root ) * invC2;
-                if ( t >= 0 && t <= length ) {
-                    _point.scaleVector( direction, t );
-                    _point.add( start );
-                    E.y = _point.y - this.half_height;
-                    dot = E.dot( A );
-                    if ( dot >= 0 ) {
-                        tmin = t;
-                        point.copy( _point );
-                    }
-                }
-
-                t = ( -c1 + root ) * invC2;
-                if ( t >= 0 && t <= length ) {
-                    if ( tmin == null || t < tmin ) {
-                        _point.scaleVector( direction, t );
-                        _point.add( start );
-                        E.y = _point.y - this.half_height;
-                        dot = E.dot( A );
-                        if ( dot >= 0 ) {
-                            tmin = t;
-                            point.copy( _point );
-                        }
-                    }
-                }
-
-                if ( tmin == null ) {
-                    return null;
-                }
-                tmin /= length;
-            } else {
-                t = -c1 / c2;
-                _point.scaleVector( direction, t );
-                _point.add( start );
-                E.y = _point.y - this.half_height;
-                dot = E.dot( A );
-                if ( dot < 0 ) {
-                    return null;
-                }
-
-                // Verify segment reaches _point
-                _tmp_vec3_1.subtractVectors( _point, start );
-                if ( _tmp_vec3_1.lengthSquared() > length * length ) {
-                    return null;
-                }
-
-                tmin = t / length;
-                point.copy( _point );
-            }
-        } else if ( Math.abs( c1 ) >= Goblin.EPSILON ) {
-            t = 0.5 * c0 / c1;
-            _point.scaleVector( direction, t );
-            _point.add( start );
-            E.y = _point.y - this.half_height;
-            dot = E.dot( A );
-            if ( dot < 0 ) {
-                return null;
-            }
-            tmin = t;
-            point.copy( _point );
-        } else {
-            return null;
-        }
-
-        if ( point.y < -this.half_height ) {
-            return null;
-        }
-
-		// Compute normal
-		normal.x = point.x;
-		normal.y = 0;
-		normal.z = point.z;
-		normal.normalize();
-
-		normal.x *= ( this.half_height * 2 ) / this.radius;
-		normal.y = this.radius / ( this.half_height * 2 );
-		normal.z *= ( this.half_height * 2 ) / this.radius;
-		normal.normalize();
-
-        return tmin * length;
-    };
-})();
-/**
  * @class ConvexShape
  * @param vertices {Array<vec3>} array of vertices composing the convex hull
  * @constructor
@@ -5987,204 +5402,6 @@ Goblin.ConvexShape.prototype.rayIntersect = (function(){
 		return null;
 	};
 })();
-/**
- * @class CylinderShape
- * @param radius {Number} radius of the cylinder
- * @param half_height {Number} half height of the cylinder
- * @constructor
- */
-Goblin.CylinderShape = function( radius, half_height ) {
-	/**
-	 * radius of the cylinder
-	 *
-	 * @property radius
-	 * @type {Number}
-	 */
-	this.radius = radius;
-
-	/**
-	 * half height of the cylinder
-	 *
-	 * @property half_height
-	 * @type {Number}
-	 */
-	this.half_height = half_height;
-
-    this.aabb = new Goblin.AABB();
-    this.calculateLocalAABB( this.aabb );
-};
-
-/**
- * Calculates this shape's local AABB and stores it in the passed AABB object
- *
- * @method calculateLocalAABB
- * @param aabb {AABB}
- */
-Goblin.CylinderShape.prototype.calculateLocalAABB = function( aabb ) {
-    aabb.min.x = aabb.min.z = -this.radius;
-    aabb.min.y = -this.half_height;
-
-    aabb.max.x = aabb.max.z = this.radius;
-    aabb.max.y = this.half_height;
-};
-
-Goblin.CylinderShape.prototype.getInertiaTensor = function( mass ) {
-	var element = 0.0833 * mass * ( 3 * this.radius * this.radius + ( this.half_height + this.half_height ) * ( this.half_height + this.half_height ) );
-
-	return new Goblin.Matrix3(
-		element, 0, 0,
-		0, 0.5 * mass * this.radius * this.radius, 0,
-		0, 0, element
-	);
-};
-
-/**
- * Given `direction`, find the point in this body which is the most extreme in that direction.
- * This support point is calculated in world coordinates and stored in the second parameter `support_point`
- *
- * @method findSupportPoint
- * @param direction {vec3} direction to use in finding the support point
- * @param support_point {vec3} vec3 variable which will contain the supporting point after calling this method
- */
-Goblin.CylinderShape.prototype.findSupportPoint = function( direction, support_point ) {
-	// Calculate the support point in the local frame
-	if ( direction.y < 0 ) {
-		support_point.y = -this.half_height;
-	} else {
-		support_point.y = this.half_height;
-	}
-
-	if ( direction.x === 0 && direction.z === 0 ) {
-		support_point.x = support_point.z = 0;
-	} else {
-		var sigma = Math.sqrt( direction.x * direction.x + direction.z * direction.z ),
-			r_s = this.radius / sigma;
-		support_point.x = r_s * direction.x;
-		support_point.z = r_s * direction.z;
-	}
-};
-
-/**
- * Checks if a ray segment intersects with the shape
- *
- * @method rayIntersect
- * @property start {vec3} start point of the segment
- * @property end {vec3{ end point of the segment
- * @return {RayIntersection|null} if the segment intersects, a RayIntersection is returned, else `null`
- */
-Goblin.CylinderShape.prototype.rayIntersect = (function(){
-	var p = new Goblin.Vector3(),
-		q = new Goblin.Vector3();
-
-	return function ( start, end ) {
-		p.y = this.half_height;
-		q.y = -this.half_height;
-
-		var d = new Goblin.Vector3();
-		d.subtractVectors( q, p );
-
-		var m = new Goblin.Vector3();
-		m.subtractVectors( start, p );
-
-		var n = new Goblin.Vector3();
-		n.subtractVectors( end, start );
-
-		var md = m.dot( d ),
-			nd = n.dot( d ),
-			dd = d.dot( d );
-
-		// Test if segment fully outside either endcap of cylinder
-		if ( md < 0 && md + nd < 0 ) {
-			return null; // Segment outside 'p' side of cylinder
-		}
-		if ( md > dd && md + nd > dd ) {
-			return null; // Segment outside 'q' side of cylinder
-		}
-
-		var nn = n.dot( n ),
-			mn = m.dot( n ),
-			a = dd * nn - nd * nd,
-			k = m.dot( m ) - this.radius * this.radius,
-			c = dd * k - md * md,
-			t, t0;
-
-		if ( Math.abs( a ) < Goblin.EPSILON ) {
-			// Segment runs parallel to cylinder axis
-			if ( c > 0 ) {
-				return null; // 'a' and thus the segment lie outside cylinder
-			}
-
-			// Now known that segment intersects cylinder; figure out how it intersects
-			if ( md < 0 ) {
-				t = -mn / nn; // Intersect segment against 'p' endcap
-			} else if ( md > dd ) {
-				t = (nd - mn) / nn; // Intersect segment against 'q' endcap
-			} else {
-				t = 0; // 'a' lies inside cylinder
-			}
-		} else {
-			var b = dd * mn - nd * md,
-				discr = b * b - a * c;
-
-			if ( discr < 0 ) {
-				return null; // No real roots; no intersection
-			}
-
-			t0 = t = ( -b - Math.sqrt( discr ) ) / a;
-
-			if ( md + t * nd < 0 ) {
-				// Intersection outside cylinder on 'p' side
-				if ( nd <= 0 ) {
-					return null; // Segment pointing away from endcap
-				}
-				t = -md / nd;
-				// Keep intersection if Dot(S(t) - p, S(t) - p) <= r^2
-				if ( k + t * ( 2 * mn + t * nn ) <= 0 ) {
-					t0 = t;
-				} else {
-					return null;
-				}
-			} else if ( md + t * nd > dd ) {
-				// Intersection outside cylinder on 'q' side
-				if ( nd >= 0 ) {
-					return null; // Segment pointing away from endcap
-				}
-				t = ( dd - md ) / nd;
-				// Keep intersection if Dot(S(t) - q, S(t) - q) <= r^2
-				if ( k + dd - 2 * md + t * ( 2 * ( mn - nd ) + t * nn ) <= 0 ) {
-					t0 = t;
-				} else {
-					return null;
-				}
-			}
-			t = t0;
-
-			// Intersection if segment intersects cylinder between the end-caps
-			if ( t < 0 || t > 1 ) {
-				return null;
-			}
-		}
-
-		// Segment intersects cylinder between the endcaps; t is correct
-		var intersection = Goblin.ObjectPool.getObject( 'RayIntersection' );
-		intersection.object = this;
-		intersection.t = t * n.length();
-		intersection.point.scaleVector( n, t );
-		intersection.point.add( start );
-
-		if ( Math.abs( intersection.point.y - this.half_height ) <= Goblin.EPSILON ) {
-			intersection.normal.x = intersection.normal.z = 0;
-			intersection.normal.y = intersection.point.y < 0 ? -1 : 1;
-		} else {
-			intersection.normal.y = 0;
-			intersection.normal.x = intersection.point.x;
-			intersection.normal.z = intersection.point.z;
-			intersection.normal.scale( 1 / this.radius );
-		}
-
-		return intersection;
-	};
-})( );
 /**
  * @class MeshShape
  * @param vertices {Array<Vector3>} vertices comprising the mesh
@@ -6823,356 +6040,6 @@ Goblin.TriangleShape.prototype.rayIntersect = (function(){
 		return intersection;
 	};
 })();
-Goblin.CollisionUtils = {};
-
-Goblin.CollisionUtils.canBodiesCollide = function( object_a, object_b ) {
-	if ( object_a._mass === Infinity && object_b._mass === Infinity ) {
-		// Two static objects aren't considered to be in contact
-		return false;
-	}
-
-	// Check collision masks
-	if ( object_a.collision_mask !== 0 ) {
-		if ( ( object_a.collision_mask & 1 ) === 0 ) {
-			// object_b must not be in a matching group
-			if ( ( object_a.collision_mask & object_b.collision_groups ) !== 0 ) {
-				return false;
-			}
-		} else {
-			// object_b must be in a matching group
-			if ( ( object_a.collision_mask & object_b.collision_groups ) === 0 ) {
-				return false;
-			}
-		}
-	}
-	if ( object_b.collision_mask !== 0 ) {
-		if ( ( object_b.collision_mask & 1 ) === 0 ) {
-			// object_a must not be in a matching group
-			if ( ( object_b.collision_mask & object_a.collision_groups ) !== 0 ) {
-				return false;
-			}
-		} else {
-			// object_a must be in a matching group
-			if ( ( object_b.collision_mask & object_a.collision_groups ) === 0 ) {
-				return false;
-			}
-		}
-	}
-
-	return true;
-};
-/**
- * Provides methods useful for working with various types of geometries
- *
- * @class GeometryMethods
- * @static
- */
-Goblin.GeometryMethods = {
-	/**
-	 * determines the location in a triangle closest to a given point
-	 *
-	 * @method findClosestPointInTriangle
-	 * @param {vec3} p point
-	 * @param {vec3} a first triangle vertex
-	 * @param {vec3} b second triangle vertex
-	 * @param {vec3} c third triangle vertex
-	 * @param {vec3} out vector where the result will be stored
-	 */
-	findClosestPointInTriangle: (function() {
-		var ab = new Goblin.Vector3(),
-			ac = new Goblin.Vector3(),
-			_vec = new Goblin.Vector3();
-
-		return function( p, a, b, c, out ) {
-			var v;
-
-			// Check if P in vertex region outside A
-			ab.subtractVectors( b, a );
-			ac.subtractVectors( c, a );
-			_vec.subtractVectors( p, a );
-			var d1 = ab.dot( _vec ),
-				d2 = ac.dot( _vec );
-			if ( d1 <= 0 && d2 <= 0 ) {
-				out.copy( a );
-				return;
-			}
-
-			// Check if P in vertex region outside B
-			_vec.subtractVectors( p, b );
-			var d3 = ab.dot( _vec ),
-				d4 = ac.dot( _vec );
-			if ( d3 >= 0 && d4 <= d3 ) {
-				out.copy( b );
-				return;
-			}
-
-			// Check if P in edge region of AB
-			var vc = d1*d4 - d3*d2;
-			if ( vc <= 0 && d1 >= 0 && d3 <= 0 ) {
-				v = d1 / ( d1 - d3 );
-				out.scaleVector( ab, v );
-				out.add( a );
-				return;
-			}
-
-			// Check if P in vertex region outside C
-			_vec.subtractVectors( p, c );
-			var d5 = ab.dot( _vec ),
-				d6 = ac.dot( _vec );
-			if ( d6 >= 0 && d5 <= d6 ) {
-				out.copy( c );
-				return;
-			}
-
-			// Check if P in edge region of AC
-			var vb = d5*d2 - d1*d6,
-				w;
-			if ( vb <= 0 && d2 >= 0 && d6 <= 0 ) {
-				w = d2 / ( d2 - d6 );
-				out.scaleVector( ac, w );
-				out.add( a );
-				return;
-			}
-
-			// Check if P in edge region of BC
-			var va = d3*d6 - d5*d4;
-			if ( va <= 0 && d4-d3 >= 0 && d5-d6 >= 0 ) {
-				w = (d4 - d3) / ( (d4-d3) + (d5-d6) );
-				out.subtractVectors( c, b );
-				out.scale( w );
-				out.add( b );
-				return;
-			}
-
-			// P inside face region
-			var denom = 1 / ( va + vb + vc );
-			v = vb * denom;
-			w = vc * denom;
-
-
-			// At this point `ab` and `ac` can be recycled and lose meaning to their nomenclature
-
-			ab.scale( v );
-			ab.add( a );
-
-			ac.scale( w );
-
-			out.addVectors( ab, ac );
-		};
-	})(),
-
-	/**
-	 * Finds the Barycentric coordinates of point `p` in the triangle `a`, `b`, `c`
-	 *
-	 * @method findBarycentricCoordinates
-	 * @param p {vec3} point to calculate coordinates of
-	 * @param a {vec3} first point in the triangle
-	 * @param b {vec3} second point in the triangle
-	 * @param c {vec3} third point in the triangle
-	 * @param out {vec3} resulting Barycentric coordinates of point `p`
-	 */
-	findBarycentricCoordinates: function( p, a, b, c, out ) {
-
-		var v0 = new Goblin.Vector3(),
-			v1 = new Goblin.Vector3(),
-			v2 = new Goblin.Vector3();
-
-		v0.subtractVectors( b, a );
-		v1.subtractVectors( c, a );
-		v2.subtractVectors( p, a );
-
-		var d00 = v0.dot( v0 ),
-			d01 = v0.dot( v1 ),
-			d11 = v1.dot( v1 ),
-			d20 = v2.dot( v0 ),
-			d21 = v2.dot( v1 ),
-			denom = d00 * d11 - d01 * d01;
-
-		out.y = ( d11 * d20 - d01 * d21 ) / denom;
-		out.z = ( d00 * d21 - d01 * d20 ) / denom;
-		out.x = 1 - out.y - out.z;
-	},
-
-	/**
-	 * Calculates the distance from point `p` to line `ab`
-	 * @param p {vec3} point to calculate distance to
-	 * @param a {vec3} first point in line
-	 * @param b [vec3] second point in line
-	 * @returns {number}
-	 */
-	findSquaredDistanceFromSegment: (function(){
-		var ab = new Goblin.Vector3(),
-			ap = new Goblin.Vector3(),
-			bp = new Goblin.Vector3();
-
-		return function( p, a, b ) {
-			ab.subtractVectors( a, b );
-			ap.subtractVectors( a, p );
-			bp.subtractVectors( b, p );
-
-			var e = ap.dot( ab );
-			if ( e <= 0 ) {
-				return ap.dot( ap );
-			}
-
-			var f = ab.dot( ab );
-			if ( e >= f ) {
-				return bp.dot( bp );
-			}
-
-			return ap.dot( ap ) - e * e / f;
-		};
-	})(),
-
-	findClosestPointsOnSegments: (function(){
-		var d1 = new Goblin.Vector3(),
-			d2 = new Goblin.Vector3(),
-			r = new Goblin.Vector3(),
-			clamp = function( x, min, max ) {
-				return Math.min( Math.max( x, min ), max );
-			};
-
-		return function( aa, ab, ba, bb, p1, p2 ) {
-			d1.subtractVectors( ab, aa );
-			d2.subtractVectors( bb, ba );
-			r.subtractVectors( aa, ba );
-
-			var a = d1.dot( d1 ),
-				e = d2.dot( d2 ),
-				f = d2.dot( r );
-
-			var s, t;
-
-			if ( a <= Goblin.EPSILON && e <= Goblin.EPSILON ) {
-				// Both segments are degenerate
-				s = t = 0;
-				p1.copy( aa );
-				p2.copy( ba );
-				_tmp_vec3_1.subtractVectors( p1, p2 );
-				return _tmp_vec3_1.dot( _tmp_vec3_1 );
-			}
-
-			if ( a <= Goblin.EPSILON ) {
-				// Only first segment is degenerate
-				s = 0;
-				t = f / e;
-				t = clamp( t, 0, 1 );
-			} else {
-				var c = d1.dot( r );
-				if ( e <= Goblin.EPSILON ) {
-					// Second segment is degenerate
-					t = 0;
-					s = clamp( -c / a, 0, 1 );
-				} else {
-					// Neither segment is degenerate
-					var b = d1.dot( d2 ),
-						denom = a * e - b * b;
-
-					if ( denom !== 0 ) {
-						// Segments aren't parallel
-						s = clamp( ( b * f - c * e ) / denom, 0, 1 );
-					} else {
-						s = 0;
-					}
-
-					// find point on segment2 closest to segment1(s)
-					t = ( b * s + f ) / e;
-
-					// validate t, if it needs clamping then clamp and recompute s
-					if ( t < 0 ) {
-						t = 0;
-						s = clamp( -c / a, 0, 1 );
-					} else if ( t > 1 ) {
-						t = 1;
-						s = clamp( ( b - c ) / a, 0, 1 );
-					}
-				}
-			}
-
-			p1.scaleVector( d1, s );
-			p1.add( aa );
-
-			p2.scaleVector( d2, t );
-			p2.add( ba );
-
-			_tmp_vec3_1.subtractVectors( p1, p2 );
-			return _tmp_vec3_1.dot( _tmp_vec3_1 );
-		};
-	})()
-};
-(function(){
-	Goblin.MinHeap = function( array ) {
-		this.heap = array == null ? [] : array.slice();
-
-		if ( this.heap.length > 0 ) {
-			this.heapify();
-		}
-	};
-	Goblin.MinHeap.prototype = {
-		heapify: function() {
-			var start = ~~( ( this.heap.length - 2 ) / 2 );
-			while ( start >= 0 ) {
-				this.siftUp( start, this.heap.length - 1 );
-				start--;
-			}
-		},
-		siftUp: function( start, end ) {
-			var root = start;
-
-			while ( root * 2 + 1 <= end ) {
-				var child = root * 2 + 1;
-
-				if ( child + 1 <= end && this.heap[child + 1].valueOf() < this.heap[child].valueOf() ) {
-					child++;
-				}
-
-				if ( this.heap[child].valueOf() < this.heap[root].valueOf() ) {
-					var tmp = this.heap[child];
-					this.heap[child] = this.heap[root];
-					this.heap[root] = tmp;
-					root = child;
-				} else {
-					return;
-				}
-			}
-		},
-		push: function( item ) {
-			this.heap.push( item );
-
-			var root = this.heap.length - 1;
-			while ( root !== 0 ) {
-				var parent = ~~( ( root - 1 ) / 2 );
-
-				if ( this.heap[parent].valueOf() > this.heap[root].valueOf() ) {
-					var tmp = this.heap[parent];
-					this.heap[parent] = this.heap[root];
-					this.heap[root] = tmp;
-				}
-
-				root = parent;
-			}
-		},
-		peek: function() {
-			return this.heap.length > 0 ? this.heap[0] : null;
-		},
-		pop: function() {
-			var entry = this.heap[0];
-			this.heap[0] = this.heap[this.heap.length - 1];
-			this.heap.length = this.heap.length - 1;
-			this.siftUp( 0, this.heap.length - 1 );
-
-			return entry;
-		}
-	};
-})();
-Goblin.Utility = {
-	getUid: (function() {
-		var uid = 0;
-		return function() {
-			return uid++;
-		};
-	})()
-};
 /**
  * Extends a given shape by sweeping a line around it
  *
