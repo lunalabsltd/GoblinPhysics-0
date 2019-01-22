@@ -388,11 +388,11 @@ Goblin.RigidBody.prototype.integrate = function( timestep ) {
 
 	// Update rotation
 	_tmp_vec3_1.copy( this.angular_velocity );
-	var fAngle = Math.sqrt( _tmp_vec3_1.length() );
+	var fAngle = _tmp_vec3_1.length();
 
 	// limit the angular motion per time step
-	if (fAngle * timestep > Goblin.RigidBody.ANGULAR_MOTION_THRESHOLD) {
-		fAngle = Goblin.RigidBody.ANGULAR_MOTION_THRESHOLD / timestep;
+	if (fAngle * timestep > (Math.PI / 4)) {
+		fAngle = (Math.PI / 4) / timestep;
 	}
 
 	// choose integration based on angular value
