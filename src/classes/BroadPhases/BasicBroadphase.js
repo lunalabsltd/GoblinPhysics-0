@@ -23,6 +23,17 @@ Goblin.BasicBroadphase = function() {
 };
 
 /**
+ * Gets the bodies that might be affected by physics (and thus need to be
+ * integrated).
+ *
+ * @method addBody
+ * @param body {RigidBody} body to add to the broadphase contact checking
+ */
+Goblin.BasicBroadphase.prototype.getDynamicBodies = function() {
+	return this.bodies;
+};
+
+/**
  * Adds a body to the broadphase for contact checking
  *
  * @method addBody
@@ -39,12 +50,25 @@ Goblin.BasicBroadphase.prototype.addBody = function( body ) {
  * @param body {RigidBody} body to remove from the broadphase contact checking
  */
 Goblin.BasicBroadphase.prototype.removeBody = function( body ) {
-	var i,
-		body_count = this.bodies.length;
+	this._removeBodyFrom( body, this.bodies );
+};
+
+/**
+ * Removes a body from the the given array.
+ *
+ * @method removeBody
+ * @param body {RigidBody} body to remove
+ */
+Goblin.BasicBroadphase.prototype._removeBodyFrom = function ( body, bodies ) {
+	var i, body_count = bodies.length;
 
 	for ( i = 0; i < body_count; i++ ) {
-		if ( this.bodies[i] === body ) {
-			this.bodies.splice( i, 1 );
+		if ( bodies[ i ] === body ) {
+			// we don't care about the order, so just copy first element into
+			// body's slot and call shift (which is fastest way to remove the element
+			// from an array as per http://jsperf.com/splicing-a-single-value/19)
+			bodies[ i ] = bodies[ 0 ];
+			bodies.shift();
 			break;
 		}
 	}

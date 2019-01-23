@@ -92,20 +92,22 @@ Goblin.EventEmitter.apply( Goblin.World );
 Goblin.World.prototype.step = function( time_delta, max_step ) {
     max_step = max_step || time_delta;
 
-	var x, delta, time_loops,
-        i, loop_count, body;
+	var x, delta, time_loops, i, loop_count, body;
 
     time_loops = time_delta / max_step;
     for ( x = 0; x < time_loops; x++ ) {
 		this.ticks++;
+		
         delta = Math.min( max_step, time_delta );
         time_delta -= max_step;
 
 		this.emit( 'stepStart', this.ticks, delta );
 
+		var bodies = this.broadphase.getDynamicBodies();
+
 		// Apply gravity
-        for ( i = 0, loop_count = this.rigid_bodies.length; i < loop_count; i++ ) {
-            body = this.rigid_bodies[i];
+        for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {
+            body = bodies[ i ];
 
             // Objects of infinite mass don't move
             if ( body._mass !== Infinity ) {
@@ -116,17 +118,17 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 
         // Apply force generators
         for ( i = 0, loop_count = this.force_generators.length; i < loop_count; i++ ) {
-            this.force_generators[i].applyForce();
+            this.force_generators[ i ].applyForce();
         }
 
 		// Integrate rigid bodies
-		for ( i = 0, loop_count = this.rigid_bodies.length; i < loop_count; i++ ) {
-			body = this.rigid_bodies[i];
+		for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {
+			body = bodies[ i ];
 			body.integrate( delta );
 		}
 
-		for ( i = 0, loop_count = this.rigid_bodies.length; i < loop_count; i++ ) {
-			this.rigid_bodies[i].updateDerived();
+		for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {
+			bodies[ i ].updateDerived();
 		}
 
         // Check for contacts, broadphase
