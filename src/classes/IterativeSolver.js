@@ -431,7 +431,7 @@ Goblin.IterativeSolver.prototype.solveConstraints = function() {
 				row.multiplier = Math.max(
 					row.lower_limit,
 					Math.min(
-						multiplier_target,
+						multiplier_target * row.gamma,
 						row.upper_limit
 					)
 				);

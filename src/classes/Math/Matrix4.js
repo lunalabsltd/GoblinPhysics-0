@@ -65,6 +65,20 @@ Goblin.Matrix4.prototype = {
 		this.e33 = m.e33;
 	},
 
+	getTranslation: function (result) {
+		result = result || new Goblin.Vector3();
+		result.set( this.e03, this.e13, this.e23 );
+
+        return result;
+    },
+
+    getRotation: function (rotation) {
+        rotation = rotation || new Goblin.Quaternion();
+        rotation.setFromMat4( this );
+
+        return rotation;
+    },
+
 	makeTransform: function( rotation, translation ) {
 		// Setup rotation
 		var x2 = rotation.x + rotation.x,
@@ -270,3 +284,35 @@ Goblin.Matrix4.prototype = {
 		this.e33 = b0*a03 + b1*a13 + b2*a23 + b3*a33;
 	}
 };
+
+Object.defineProperty( Goblin.Matrix4.prototype, 'data', {
+	
+	/**
+	 * FIXME EN-77 to remove the below
+	 * Gets the matrix data as float array.
+	 */
+	get: function () {
+		return [
+			this.e00,
+			this.e10,
+			this.e20,
+			this.e30,
+
+			this.e01,
+			this.e11,
+			this.e21,
+			this.e31,
+
+			this.e02,
+			this.e12,
+			this.e22,
+			this.e32,
+
+			this.e03,
+			this.e13,
+			this.e23,
+			this.e33
+		];
+	}
+
+} );

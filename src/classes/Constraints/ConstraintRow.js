@@ -9,6 +9,7 @@ Goblin.ConstraintRow = function() {
 	this.bias = 0;
 	this.multiplier = 0;
 	this.multiplier_cached = 0;
+	this.gamma = 1;
 	this.eta = 0;
 	this.eta_row = new Float64Array( 12 );
 };
@@ -25,6 +26,35 @@ Goblin.ConstraintRow.createConstraintRow = function() {
 	row.jacobian[9] = row.jacobian[10] = row.jacobian[11] = 0;
 
 	return row;
+};
+
+/**
+ * Resets row's jacobian to 0 effectively disabling the constrain for corresponding
+ * bodies.
+ *
+ * @param {boolean} nullify_a Whether to nullify first object's jacobian
+ * @param {boolean} nullify_b Whether to nullify second object's jacobian
+ */
+Goblin.ConstraintRow.prototype.nullify = function( nullify_a, nullify_b ) {
+	var i = 0;
+
+	for ( i = 0; nullify_a && ( i < 6 ); i++ ) {
+		this.jacobian[ i ] = 0;
+	}
+
+	for ( i = 6; nullify_b && ( i < 12 ); i++ ) {
+		this.jacobian[ i ] = 0;
+	}
+};
+
+/**
+ * Resets row to "blank state" (zero jacobian, no limits and zero bias).
+ */
+Goblin.ConstraintRow.prototype.reset = function() {
+	this.nullify( true, true );
+	this.lower_limit = -Infinity;
+	this.upper_limit = Infinity;
+	this.bias = 0;
 };
 
 Goblin.ConstraintRow.prototype.computeB = function( constraint ) {
@@ -59,9 +89,9 @@ Goblin.ConstraintRow.prototype.computeB = function( constraint ) {
 		_tmp_vec3_1.y = this.jacobian[10];
 		_tmp_vec3_1.z = this.jacobian[11];
 		constraint.object_b.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
-		this.B[9] = _tmp_vec3_1.x * constraint.object_b.linear_factor.x;
-		this.B[10] = _tmp_vec3_1.y * constraint.object_b.linear_factor.y;
-		this.B[11] = _tmp_vec3_1.z * constraint.object_b.linear_factor.z;
+		this.B[9] = _tmp_vec3_1.x * constraint.object_b.angular_factor.x;
+		this.B[10] = _tmp_vec3_1.y * constraint.object_b.angular_factor.y;
+		this.B[11] = _tmp_vec3_1.z * constraint.object_b.angular_factor.z;
 	} else {
 		this.B[6] = this.B[7] = this.B[8] = 0;
 		this.B[9] = this.B[10] = this.B[11] = 0;

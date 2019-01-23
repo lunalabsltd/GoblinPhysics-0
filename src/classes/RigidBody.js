@@ -186,6 +186,14 @@ Goblin.RigidBody = (function() {
 		this.angular_factor = new Goblin.Vector3( 1, 1, 1 );
 
 		/**
+		 * Position of center of mass for this body
+		 *
+		 * @property center_of_mass
+		 * @type {Goblin.Vector3}
+		 */
+		this.center_of_mass = new Goblin.Vector3( 0, 0, 0 );
+
+		/**
 		 * the world to which the rigid body has been added,
 		 * this is set when the rigid body is added to a world
 		 *
@@ -217,6 +225,11 @@ Goblin.RigidBody = (function() {
 		 */
 		this.accumulated_torque = new Goblin.Vector3();
 
+		/**
+		 * World transform of the body (which might differ from center-of-mass transform)
+		 */
+		this._world_transform = new Goblin.Matrix4();
+
 		// Used by the constraint solver to determine what impulse needs to be added to the body
 		this.push_velocity = new Goblin.Vector3();
 		this.turn_velocity = new Goblin.Vector3();
@@ -240,10 +253,33 @@ Object.defineProperty(
 		set: function( n ) {
 			this._mass = n;
 			this._mass_inverted = 1 / n;
-			this.inertiaTensor = this.shape.getInertiaTensor( n );
+			this.updateShapeDerivedValues();
 		}
 	}
 );
+
+Goblin.RigidBody.prototype.setTransform = function ( transform ) {
+	this.transform.copy( transform );
+
+	_tmp_mat4_1.makeTransform( Goblin.Quaternion.IDENTITY, this.center_of_mass );
+	this.transform.multiply( _tmp_mat4_1 );
+
+	this.transform.getTranslation( this.position );
+	this.transform.getRotation( this.rotation );
+};
+
+Goblin.RigidBody.prototype.getTransform = function () {
+	this.updateDerived();
+
+	this._world_transform.copy( this.transform );
+
+	_tmp_mat4_1.makeTransform( Goblin.Quaternion.IDENTITY, this.center_of_mass );
+	_tmp_mat4_1.invert();
+
+	this._world_transform.multiply( _tmp_mat4_1 );
+
+	return this._world_transform;
+};
 
 /**
  * Updates bodies' derived values to reflect changes in shape (i.e. new children in compound shape).
@@ -251,7 +287,18 @@ Object.defineProperty(
  * @method updateShapeDerivedValues
  */
 Goblin.RigidBody.prototype.updateShapeDerivedValues = function () {
+	if ( !this.shape.center_of_mass ) {
+		this.inertiaTensor = this.shape.getInertiaTensor( this._mass );
+		return;
+	}
+
+	this.shape.updateCenterOfMass();
+
 	this.inertiaTensor = this.shape.getInertiaTensor( this._mass );
+
+	this.position.subtract( this.center_of_mass );
+	this.center_of_mass.copy( this.shape.center_of_mass );
+	this.position.add( this.center_of_mass );
 };
 
 /**
@@ -338,20 +385,35 @@ Goblin.RigidBody.prototype.integrate = function( timestep ) {
 	this.position.add( _tmp_vec3_1 );
 
 	// Update rotation
-	_tmp_quat4_1.x = this.angular_velocity.x * timestep;
-	_tmp_quat4_1.y = this.angular_velocity.y * timestep;
-	_tmp_quat4_1.z = this.angular_velocity.z * timestep;
-	_tmp_quat4_1.w = 0;
+	_tmp_vec3_1.copy( this.angular_velocity );
+	var fAngle = _tmp_vec3_1.length();
 
+	// limit the angular motion per time step
+	if (fAngle * timestep > (Math.PI / 4)) {
+		fAngle = (Math.PI / 4) / timestep;
+	}
+
+	// choose integration based on angular value
+	if (fAngle < 0.001) {
+		// use Taylor's expansions of sync function
+		_tmp_vec3_1.scale(0.5 * timestep - (timestep * timestep * timestep) * 0.020833333333 * fAngle * fAngle);
+	} else {
+		// sync(fAngle) = sin(c*fAngle)/t
+		_tmp_vec3_1.scale( Math.sin(0.5 * fAngle * timestep) / fAngle );
+	}
+
+	// compose rotational quaternion
+	_tmp_quat4_1.x = _tmp_vec3_1.x;
+	_tmp_quat4_1.y = _tmp_vec3_1.y;
+	_tmp_quat4_1.z = _tmp_vec3_1.z;
+	_tmp_quat4_1.w = Math.cos( fAngle * timestep * 0.5 );
+	
+	// rotate the body
 	_tmp_quat4_1.multiply( this.rotation );
+	_tmp_quat4_1.normalize();
 
-	var half_dt = 0.5;
-	this.rotation.x += half_dt * _tmp_quat4_1.x;
-	this.rotation.y += half_dt * _tmp_quat4_1.y;
-	this.rotation.z += half_dt * _tmp_quat4_1.z;
-	this.rotation.w += half_dt * _tmp_quat4_1.w;
-	this.rotation.normalize();
-
+	this.rotation.copy( _tmp_quat4_1 );
+	
 	// Clear accumulated forces
 	this.accumulated_force.x = this.accumulated_force.y = this.accumulated_force.z = 0;
 	this.accumulated_torque.x = this.accumulated_torque.y = this.accumulated_torque.z = 0;
@@ -423,8 +485,8 @@ Goblin.RigidBody.prototype.applyForceAtWorldPoint = function( force, point ) {
  * @param point {vec3} local frame coordinates where force originates
  */
 Goblin.RigidBody.prototype.applyForceAtLocalPoint = function( force, point ) {
-	this.transform.transformVector3Into( point, _tmp_vec3_1 );
-	this.applyForceAtWorldPoint( force, _tmp_vec3_1 );
+	this.transform.transformVector3Into( point, _tmp_vec3_2 );
+	this.applyForceAtWorldPoint( force, _tmp_vec3_2 );
 };
 
 Goblin.RigidBody.prototype.getVelocityInLocalPoint = function( point, out ) {
