@@ -36,14 +36,14 @@ Goblin.ConstraintRow.createConstraintRow = function() {
  * @param {boolean} nullify_b Whether to nullify second object's jacobian
  */
 Goblin.ConstraintRow.prototype.nullify = function( nullify_a, nullify_b ) {
-	for ( var i = 0; i < 12; i++ ) {
-		if ( i < 6 && nullify_a ) {
-			this.jacobian[ i ] = 0;
-		}
+	var i = 0;
 
-		if ( i >= 6 && nullify_b ) {
-			this.jacobian[ i ] = 0;
-		}
+	for ( i = 0; nullify_a && ( i < 6 ); i++ ) {
+		this.jacobian[ i ] = 0;
+	}
+
+	for ( i = 6; nullify_b && ( i < 12 ); i++ ) {
+		this.jacobian[ i ] = 0;
 	}
 };
 
