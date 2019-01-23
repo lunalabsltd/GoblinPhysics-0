@@ -6,6 +6,12 @@ Goblin.CollisionUtils.canBodiesCollide = function( object_a, object_b ) {
 		return false;
 	}
 
+	var matrix = object_a.world.collision_matrix;
+
+	if ( matrix[ object_a.layer ] && matrix[ object_a.layer ][ object_b.layer ] === false ) {
+		return false;
+	}
+
 	// Check collision masks
 	if ( object_a.collision_mask !== 0 ) {
 		if ( ( object_a.collision_mask & 1 ) === 0 ) {

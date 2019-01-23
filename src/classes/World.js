@@ -78,6 +78,17 @@ Goblin.World = function( broadphase, narrowphase, solver ) {
 	 */
 	this.force_generators = [];
 
+	/**
+	 * An object containing the flags allowing / disallowing the objects to collide.
+	 * If the entry is absent from the object, it's considered to be allowed.
+	 *
+	 * @property collision_matrix
+	 * @type {object}
+	 * @default {}
+	 * @private
+	 */
+	this.collision_matrix = {};
+
 	this.listeners = {};
 };
 Goblin.EventEmitter.apply( Goblin.World );

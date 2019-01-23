@@ -9,7 +9,7 @@
 Goblin.RigidBody = (function() {
 	var body_count = 0;
 
-	return function( shape, mass ) {
+	return function( shape, mass, static ) {
 		/**
 		 * goblin ID of the body
 		 *
@@ -42,6 +42,15 @@ Goblin.RigidBody = (function() {
 		 */
 		this._mass = mass || Infinity;
 		this._mass_inverted = 1 / mass;
+
+		/**
+		 * the flag indicating the body is static
+		 *
+		 * @property static
+		 * @type {Boolean}
+		 * @default false
+		 */
+		this.static = !!static;
 
 		/**
 		 * the rigid body's current position
@@ -202,6 +211,15 @@ Goblin.RigidBody = (function() {
 		 * @default null
 		 */
 		this.world = null;
+
+		/**
+		 * the layer the object belongs to.
+		 *
+		 * @property layer
+		 * @type {any}
+		 * @default null
+		 */
+		this.layer = null;
 
 		/**
 		 * all resultant force accumulated by the rigid body
