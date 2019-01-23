@@ -355,8 +355,6 @@ Goblin.RigidBody.prototype.rayIntersect = (function(){
 	};
 })();
 
-Goblin.RigidBody.ANGULAR_MOTION_THRESHOLD = (0.25 * 3.14159254);
-
 /**
  * Updates the rigid body's position, velocity, and acceleration
  *
