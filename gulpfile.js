@@ -24,6 +24,7 @@ gulp.task('build', ['lint'], function(){
 
 		// exclude bits we don't need
 		'!src/classes/ForceGenerator/**/*.js',
+		'!src/classes/BroadPhases/SAPBroadphase.js',
 		'!src/classes/Shapes/ConeShape.js',
 		'!src/classes/Shapes/CylinderShape.js',
 		'!src/classes/Constraints/HingeConstraint.js',
