@@ -28,6 +28,26 @@ Goblin.CompoundShape.prototype.addChildShape = function( shape, position, rotati
 	this.calculateLocalAABB( this.aabb );
 };
 
+/**
+ * Removes child shape from shapes collection and updates all values.
+ *
+ * @method removeChildShape
+ * @param shape
+ */
+Goblin.CompoundShape.prototype.removeChildShape = function( shape ) {
+	for ( var i = 0; i < this.child_shapes.length; i++ ) {
+		if ( this.child_shapes[ i ].shape === shape ) {
+			this.child_shapes[ i ] = this.child_shapes[ 0 ];
+			this.child_shapes.shift();
+			
+			break;
+		}
+	}
+
+	this.updateCenterOfMass();
+	this.calculateLocalAABB( this.aabb );
+};
+
 Goblin.CompoundShape.prototype.updateCenterOfMass = function () {
 	var i;
 
@@ -40,7 +60,10 @@ Goblin.CompoundShape.prototype.updateCenterOfMass = function () {
 			this.center_of_mass.add( this.child_shapes[ i ].local_position );
 		}
 
-		this.center_of_mass.scale( 1.0 / this.child_shapes.length );
+		// watch out for NaN because of 0/0
+		if ( this.child_shapes.length > 0 ) {
+			this.center_of_mass.scale( 1.0 / this.child_shapes.length );
+		}
 	}
 
 	for( i = 0; i < this.child_shapes.length; i++ ) {
@@ -56,6 +79,11 @@ Goblin.CompoundShape.prototype.updateCenterOfMass = function () {
  * @param aabb {AABB}
  */
 Goblin.CompoundShape.prototype.calculateLocalAABB = function( aabb ) {
+	if ( this.child_shapes.length === 0 ) {
+		aabb.min.x = aabb.min.y = aabb.min.z = aabb.max.x = aabb.max.y = aabb.max.z = 0;
+		return;
+	}
+
 	aabb.min.x = aabb.min.y = aabb.min.z = Infinity;
 	aabb.max.x = aabb.max.y = aabb.max.z = -Infinity;
 
@@ -96,6 +124,9 @@ Goblin.CompoundShape.prototype.getInertiaTensor = function( _mass ) {
 		child_tensor;
 
 	if ( this.child_shapes.length === 0 ) {
+		// let's fall back to spherical shape in this case to avoid
+		// nullifying inverse tensors
+		tensor.e00 = tensor.e11 = tensor.e22 = _mass;
 		return tensor;
 	}
 
@@ -153,42 +184,37 @@ Goblin.CompoundShape.prototype.getInertiaTensor = function( _mass ) {
  * Checks if a ray segment intersects with the shape
  *
  * @method rayIntersect
- * @property ray_start {vec3} start point of the segment
- * @property ray_end {vec3} end point of the segment
+ * @param 	ray_start 	{vec3} 		Start point of the segment
+ * @param 	ray_end 	{vec3} 		End point of the segment
+ * @param 	limit      	{Number}    Limit the amount of intersections (i.e. 1)
  * @return {RayIntersection|null} if the segment intersects, a RayIntersection is returned, else `null`
  */
-Goblin.CompoundShape.prototype.rayIntersect = (function(){
-	var tSort = function( a, b ) {
-		if ( a.t < b.t ) {
-			return -1;
-		} else if ( a.t > b.t ) {
-			return 1;
-		} else {
-			return 0;
-		}
-	};
-	return function( ray_start, ray_end ) {
-		var intersections = [],
-			local_start = new Goblin.Vector3(),
-			local_end = new Goblin.Vector3(),
-			intersection,
-			i, child;
+Goblin.CompoundShape.prototype.rayIntersect = function( ray_start, ray_end, limit ) {
+	var intersections = [],
+		local_start = new Goblin.Vector3(),
+		local_end = new Goblin.Vector3(),
+		intersection,
+		i, child;
 
-		for ( i = 0; i < this.child_shapes.length; i++ ) {
-			child = this.child_shapes[i];
+	for ( i = 0; i < this.child_shapes.length; i++ ) {
+		child = this.child_shapes[i];
 
-			child.transform_inverse.transformVector3Into( ray_start, local_start );
-			child.transform_inverse.transformVector3Into( ray_end, local_end );
+		child.transform_inverse.transformVector3Into( ray_start, local_start );
+		child.transform_inverse.transformVector3Into( ray_end, local_end );
 
-			intersection = child.shape.rayIntersect( local_start, local_end );
-			if ( intersection != null ) {
-				intersection.object = this; // change from the shape to the body
-				child.transform.transformVector3( intersection.point ); // transform child's local coordinates to the compound's coordinates
-				intersections.push( intersection );
-			}
+		intersection = child.shape.rayIntersect( local_start, local_end );
+
+		if ( intersection != null ) {
+			intersection.shape = child.shape;
+
+			child.transform.transformVector3( intersection.point );
+			intersections.push( intersection );
 		}
 
-		intersections.sort( tSort );
-		return intersections[0] || null;
-	};
-})();
+		if ( intersections.length >= limit ) {
+			break;
+		}
+	}
+
+	return intersections;
+};

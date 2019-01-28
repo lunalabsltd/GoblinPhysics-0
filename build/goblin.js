@@ -1094,18 +1094,6 @@ Goblin.RigidBody = (function() {
 		this.friction = 0.6;
 
 		/**
-		 * bitmask indicating what collision groups this object belongs to
-		 * @type {number}
-		 */
-		this.collision_groups = 0;
-
-		/**
-		 * collision groups mask for the object, specifying what groups to not collide with (BIT 1=0) or which groups to only collide with (Bit 1=1)
-		 * @type {number}
-		 */
-		this.collision_mask = 0;
-
-		/**
 		 * the rigid body's custom gravity
 		 *
 		 * @property gravity
@@ -1171,8 +1159,9 @@ Goblin.RigidBody = (function() {
 		 * @property layer
 		 * @type {any}
 		 * @default null
+		 * @private
 		 */
-		this.layer = null;
+		this._layer = null;
 
 		/**
 		 * all resultant force accumulated by the rigid body
@@ -1206,9 +1195,6 @@ Goblin.RigidBody = (function() {
 		this.turn_velocity = new Goblin.Vector3();
 		this.solver_impulse = new Float64Array( 6 );
 
-		// Set default derived values
-		this.updateDerived();
-
 		this.listeners = {};
 	};
 })();
@@ -1225,6 +1211,25 @@ Object.defineProperty(
 			this._mass = n;
 			this._mass_inverted = 1 / n;
 			this.updateShapeDerivedValues();
+		}
+	}
+);
+
+Object.defineProperty(
+	Goblin.RigidBody.prototype,
+	'layer',
+	{
+		get: function() {
+			return this._layer;
+		},
+		set: function( value ) {
+			if ( value !== this._layer ) {
+				if ( this.world ) {
+					this.world.updateObjectLayer( this, value );
+				}
+
+				this._layer = value;
+			}
 		}
 	}
 );
@@ -1298,27 +1303,33 @@ Goblin.RigidBody.prototype.findSupportPoint = (function(){
  * Checks if a ray segment intersects with the object
  *
  * @method rayIntersect
- * @property ray_start {vec3} start point of the segment
- * @property ray_end {vec3{ end point of the segment
- * @property intersection_list {Array} array to append intersection to
+ * @param ray_start {vec3} start point of the segment
+ * @param ray_end {vec3} end point of the segment
+ * @param limit {Number} Limit the amount of intersections by this number
+ * @param intersection_list {Array} array to append intersection to
  */
 Goblin.RigidBody.prototype.rayIntersect = (function(){
 	var local_start = new Goblin.Vector3(),
 		local_end = new Goblin.Vector3();
 
-	return function( ray_start, ray_end, intersection_list ) {
+	return function( ray_start, ray_end, limit, intersection_list ) {
 		// transform start & end into local coordinates
 		this.transform_inverse.transformVector3Into( ray_start, local_start );
 		this.transform_inverse.transformVector3Into( ray_end, local_end );
 
 		// Intersect with shape
-		var intersection = this.shape.rayIntersect( local_start, local_end );
+		var intersections = this.shape.rayIntersect( local_start, local_end, limit - intersection_list.length );
 
-		if ( intersection != null ) {
-			intersection.object = this; // change from the shape to the body
-			this.transform.transformVector3( intersection.point ); // transform shape's local coordinates to the body's world coordinates
+		if ( intersections !== null && !Array.isArray( intersections ) ) {
+			intersections = [ intersections ];
+		}
 
-            // Rotate intersection normal
+		for ( var i = 0; i < intersections.length; i++ ) {
+			var intersection = intersections[ i ];
+
+			intersection.object = this;
+
+			this.transform.transformVector3( intersection.point );
 			this.transform.rotateVector3( intersection.normal );
 
 			intersection_list.push( intersection );
@@ -1782,6 +1793,20 @@ Goblin.BasicPooledBroadphase = function() {
      * @type {Array}
      */
     this.dynamic_bodies = [];
+
+    /**
+     * Holds 32 layers of objects
+     *
+     * @property _layers
+     * @type {Array}
+     * @private
+     */
+    this._layers = new Array(32);
+
+    // set up empty arrays for each layer
+    for ( var i = 0; i < 32; i++ ) {
+        this._layers[ i ] = [];
+    }
 };
 
 // Set up inheritance
@@ -1799,6 +1824,23 @@ Goblin.BasicPooledBroadphase.prototype.getDynamicBodies = function() {
 };
 
 /**
+ * Updates body's collision layer
+ *
+ * @method updateObjectLayer
+ * @param rigid_body {Goblin.RigidBody} Rigid body to update
+ * @param new_layer  {Number} New layer that is about to be set
+ */
+Goblin.BasicBroadphase.prototype.updateObjectLayer = function ( rigid_body, new_layer ) {
+    if ( rigid_body._layer !== null && this._layers[ rigid_body._layer ] ) {
+        this._removeBodyFrom( rigid_body, this._layers[ rigid_body._layer ] );
+    }
+
+    if ( new_layer !== null ) {
+        this._layers[ new_layer ].push( rigid_body );
+    }
+};
+
+/**
  * Adds a body to the broadphase for contact checking
  *
  * @method addBody
@@ -1812,7 +1854,63 @@ Goblin.BasicPooledBroadphase.prototype.addBody = function( body ) {
     } else {
         this.dynamic_bodies.push( body );
     }
+
+    if ( body._layer !== null ) {
+        this._layers[ body._layer ].push( body );
+    }
 };
+
+/**
+ * Checks if a ray segment intersects with objects in the world
+ *
+ * @method rayIntersect
+ * @param start         {vec3}      Start point of the segment
+ * @param end           {vec3}      End point of the segment
+ * @param limit         {Number}    Limit the amount of intersections (i.e. 1)
+ * @param layerMask     {Number}    The bitmask of layers to check
+ * @return {Array<RayIntersection>} an unsorted array of intersections
+ */
+Goblin.BasicPooledBroadphase.prototype.rayIntersect = (function () {
+    // FIXME EN-77 should eliminate the below
+    var _start = new Goblin.Vector3();
+    var _end = new Goblin.Vector3();
+
+    return function( start, end, limit, layerMask ) {
+        // copy vector values over to allow for duck typing
+        _start.copy( start );
+        _end.copy( end );
+
+        var intersections = [];
+
+        for ( var i = 0; i < this._layers.length; i++ ) {
+            var objects = this._layers[ i ];
+
+            if ( layerMask && ( layerMask & (1 << i) ) === 0 ) {
+                continue;
+            }
+
+            for ( var j = 0; j < objects.length; j++ ) {
+                var body = objects[ j ];
+
+                // first test AABB intersection (~ broad phase)
+                if ( body.aabb.testRayIntersect( _start, _end ) ) {
+                    // if AABB intersects, as the body about inner intersections
+                    body.rayIntersect( _start, _end, limit, intersections );
+                }
+
+                if ( limit && ( intersections.length >= limit ) ) {
+                    return intersections.slice( 0, limit );
+                }
+            }
+        }
+
+        intersections.sort( function ( a, b ) {
+            return a.t - b.t;
+        } );
+
+        return intersections;
+    };
+})();
 
 /**
  * Removes a body from the broadphase contact checking
@@ -1836,7 +1934,7 @@ Goblin.BasicPooledBroadphase.prototype.removeBody = function( body ) {
  *
  * @method update
  */
-Goblin.BasicBroadphase.prototype.update = function() {
+Goblin.BasicPooledBroadphase.prototype.update = function() {
     // local variables to make linter happy
     var i, j, object_a, object_b;
 
@@ -3607,6 +3705,7 @@ Goblin.DragForce.prototype.applyForce = function() {
 };
 Goblin.RayIntersection = function() {
 	this.object = null;
+    this.shape = null;
 	this.point = new Goblin.Vector3();
 	this.t = null;
     this.normal = new Goblin.Vector3();
@@ -4149,6 +4248,26 @@ Goblin.CompoundShape.prototype.addChildShape = function( shape, position, rotati
 	this.calculateLocalAABB( this.aabb );
 };
 
+/**
+ * Removes child shape from shapes collection and updates all values.
+ *
+ * @method removeChildShape
+ * @param shape
+ */
+Goblin.CompoundShape.prototype.removeChildShape = function( shape ) {
+	for ( var i = 0; i < this.child_shapes.length; i++ ) {
+		if ( this.child_shapes[ i ].shape === shape ) {
+			this.child_shapes[ i ] = this.child_shapes[ 0 ];
+			this.child_shapes.shift();
+			
+			break;
+		}
+	}
+
+	this.updateCenterOfMass();
+	this.calculateLocalAABB( this.aabb );
+};
+
 Goblin.CompoundShape.prototype.updateCenterOfMass = function () {
 	var i;
 
@@ -4161,7 +4280,10 @@ Goblin.CompoundShape.prototype.updateCenterOfMass = function () {
 			this.center_of_mass.add( this.child_shapes[ i ].local_position );
 		}
 
-		this.center_of_mass.scale( 1.0 / this.child_shapes.length );
+		// watch out for NaN because of 0/0
+		if ( this.child_shapes.length > 0 ) {
+			this.center_of_mass.scale( 1.0 / this.child_shapes.length );
+		}
 	}
 
 	for( i = 0; i < this.child_shapes.length; i++ ) {
@@ -4177,6 +4299,11 @@ Goblin.CompoundShape.prototype.updateCenterOfMass = function () {
  * @param aabb {AABB}
  */
 Goblin.CompoundShape.prototype.calculateLocalAABB = function( aabb ) {
+	if ( this.child_shapes.length === 0 ) {
+		aabb.min.x = aabb.min.y = aabb.min.z = aabb.max.x = aabb.max.y = aabb.max.z = 0;
+		return;
+	}
+
 	aabb.min.x = aabb.min.y = aabb.min.z = Infinity;
 	aabb.max.x = aabb.max.y = aabb.max.z = -Infinity;
 
@@ -4217,6 +4344,9 @@ Goblin.CompoundShape.prototype.getInertiaTensor = function( _mass ) {
 		child_tensor;
 
 	if ( this.child_shapes.length === 0 ) {
+		// let's fall back to spherical shape in this case to avoid
+		// nullifying inverse tensors
+		tensor.e00 = tensor.e11 = tensor.e22 = _mass;
 		return tensor;
 	}
 
@@ -4274,45 +4404,40 @@ Goblin.CompoundShape.prototype.getInertiaTensor = function( _mass ) {
  * Checks if a ray segment intersects with the shape
  *
  * @method rayIntersect
- * @property ray_start {vec3} start point of the segment
- * @property ray_end {vec3} end point of the segment
+ * @param 	ray_start 	{vec3} 		Start point of the segment
+ * @param 	ray_end 	{vec3} 		End point of the segment
+ * @param 	limit      	{Number}    Limit the amount of intersections (i.e. 1)
  * @return {RayIntersection|null} if the segment intersects, a RayIntersection is returned, else `null`
  */
-Goblin.CompoundShape.prototype.rayIntersect = (function(){
-	var tSort = function( a, b ) {
-		if ( a.t < b.t ) {
-			return -1;
-		} else if ( a.t > b.t ) {
-			return 1;
-		} else {
-			return 0;
-		}
-	};
-	return function( ray_start, ray_end ) {
-		var intersections = [],
-			local_start = new Goblin.Vector3(),
-			local_end = new Goblin.Vector3(),
-			intersection,
-			i, child;
+Goblin.CompoundShape.prototype.rayIntersect = function( ray_start, ray_end, limit ) {
+	var intersections = [],
+		local_start = new Goblin.Vector3(),
+		local_end = new Goblin.Vector3(),
+		intersection,
+		i, child;
 
-		for ( i = 0; i < this.child_shapes.length; i++ ) {
-			child = this.child_shapes[i];
+	for ( i = 0; i < this.child_shapes.length; i++ ) {
+		child = this.child_shapes[i];
 
-			child.transform_inverse.transformVector3Into( ray_start, local_start );
-			child.transform_inverse.transformVector3Into( ray_end, local_end );
+		child.transform_inverse.transformVector3Into( ray_start, local_start );
+		child.transform_inverse.transformVector3Into( ray_end, local_end );
 
-			intersection = child.shape.rayIntersect( local_start, local_end );
-			if ( intersection != null ) {
-				intersection.object = this; // change from the shape to the body
-				child.transform.transformVector3( intersection.point ); // transform child's local coordinates to the compound's coordinates
-				intersections.push( intersection );
-			}
+		intersection = child.shape.rayIntersect( local_start, local_end );
+
+		if ( intersection != null ) {
+			intersection.shape = child.shape;
+
+			child.transform.transformVector3( intersection.point );
+			intersections.push( intersection );
 		}
 
-		intersections.sort( tSort );
-		return intersections[0] || null;
-	};
-})();
+		if ( intersections.length >= limit ) {
+			break;
+		}
+	}
+
+	return intersections;
+};
 /**
  * @class CompoundShapeChild
  * @constructor
@@ -5393,46 +5518,13 @@ Goblin.TriangleShape.prototype.rayIntersect = (function(){
 Goblin.CollisionUtils = {};
 
 Goblin.CollisionUtils.canBodiesCollide = function( object_a, object_b ) {
-	if ( object_a._mass === Infinity && object_b._mass === Infinity ) {
-		// Two static objects aren't considered to be in contact
-		return false;
-	}
-
 	var matrix = object_a.world.collision_matrix;
 
 	if ( matrix[ object_a.layer ] && matrix[ object_a.layer ][ object_b.layer ] === false ) {
 		return false;
+	} else {
+		return true;
 	}
-
-	// Check collision masks
-	if ( object_a.collision_mask !== 0 ) {
-		if ( ( object_a.collision_mask & 1 ) === 0 ) {
-			// object_b must not be in a matching group
-			if ( ( object_a.collision_mask & object_b.collision_groups ) !== 0 ) {
-				return false;
-			}
-		} else {
-			// object_b must be in a matching group
-			if ( ( object_a.collision_mask & object_b.collision_groups ) === 0 ) {
-				return false;
-			}
-		}
-	}
-	if ( object_b.collision_mask !== 0 ) {
-		if ( ( object_b.collision_mask & 1 ) === 0 ) {
-			// object_a must not be in a matching group
-			if ( ( object_b.collision_mask & object_a.collision_groups ) !== 0 ) {
-				return false;
-			}
-		} else {
-			// object_a must be in a matching group
-			if ( ( object_b.collision_mask & object_a.collision_groups ) === 0 ) {
-				return false;
-			}
-		}
-	}
-
-	return true;
 };
 /**
  * Provides methods useful for working with various types of geometries
@@ -7969,6 +8061,17 @@ Goblin.World.prototype.removeRigidBody = function( rigid_body ) {
 };
 
 /**
+ * Updates body's collision layer
+ *
+ * @method updateObjectLayer
+ * @param rigid_body {Goblin.RigidBody} Rigid body to update
+ * @param new_layer  {Number} New layer that is about to be set
+ */
+Goblin.World.prototype.updateObjectLayer = function ( rigid_body, new_layer ) {
+	this.broadphase.updateObjectLayer( rigid_body, new_layer );
+};
+
+/**
  * Adds a ghost body to the world
  *
  * @method addGhostBody
@@ -8070,8 +8173,8 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 	 * @property end {vec3{ end point of the segment
 	 * @return {Array<RayIntersection>} an array of intersections, sorted by distance from `start`
 	 */
-	Goblin.World.prototype.rayIntersect = function( start, end ) {
-		var intersections = this.broadphase.rayIntersect( start, end );
+	Goblin.World.prototype.rayIntersect = function( start, end, limit, layer_mask ) {
+		var intersections = this.broadphase.rayIntersect( start, end, limit, layer_mask );
 		intersections.sort( tSort );
 		return intersections;
 	};

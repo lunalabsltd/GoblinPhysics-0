@@ -210,6 +210,17 @@ Goblin.World.prototype.removeRigidBody = function( rigid_body ) {
 };
 
 /**
+ * Updates body's collision layer
+ *
+ * @method updateObjectLayer
+ * @param rigid_body {Goblin.RigidBody} Rigid body to update
+ * @param new_layer  {Number} New layer that is about to be set
+ */
+Goblin.World.prototype.updateObjectLayer = function ( rigid_body, new_layer ) {
+	this.broadphase.updateObjectLayer( rigid_body, new_layer );
+};
+
+/**
  * Adds a ghost body to the world
  *
  * @method addGhostBody
@@ -311,8 +322,8 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 	 * @property end {vec3{ end point of the segment
 	 * @return {Array<RayIntersection>} an array of intersections, sorted by distance from `start`
 	 */
-	Goblin.World.prototype.rayIntersect = function( start, end ) {
-		var intersections = this.broadphase.rayIntersect( start, end );
+	Goblin.World.prototype.rayIntersect = function( start, end, limit, layer_mask ) {
+		var intersections = this.broadphase.rayIntersect( start, end, limit, layer_mask );
 		intersections.sort( tSort );
 		return intersections;
 	};
