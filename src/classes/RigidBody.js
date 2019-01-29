@@ -9,7 +9,7 @@
 Goblin.RigidBody = (function() {
 	var body_count = 0;
 
-	return function( shape, mass ) {
+	return function( shape, mass, static ) {
 		/**
 		 * goblin ID of the body
 		 *
@@ -42,6 +42,15 @@ Goblin.RigidBody = (function() {
 		 */
 		this._mass = mass || Infinity;
 		this._mass_inverted = 1 / mass;
+
+		/**
+		 * the flag indicating the body is static
+		 *
+		 * @property static
+		 * @type {Boolean}
+		 * @default false
+		 */
+		this.static = !!static;
 
 		/**
 		 * the rigid body's current position
@@ -132,18 +141,6 @@ Goblin.RigidBody = (function() {
 		this.friction = 0.6;
 
 		/**
-		 * bitmask indicating what collision groups this object belongs to
-		 * @type {number}
-		 */
-		this.collision_groups = 0;
-
-		/**
-		 * collision groups mask for the object, specifying what groups to not collide with (BIT 1=0) or which groups to only collide with (Bit 1=1)
-		 * @type {number}
-		 */
-		this.collision_mask = 0;
-
-		/**
 		 * the rigid body's custom gravity
 		 *
 		 * @property gravity
@@ -204,6 +201,16 @@ Goblin.RigidBody = (function() {
 		this.world = null;
 
 		/**
+		 * the layer the object belongs to.
+		 *
+		 * @property layer
+		 * @type {any}
+		 * @default null
+		 * @private
+		 */
+		this._layer = null;
+
+		/**
 		 * all resultant force accumulated by the rigid body
 		 * this force is applied in the next occurring integration
 		 *
@@ -235,9 +242,6 @@ Goblin.RigidBody = (function() {
 		this.turn_velocity = new Goblin.Vector3();
 		this.solver_impulse = new Float64Array( 6 );
 
-		// Set default derived values
-		this.updateDerived();
-
 		this.listeners = {};
 	};
 })();
@@ -254,6 +258,25 @@ Object.defineProperty(
 			this._mass = n;
 			this._mass_inverted = 1 / n;
 			this.updateShapeDerivedValues();
+		}
+	}
+);
+
+Object.defineProperty(
+	Goblin.RigidBody.prototype,
+	'layer',
+	{
+		get: function() {
+			return this._layer;
+		},
+		set: function( value ) {
+			if ( value !== this._layer ) {
+				if ( this.world ) {
+					this.world.updateObjectLayer( this, value );
+				}
+
+				this._layer = value;
+			}
 		}
 	}
 );
@@ -327,27 +350,33 @@ Goblin.RigidBody.prototype.findSupportPoint = (function(){
  * Checks if a ray segment intersects with the object
  *
  * @method rayIntersect
- * @property ray_start {vec3} start point of the segment
- * @property ray_end {vec3{ end point of the segment
- * @property intersection_list {Array} array to append intersection to
+ * @param ray_start {vec3} start point of the segment
+ * @param ray_end {vec3} end point of the segment
+ * @param limit {Number} Limit the amount of intersections by this number
+ * @param intersection_list {Array} array to append intersection to
  */
 Goblin.RigidBody.prototype.rayIntersect = (function(){
 	var local_start = new Goblin.Vector3(),
 		local_end = new Goblin.Vector3();
 
-	return function( ray_start, ray_end, intersection_list ) {
+	return function( ray_start, ray_end, limit, intersection_list ) {
 		// transform start & end into local coordinates
 		this.transform_inverse.transformVector3Into( ray_start, local_start );
 		this.transform_inverse.transformVector3Into( ray_end, local_end );
 
 		// Intersect with shape
-		var intersection = this.shape.rayIntersect( local_start, local_end );
+		var intersections = this.shape.rayIntersect( local_start, local_end, limit - intersection_list.length );
 
-		if ( intersection != null ) {
-			intersection.object = this; // change from the shape to the body
-			this.transform.transformVector3( intersection.point ); // transform shape's local coordinates to the body's world coordinates
+		if ( intersections !== null && !Array.isArray( intersections ) ) {
+			intersections = [ intersections ];
+		}
 
-            // Rotate intersection normal
+		for ( var i = 0; i < intersections.length; i++ ) {
+			var intersection = intersections[ i ];
+
+			intersection.object = this;
+
+			this.transform.transformVector3( intersection.point );
 			this.transform.rotateVector3( intersection.normal );
 
 			intersection_list.push( intersection );
