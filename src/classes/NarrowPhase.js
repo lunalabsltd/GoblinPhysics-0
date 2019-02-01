@@ -99,6 +99,9 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 				contact.shape_a = proxy.shape;
 				contact.shape_b = other.shape;
 
+				contact.restitution = contact.shape_a.material.combineRestitution(contact.shape_b);
+				contact.friction = contact.shape_a.material.combineFriction(contact.shape_b);
+
 				this.addContact( parent_a, parent_b, contact );
 			}
 		}
@@ -151,8 +154,12 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
                     contact.shape_a = object_a.shape;
 					contact.shape_b = object_b.shape;
 
-                    contact.restitution = ( object_a.restitution + object_b.restitution ) / 2;
-                    contact.friction = ( object_a.friction + object_b.friction ) / 2;
+                    //contact.restitution = ( object_a.restitution + object_b.restitution ) / 2;
+                    //contact.friction = ( object_a.friction + object_b.friction ) / 2;
+
+					contact.restitution = contact.shape_a.material.combineRestitution(contact.shape_b);
+					contact.friction = contact.shape_a.material.combineFriction(contact.shape_b);
+
                     /*console.log( contact );
                     debugger;*/
 
@@ -251,6 +258,9 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 
 							contact.shape_a = mesh.shape;
 							contact.shape_b = convex.shape;
+
+							contact.restitution = contact.shape_a.material.combineRestitution(contact.shape_b);
+							contact.friction = contact.shape_a.material.combineFriction(contact.shape_b);
 
 							addContact( _mesh, _convex, contact );
 						}

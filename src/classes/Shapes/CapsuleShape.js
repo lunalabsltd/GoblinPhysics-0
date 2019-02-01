@@ -4,7 +4,7 @@
  * @param half_height {Number} half height of the capsule
  * @constructor
  */
-Goblin.CapsuleShape = function( radius, half_height ) {
+Goblin.CapsuleShape = function( radius, half_height, material ) {
 	/**
 	 * radius of the capsule
 	 *
@@ -23,6 +23,8 @@ Goblin.CapsuleShape = function( radius, half_height ) {
 
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
+
+	this.material = new Goblin.PhysicMaterial(material);
 };
 
 /**

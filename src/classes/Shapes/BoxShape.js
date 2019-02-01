@@ -5,7 +5,7 @@
  * @param half_depth {Number} half depth of the cube ( Z axis )
  * @constructor
  */
-Goblin.BoxShape = function( half_width, half_height, half_depth ) {
+Goblin.BoxShape = function( half_width, half_height, half_depth, material ) {
 	/**
 	 * Half width of the cube ( X axis )
 	 *
@@ -32,6 +32,8 @@ Goblin.BoxShape = function( half_width, half_height, half_depth ) {
 
     this.aabb = new Goblin.AABB();
     this.calculateLocalAABB( this.aabb );
+
+	this.material = new Goblin.PhysicMaterial(material);
 };
 
 /**
