@@ -99,8 +99,8 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 				contact.shape_a = proxy.shape;
 				contact.shape_b = other.shape;
 
-				contact.restitution = contact.shape_a.material.combineRestitution(contact.shape_b);
-				contact.friction = contact.shape_a.material.combineFriction(contact.shape_b);
+				contact.restitution = Goblin.CollisionUtils.combineRestitutions( contact.object_a, contact.object_b, contact.shape_a, contact.shape_b );
+				contact.friction = Goblin.CollisionUtils.combineFrictions( contact.object_a, contact.object_b, contact.shape_a, contact.shape_b );
 
 				this.addContact( parent_a, parent_b, contact );
 			}
@@ -154,14 +154,8 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
                     contact.shape_a = object_a.shape;
 					contact.shape_b = object_b.shape;
 
-                    //contact.restitution = ( object_a.restitution + object_b.restitution ) / 2;
-                    //contact.friction = ( object_a.friction + object_b.friction ) / 2;
-
-					contact.restitution = contact.shape_a.material.combineRestitution(contact.shape_b);
-					contact.friction = contact.shape_a.material.combineFriction(contact.shape_b);
-
-                    /*console.log( contact );
-                    debugger;*/
+					contact.restitution = Goblin.CollisionUtils.combineRestitutions( object_a, object_b, object_a.shape, object_b.shape );
+					contact.friction = Goblin.CollisionUtils.combineFrictions( object_a, object_b, object_a.shape, object_b.shape );
 
                     addContact( object_a, object_b, contact );
                 }
@@ -259,8 +253,8 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 							contact.shape_a = mesh.shape;
 							contact.shape_b = convex.shape;
 
-							contact.restitution = contact.shape_a.material.combineRestitution(contact.shape_b);
-							contact.friction = contact.shape_a.material.combineFriction(contact.shape_b);
+							contact.restitution = Goblin.CollisionUtils.combineRestitutions( _mesh, _convex, mesh.shape, convex.shape );
+							contact.friction = Goblin.CollisionUtils.combineFrictions( _mesh, _convex, mesh.shape, convex.shape );
 
 							addContact( _mesh, _convex, contact );
 						}

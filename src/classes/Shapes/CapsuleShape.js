@@ -24,7 +24,7 @@ Goblin.CapsuleShape = function( radius, half_height, material ) {
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
 
-	this.material = new Goblin.PhysicMaterial(material);
+	this.material = ( material !== undefined ) ? material : null;
 };
 
 /**
@@ -53,7 +53,7 @@ Goblin.CapsuleShape.prototype.getInertiaTensor = function( mass ) {
 			0, 0, element
 		);
 	}
-	
+
 	var k = 1.5 * this.half_height / this.radius;
 	var ms = mass / ( 1 + k );
 	var mc = mass / ( 1 + 1 / k );

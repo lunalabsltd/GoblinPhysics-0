@@ -43,8 +43,8 @@ Goblin.SphereSphere = function( object_a, object_b ) {
 	contact.object_a.transform_inverse.transformVector3( contact.contact_point_in_a );
 	contact.object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
 
-	contact.restitution = ( object_a.restitution + object_b.restitution ) / 2;
-	contact.friction = ( object_a.friction + object_b.friction ) / 2;
+	//contact.restitution = ( object_a.restitution + object_b.restitution ) / 2;
+	//contact.friction = ( object_a.friction + object_b.friction ) / 2;
 
 	return contact;
 };

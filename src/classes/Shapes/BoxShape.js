@@ -33,7 +33,7 @@ Goblin.BoxShape = function( half_width, half_height, half_depth, material ) {
     this.aabb = new Goblin.AABB();
     this.calculateLocalAABB( this.aabb );
 
-	this.material = new Goblin.PhysicMaterial(material);
+	this.material = ( material !== undefined ) ? material : null;
 };
 
 /**
