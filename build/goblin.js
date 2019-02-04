@@ -2059,8 +2059,8 @@ Goblin.BoxSphere = function( object_a, object_b ) {
 	contact.contact_point.scaleVector( contact.contact_normal, sphere.shape.radius - contact.penetration_depth / 2 );
 	contact.contact_point.add( sphere.position );
 
-	contact.restitution = ( sphere.restitution + box.restitution ) / 2;
-	contact.friction = ( sphere.friction + box.friction ) / 2;
+	//contact.restitution = ( sphere.restitution + box.restitution ) / 2;
+	//contact.friction = ( sphere.friction + box.friction ) / 2;
 
 	return contact;
 };
@@ -2317,8 +2317,8 @@ Goblin.GjkEpa = {
 					// Calculate penetration depth
 					contact.penetration_depth = polyhedron.closest_point.length() + Goblin.GjkEpa.margins;
 
-					contact.restitution = ( simplex.object_a.restitution + simplex.object_b.restitution ) / 2;
-					contact.friction = ( simplex.object_a.friction + simplex.object_b.friction ) / 2;
+					//contact.restitution = ( simplex.object_a.restitution + simplex.object_b.restitution ) / 2;
+					//contact.friction = ( simplex.object_a.friction + simplex.object_b.friction ) / 2;
 
 					Goblin.GjkEpa.freePolyhedron( polyhedron );
 
@@ -2932,8 +2932,8 @@ Goblin.SphereSphere = function( object_a, object_b ) {
 	contact.object_a.transform_inverse.transformVector3( contact.contact_point_in_a );
 	contact.object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
 
-	contact.restitution = ( object_a.restitution + object_b.restitution ) / 2;
-	contact.friction = ( object_a.friction + object_b.friction ) / 2;
+	//contact.restitution = ( object_a.restitution + object_b.restitution ) / 2;
+	//contact.friction = ( object_a.friction + object_b.friction ) / 2;
 
 	return contact;
 };
@@ -3717,7 +3717,7 @@ Goblin.RayIntersection = function() {
  * @param half_depth {Number} half depth of the cube ( Z axis )
  * @constructor
  */
-Goblin.BoxShape = function( half_width, half_height, half_depth ) {
+Goblin.BoxShape = function( half_width, half_height, half_depth, material ) {
 	/**
 	 * Half width of the cube ( X axis )
 	 *
@@ -3744,6 +3744,8 @@ Goblin.BoxShape = function( half_width, half_height, half_depth ) {
 
     this.aabb = new Goblin.AABB();
     this.calculateLocalAABB( this.aabb );
+
+	this.material = ( material !== undefined ) ? material : null;
 };
 
 /**
@@ -3872,7 +3874,7 @@ Goblin.BoxShape.prototype.rayIntersect = (function(){
  * @param half_height {Number} half height of the capsule
  * @constructor
  */
-Goblin.CapsuleShape = function( radius, half_height ) {
+Goblin.CapsuleShape = function( radius, half_height, material ) {
 	/**
 	 * radius of the capsule
 	 *
@@ -3891,6 +3893,8 @@ Goblin.CapsuleShape = function( radius, half_height ) {
 
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
+
+	this.material = ( material !== undefined ) ? material : null;
 };
 
 /**
@@ -3919,7 +3923,7 @@ Goblin.CapsuleShape.prototype.getInertiaTensor = function( mass ) {
 			0, 0, element
 		);
 	}
-	
+
 	var k = 1.5 * this.half_height / this.radius;
 	var ms = mass / ( 1 + k );
 	var mc = mass / ( 1 + 1 / k );
@@ -4883,7 +4887,7 @@ Goblin.ConvexShape.prototype.rayIntersect = (function(){
  * @param faces {Array<Number>} array of indices indicating which vertices compose a face; faces[0..2] represent the first face, faces[3..5] are the second, etc
  * @constructor
  */
-Goblin.MeshShape = function( vertices, faces ) {
+Goblin.MeshShape = function( vertices, faces, material ) {
 	this.vertices = vertices;
 
 	this.triangles = [];
@@ -4930,6 +4934,8 @@ Goblin.MeshShape = function( vertices, faces ) {
 
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
+
+	this.material = ( material !== undefined ) ? material : null;
 };
 
 /**
@@ -5245,11 +5251,13 @@ Goblin.PlaneShape.prototype.rayIntersect = (function(){
  * @param radius {Number} sphere radius
  * @constructor
  */
-Goblin.SphereShape = function( radius ) {
+Goblin.SphereShape = function( radius, material ) {
 	this.radius = radius;
 
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
+
+	this.material = ( material !== undefined ) ? material : null;
 };
 
 /**
@@ -5518,13 +5526,81 @@ Goblin.TriangleShape.prototype.rayIntersect = (function(){
 Goblin.CollisionUtils = {};
 
 Goblin.CollisionUtils.canBodiesCollide = function( object_a, object_b ) {
-	var matrix = object_a.world.collision_matrix;
+    var matrix = object_a.world.collision_matrix;
 
-	if ( matrix[ object_a.layer ] && matrix[ object_a.layer ][ object_b.layer ] === false ) {
-		return false;
-	} else {
-		return true;
-	}
+    if ( matrix[ object_a.layer ] && matrix[ object_a.layer ][ object_b.layer ] === false ) {
+        return false;
+    } else {
+        return true;
+    }
+};
+
+/**
+ * Calculate the friction of two colliding objects
+ *
+ * @method combineFrictions
+ * @param object_a {object} First object
+ * @param object_b {object} Second object
+ * @param shape_a {object} First shape
+ * @param shape_b {object} Second shape
+ */
+Goblin.CollisionUtils.combineFrictions = function( object_a, object_b, shape_a, shape_b ) {
+    if ( shape_a.material === null && shape_b.material === null ) {
+        return ( object_a.friction + object_b.friction ) / 2;
+    } else if ( shape_a.material === null ) {
+        return this.combineValues( 0, shape_b.material.frictionCombine, object_a.friction || 0, shape_b.material.dynamicFriction );
+    } else if ( shape_b.material === null ) {
+        return this.combineValues( shape_a.material.frictionCombine, 0, shape_a.material.dynamicFriction, shape_b.friction || 0 );
+    }
+
+    return this.combineValues( shape_a.material.frictionCombine, shape_b.material.frictionCombine, shape_a.material.dynamicFriction, shape_b.material.dynamicFriction );
+};
+
+/**
+ * Calculate the restriction of two colliding objects
+ *
+ * @method combineFrictions
+ * @param object_a {object} First object
+ * @param object_b {object} Second object
+ * @param shape_a {object} First shape
+ * @param shape_b {object} Second shape
+ */
+Goblin.CollisionUtils.combineRestitutions = function( object_a, object_b, shape_a, shape_b ) {
+    if ( shape_a.material === null && shape_b.material === null ) {
+        return ( object_a.restitution + object_b.restitution ) / 2;
+    } else if ( shape_a.material === null ) {
+        return this.combineValues( 0, shape_b.material.bounceCombine, object_a.restitution || 0, shape_b.material.bounciness );
+    } else if ( shape_b.material === null ) {
+        return this.combineValues( shape_a.material.bounceCombine, 0, shape_a.material.bounciness, object_b.restitution || 0 );
+    }
+
+    return this.combineValues( shape_a.material.bounceCombine, shape_b.material.bounceCombine, shape_a.material.bounciness, shape_b.material.bounciness );
+};
+
+/**
+ * Combine two values by combination mode
+ * Average = 0,
+ * Multiply = 1,
+ * Minimum = 2,
+ * Maximum = 3
+ *
+ * @method combineFrictions
+ * @param combine_a {Number} First combination mode
+ * @param combine_b {Number} Second combination mode
+ * @param value_a {Number} First value
+ * @param value_b {Number} Second value
+ */
+Goblin.CollisionUtils.combineValues = function( combine_a, combine_b, value_a, value_b ) {
+    switch ( Math.max( combine_a, combine_b ) ) {
+        case 1:
+            return value_a * value_b;
+        case 2:
+            return Math.min( value_a, value_b );
+        case 3:
+            return Math.max( value_a, value_b );
+        default:
+            return ( value_a + value_b ) / 2;
+    }
 };
 /**
  * Provides methods useful for working with various types of geometries
@@ -7440,6 +7516,9 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 				contact.shape_a = proxy.shape;
 				contact.shape_b = other.shape;
 
+				contact.restitution = Goblin.CollisionUtils.combineRestitutions( contact.object_a, contact.object_b, contact.shape_a, contact.shape_b );
+				contact.friction = Goblin.CollisionUtils.combineFrictions( contact.object_a, contact.object_b, contact.shape_a, contact.shape_b );
+
 				this.addContact( parent_a, parent_b, contact );
 			}
 		}
@@ -7492,10 +7571,8 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
                     contact.shape_a = object_a.shape;
 					contact.shape_b = object_b.shape;
 
-                    contact.restitution = ( object_a.restitution + object_b.restitution ) / 2;
-                    contact.friction = ( object_a.friction + object_b.friction ) / 2;
-                    /*console.log( contact );
-                    debugger;*/
+					contact.restitution = Goblin.CollisionUtils.combineRestitutions( object_a, object_b, object_a.shape, object_b.shape );
+					contact.friction = Goblin.CollisionUtils.combineFrictions( object_a, object_b, object_a.shape, object_b.shape );
 
                     addContact( object_a, object_b, contact );
                 }
@@ -7592,6 +7669,9 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 
 							contact.shape_a = mesh.shape;
 							contact.shape_b = convex.shape;
+
+							contact.restitution = Goblin.CollisionUtils.combineRestitutions( _mesh, _convex, mesh.shape, convex.shape );
+							contact.friction = Goblin.CollisionUtils.combineFrictions( _mesh, _convex, mesh.shape, convex.shape );
 
 							addContact( _mesh, _convex, contact );
 						}
@@ -7782,6 +7862,44 @@ Goblin.ObjectPool.registerType( 'ContactConstraint', function() { return new Gob
 Goblin.ObjectPool.registerType( 'FrictionConstraint', function() { return new Goblin.FrictionConstraint(); } );
 Goblin.ObjectPool.registerType( 'RayIntersection', function() { return new Goblin.RayIntersection(); } );
 Goblin.ObjectPool.registerType( 'RigidBodyProxy', function() { return new Goblin.RigidBodyProxy(); } );
+/**
+ * Manages the physics simulation
+ *
+ * @class PhysicMaterial
+ * @constructor
+ */
+Goblin.PhysicMaterial = function( attributes ) {
+
+    this.bounciness = attributes.bounciness;
+
+    this.dynamicFriction = attributes.dynamicFriction;
+
+    this.staticFriction = attributes.staticFriction;
+
+    /**
+     * Friction combine type
+     * Average = 0,
+     * Multiply = 1,
+     * Minimum = 2,
+     * Maximum = 3
+     *
+     * @property frictionCombine
+     * @type {number}
+     */
+    this.frictionCombine = attributes.frictionCombine;
+
+    /**
+     * Bounce combine type
+     * Average = 0,
+     * Multiply = 1,
+     * Minimum = 2,
+     * Maximum = 3
+     *
+     * @property bounceCombine
+     * @type {number}
+     */
+    this.bounceCombine = attributes.bounceCombine;
+};
 Goblin.RigidBodyProxy = function() {
 	this.parent = null;
 	this.id = null;
