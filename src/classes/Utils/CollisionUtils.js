@@ -34,7 +34,7 @@ Goblin.CollisionUtils.combineFrictions = function( object_a, object_b, shape_a, 
 /**
  * Calculate the restriction of two colliding objects
  *
- * @method combineFrictions
+ * @method combineRestitutions
  * @param object_a {object} First object
  * @param object_b {object} Second object
  * @param shape_a {object} First shape
@@ -53,13 +53,13 @@ Goblin.CollisionUtils.combineRestitutions = function( object_a, object_b, shape_
 };
 
 /**
- * Combine two values by combination mode
+ * Combine two friction/restriction values by combination mode.
  * Average = 0,
  * Multiply = 1,
  * Minimum = 2,
  * Maximum = 3
  *
- * @method combineFrictions
+ * @method combineValues
  * @param combine_a {Number} First combination mode
  * @param combine_b {Number} Second combination mode
  * @param value_a {Number} First value

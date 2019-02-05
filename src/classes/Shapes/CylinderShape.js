@@ -24,7 +24,7 @@ Goblin.CylinderShape = function( radius, half_height, material ) {
     this.aabb = new Goblin.AABB();
     this.calculateLocalAABB( this.aabb );
 
-	this.material = ( material !== undefined ) ? material : null;
+	this.material = material || null;
 };
 
 /**

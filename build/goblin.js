@@ -2059,9 +2059,6 @@ Goblin.BoxSphere = function( object_a, object_b ) {
 	contact.contact_point.scaleVector( contact.contact_normal, sphere.shape.radius - contact.penetration_depth / 2 );
 	contact.contact_point.add( sphere.position );
 
-	//contact.restitution = ( sphere.restitution + box.restitution ) / 2;
-	//contact.friction = ( sphere.friction + box.friction ) / 2;
-
 	return contact;
 };
 
@@ -2316,9 +2313,6 @@ Goblin.GjkEpa = {
 
 					// Calculate penetration depth
 					contact.penetration_depth = polyhedron.closest_point.length() + Goblin.GjkEpa.margins;
-
-					//contact.restitution = ( simplex.object_a.restitution + simplex.object_b.restitution ) / 2;
-					//contact.friction = ( simplex.object_a.friction + simplex.object_b.friction ) / 2;
 
 					Goblin.GjkEpa.freePolyhedron( polyhedron );
 
@@ -2931,9 +2925,6 @@ Goblin.SphereSphere = function( object_a, object_b ) {
 	// Convert contact_point_in_a and contact_point_in_b to those objects' local frames
 	contact.object_a.transform_inverse.transformVector3( contact.contact_point_in_a );
 	contact.object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
-
-	//contact.restitution = ( object_a.restitution + object_b.restitution ) / 2;
-	//contact.friction = ( object_a.friction + object_b.friction ) / 2;
 
 	return contact;
 };
@@ -3710,6 +3701,397 @@ Goblin.RayIntersection = function() {
 	this.t = null;
     this.normal = new Goblin.Vector3();
 };
+Goblin.CollisionUtils = {};
+
+Goblin.CollisionUtils.canBodiesCollide = function( object_a, object_b ) {
+    var matrix = object_a.world.collision_matrix;
+
+    if ( matrix[ object_a.layer ] && matrix[ object_a.layer ][ object_b.layer ] === false ) {
+        return false;
+    } else {
+        return true;
+    }
+};
+
+/**
+ * Calculate the friction of two colliding objects
+ *
+ * @method combineFrictions
+ * @param object_a {object} First object
+ * @param object_b {object} Second object
+ * @param shape_a {object} First shape
+ * @param shape_b {object} Second shape
+ */
+Goblin.CollisionUtils.combineFrictions = function( object_a, object_b, shape_a, shape_b ) {
+    if ( shape_a.material === null && shape_b.material === null ) {
+        return ( object_a.friction + object_b.friction ) / 2;
+    } else if ( shape_a.material === null ) {
+        return this.combineValues( 0, shape_b.material.frictionCombine, object_a.friction || 0, shape_b.material.dynamicFriction );
+    } else if ( shape_b.material === null ) {
+        return this.combineValues( shape_a.material.frictionCombine, 0, shape_a.material.dynamicFriction, shape_b.friction || 0 );
+    }
+
+    return this.combineValues( shape_a.material.frictionCombine, shape_b.material.frictionCombine, shape_a.material.dynamicFriction, shape_b.material.dynamicFriction );
+};
+
+/**
+ * Calculate the restriction of two colliding objects
+ *
+ * @method combineRestitutions
+ * @param object_a {object} First object
+ * @param object_b {object} Second object
+ * @param shape_a {object} First shape
+ * @param shape_b {object} Second shape
+ */
+Goblin.CollisionUtils.combineRestitutions = function( object_a, object_b, shape_a, shape_b ) {
+    if ( shape_a.material === null && shape_b.material === null ) {
+        return ( object_a.restitution + object_b.restitution ) / 2;
+    } else if ( shape_a.material === null ) {
+        return this.combineValues( 0, shape_b.material.bounceCombine, object_a.restitution || 0, shape_b.material.bounciness );
+    } else if ( shape_b.material === null ) {
+        return this.combineValues( shape_a.material.bounceCombine, 0, shape_a.material.bounciness, object_b.restitution || 0 );
+    }
+
+    return this.combineValues( shape_a.material.bounceCombine, shape_b.material.bounceCombine, shape_a.material.bounciness, shape_b.material.bounciness );
+};
+
+/**
+ * Combine two friction/restriction values by combination mode.
+ * Average = 0,
+ * Multiply = 1,
+ * Minimum = 2,
+ * Maximum = 3
+ *
+ * @method combineValues
+ * @param combine_a {Number} First combination mode
+ * @param combine_b {Number} Second combination mode
+ * @param value_a {Number} First value
+ * @param value_b {Number} Second value
+ */
+Goblin.CollisionUtils.combineValues = function( combine_a, combine_b, value_a, value_b ) {
+    switch ( Math.max( combine_a, combine_b ) ) {
+        case 1:
+            return value_a * value_b;
+        case 2:
+            return Math.min( value_a, value_b );
+        case 3:
+            return Math.max( value_a, value_b );
+        default:
+            return ( value_a + value_b ) / 2;
+    }
+};
+/**
+ * Provides methods useful for working with various types of geometries
+ *
+ * @class GeometryMethods
+ * @static
+ */
+Goblin.GeometryMethods = {
+	/**
+	 * determines the location in a triangle closest to a given point
+	 *
+	 * @method findClosestPointInTriangle
+	 * @param {vec3} p point
+	 * @param {vec3} a first triangle vertex
+	 * @param {vec3} b second triangle vertex
+	 * @param {vec3} c third triangle vertex
+	 * @param {vec3} out vector where the result will be stored
+	 */
+	findClosestPointInTriangle: (function() {
+		var ab = new Goblin.Vector3(),
+			ac = new Goblin.Vector3(),
+			_vec = new Goblin.Vector3();
+
+		return function( p, a, b, c, out ) {
+			var v;
+
+			// Check if P in vertex region outside A
+			ab.subtractVectors( b, a );
+			ac.subtractVectors( c, a );
+			_vec.subtractVectors( p, a );
+			var d1 = ab.dot( _vec ),
+				d2 = ac.dot( _vec );
+			if ( d1 <= 0 && d2 <= 0 ) {
+				out.copy( a );
+				return;
+			}
+
+			// Check if P in vertex region outside B
+			_vec.subtractVectors( p, b );
+			var d3 = ab.dot( _vec ),
+				d4 = ac.dot( _vec );
+			if ( d3 >= 0 && d4 <= d3 ) {
+				out.copy( b );
+				return;
+			}
+
+			// Check if P in edge region of AB
+			var vc = d1*d4 - d3*d2;
+			if ( vc <= 0 && d1 >= 0 && d3 <= 0 ) {
+				v = d1 / ( d1 - d3 );
+				out.scaleVector( ab, v );
+				out.add( a );
+				return;
+			}
+
+			// Check if P in vertex region outside C
+			_vec.subtractVectors( p, c );
+			var d5 = ab.dot( _vec ),
+				d6 = ac.dot( _vec );
+			if ( d6 >= 0 && d5 <= d6 ) {
+				out.copy( c );
+				return;
+			}
+
+			// Check if P in edge region of AC
+			var vb = d5*d2 - d1*d6,
+				w;
+			if ( vb <= 0 && d2 >= 0 && d6 <= 0 ) {
+				w = d2 / ( d2 - d6 );
+				out.scaleVector( ac, w );
+				out.add( a );
+				return;
+			}
+
+			// Check if P in edge region of BC
+			var va = d3*d6 - d5*d4;
+			if ( va <= 0 && d4-d3 >= 0 && d5-d6 >= 0 ) {
+				w = (d4 - d3) / ( (d4-d3) + (d5-d6) );
+				out.subtractVectors( c, b );
+				out.scale( w );
+				out.add( b );
+				return;
+			}
+
+			// P inside face region
+			var denom = 1 / ( va + vb + vc );
+			v = vb * denom;
+			w = vc * denom;
+
+
+			// At this point `ab` and `ac` can be recycled and lose meaning to their nomenclature
+
+			ab.scale( v );
+			ab.add( a );
+
+			ac.scale( w );
+
+			out.addVectors( ab, ac );
+		};
+	})(),
+
+	/**
+	 * Finds the Barycentric coordinates of point `p` in the triangle `a`, `b`, `c`
+	 *
+	 * @method findBarycentricCoordinates
+	 * @param p {vec3} point to calculate coordinates of
+	 * @param a {vec3} first point in the triangle
+	 * @param b {vec3} second point in the triangle
+	 * @param c {vec3} third point in the triangle
+	 * @param out {vec3} resulting Barycentric coordinates of point `p`
+	 */
+	findBarycentricCoordinates: function( p, a, b, c, out ) {
+
+		var v0 = new Goblin.Vector3(),
+			v1 = new Goblin.Vector3(),
+			v2 = new Goblin.Vector3();
+
+		v0.subtractVectors( b, a );
+		v1.subtractVectors( c, a );
+		v2.subtractVectors( p, a );
+
+		var d00 = v0.dot( v0 ),
+			d01 = v0.dot( v1 ),
+			d11 = v1.dot( v1 ),
+			d20 = v2.dot( v0 ),
+			d21 = v2.dot( v1 ),
+			denom = d00 * d11 - d01 * d01;
+
+		out.y = ( d11 * d20 - d01 * d21 ) / denom;
+		out.z = ( d00 * d21 - d01 * d20 ) / denom;
+		out.x = 1 - out.y - out.z;
+	},
+
+	/**
+	 * Calculates the distance from point `p` to line `ab`
+	 * @param p {vec3} point to calculate distance to
+	 * @param a {vec3} first point in line
+	 * @param b [vec3] second point in line
+	 * @returns {number}
+	 */
+	findSquaredDistanceFromSegment: (function(){
+		var ab = new Goblin.Vector3(),
+			ap = new Goblin.Vector3(),
+			bp = new Goblin.Vector3();
+
+		return function( p, a, b ) {
+			ab.subtractVectors( a, b );
+			ap.subtractVectors( a, p );
+			bp.subtractVectors( b, p );
+
+			var e = ap.dot( ab );
+			if ( e <= 0 ) {
+				return ap.dot( ap );
+			}
+
+			var f = ab.dot( ab );
+			if ( e >= f ) {
+				return bp.dot( bp );
+			}
+
+			return ap.dot( ap ) - e * e / f;
+		};
+	})(),
+
+	findClosestPointsOnSegments: (function(){
+		var d1 = new Goblin.Vector3(),
+			d2 = new Goblin.Vector3(),
+			r = new Goblin.Vector3(),
+			clamp = function( x, min, max ) {
+				return Math.min( Math.max( x, min ), max );
+			};
+
+		return function( aa, ab, ba, bb, p1, p2 ) {
+			d1.subtractVectors( ab, aa );
+			d2.subtractVectors( bb, ba );
+			r.subtractVectors( aa, ba );
+
+			var a = d1.dot( d1 ),
+				e = d2.dot( d2 ),
+				f = d2.dot( r );
+
+			var s, t;
+
+			if ( a <= Goblin.EPSILON && e <= Goblin.EPSILON ) {
+				// Both segments are degenerate
+				s = t = 0;
+				p1.copy( aa );
+				p2.copy( ba );
+				_tmp_vec3_1.subtractVectors( p1, p2 );
+				return _tmp_vec3_1.dot( _tmp_vec3_1 );
+			}
+
+			if ( a <= Goblin.EPSILON ) {
+				// Only first segment is degenerate
+				s = 0;
+				t = f / e;
+				t = clamp( t, 0, 1 );
+			} else {
+				var c = d1.dot( r );
+				if ( e <= Goblin.EPSILON ) {
+					// Second segment is degenerate
+					t = 0;
+					s = clamp( -c / a, 0, 1 );
+				} else {
+					// Neither segment is degenerate
+					var b = d1.dot( d2 ),
+						denom = a * e - b * b;
+
+					if ( denom !== 0 ) {
+						// Segments aren't parallel
+						s = clamp( ( b * f - c * e ) / denom, 0, 1 );
+					} else {
+						s = 0;
+					}
+
+					// find point on segment2 closest to segment1(s)
+					t = ( b * s + f ) / e;
+
+					// validate t, if it needs clamping then clamp and recompute s
+					if ( t < 0 ) {
+						t = 0;
+						s = clamp( -c / a, 0, 1 );
+					} else if ( t > 1 ) {
+						t = 1;
+						s = clamp( ( b - c ) / a, 0, 1 );
+					}
+				}
+			}
+
+			p1.scaleVector( d1, s );
+			p1.add( aa );
+
+			p2.scaleVector( d2, t );
+			p2.add( ba );
+
+			_tmp_vec3_1.subtractVectors( p1, p2 );
+			return _tmp_vec3_1.dot( _tmp_vec3_1 );
+		};
+	})()
+};
+(function(){
+	Goblin.MinHeap = function( array ) {
+		this.heap = array == null ? [] : array.slice();
+
+		if ( this.heap.length > 0 ) {
+			this.heapify();
+		}
+	};
+	Goblin.MinHeap.prototype = {
+		heapify: function() {
+			var start = ~~( ( this.heap.length - 2 ) / 2 );
+			while ( start >= 0 ) {
+				this.siftUp( start, this.heap.length - 1 );
+				start--;
+			}
+		},
+		siftUp: function( start, end ) {
+			var root = start;
+
+			while ( root * 2 + 1 <= end ) {
+				var child = root * 2 + 1;
+
+				if ( child + 1 <= end && this.heap[child + 1].valueOf() < this.heap[child].valueOf() ) {
+					child++;
+				}
+
+				if ( this.heap[child].valueOf() < this.heap[root].valueOf() ) {
+					var tmp = this.heap[child];
+					this.heap[child] = this.heap[root];
+					this.heap[root] = tmp;
+					root = child;
+				} else {
+					return;
+				}
+			}
+		},
+		push: function( item ) {
+			this.heap.push( item );
+
+			var root = this.heap.length - 1;
+			while ( root !== 0 ) {
+				var parent = ~~( ( root - 1 ) / 2 );
+
+				if ( this.heap[parent].valueOf() > this.heap[root].valueOf() ) {
+					var tmp = this.heap[parent];
+					this.heap[parent] = this.heap[root];
+					this.heap[root] = tmp;
+				}
+
+				root = parent;
+			}
+		},
+		peek: function() {
+			return this.heap.length > 0 ? this.heap[0] : null;
+		},
+		pop: function() {
+			var entry = this.heap[0];
+			this.heap[0] = this.heap[this.heap.length - 1];
+			this.heap.length = this.heap.length - 1;
+			this.siftUp( 0, this.heap.length - 1 );
+
+			return entry;
+		}
+	};
+})();
+Goblin.Utility = {
+	getUid: (function() {
+		var uid = 0;
+		return function() {
+			return uid++;
+		};
+	})()
+};
 /**
  * @class BoxShape
  * @param half_width {Number} half width of the cube ( X axis )
@@ -3745,7 +4127,7 @@ Goblin.BoxShape = function( half_width, half_height, half_depth, material ) {
     this.aabb = new Goblin.AABB();
     this.calculateLocalAABB( this.aabb );
 
-	this.material = ( material !== undefined ) ? material : null;
+	this.material = material || null;
 };
 
 /**
@@ -3894,7 +4276,7 @@ Goblin.CapsuleShape = function( radius, half_height, material ) {
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
 
-	this.material = ( material !== undefined ) ? material : null;
+	this.material = material || null;
 };
 
 /**
@@ -4935,7 +5317,7 @@ Goblin.MeshShape = function( vertices, faces, material ) {
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
 
-	this.material = ( material !== undefined ) ? material : null;
+	this.material = material || null;
 };
 
 /**
@@ -5257,7 +5639,7 @@ Goblin.SphereShape = function( radius, material ) {
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
 
-	this.material = ( material !== undefined ) ? material : null;
+	this.material = material || null;
 };
 
 /**
@@ -5523,397 +5905,6 @@ Goblin.TriangleShape.prototype.rayIntersect = (function(){
 		return intersection;
 	};
 })();
-Goblin.CollisionUtils = {};
-
-Goblin.CollisionUtils.canBodiesCollide = function( object_a, object_b ) {
-    var matrix = object_a.world.collision_matrix;
-
-    if ( matrix[ object_a.layer ] && matrix[ object_a.layer ][ object_b.layer ] === false ) {
-        return false;
-    } else {
-        return true;
-    }
-};
-
-/**
- * Calculate the friction of two colliding objects
- *
- * @method combineFrictions
- * @param object_a {object} First object
- * @param object_b {object} Second object
- * @param shape_a {object} First shape
- * @param shape_b {object} Second shape
- */
-Goblin.CollisionUtils.combineFrictions = function( object_a, object_b, shape_a, shape_b ) {
-    if ( shape_a.material === null && shape_b.material === null ) {
-        return ( object_a.friction + object_b.friction ) / 2;
-    } else if ( shape_a.material === null ) {
-        return this.combineValues( 0, shape_b.material.frictionCombine, object_a.friction || 0, shape_b.material.dynamicFriction );
-    } else if ( shape_b.material === null ) {
-        return this.combineValues( shape_a.material.frictionCombine, 0, shape_a.material.dynamicFriction, shape_b.friction || 0 );
-    }
-
-    return this.combineValues( shape_a.material.frictionCombine, shape_b.material.frictionCombine, shape_a.material.dynamicFriction, shape_b.material.dynamicFriction );
-};
-
-/**
- * Calculate the restriction of two colliding objects
- *
- * @method combineFrictions
- * @param object_a {object} First object
- * @param object_b {object} Second object
- * @param shape_a {object} First shape
- * @param shape_b {object} Second shape
- */
-Goblin.CollisionUtils.combineRestitutions = function( object_a, object_b, shape_a, shape_b ) {
-    if ( shape_a.material === null && shape_b.material === null ) {
-        return ( object_a.restitution + object_b.restitution ) / 2;
-    } else if ( shape_a.material === null ) {
-        return this.combineValues( 0, shape_b.material.bounceCombine, object_a.restitution || 0, shape_b.material.bounciness );
-    } else if ( shape_b.material === null ) {
-        return this.combineValues( shape_a.material.bounceCombine, 0, shape_a.material.bounciness, object_b.restitution || 0 );
-    }
-
-    return this.combineValues( shape_a.material.bounceCombine, shape_b.material.bounceCombine, shape_a.material.bounciness, shape_b.material.bounciness );
-};
-
-/**
- * Combine two values by combination mode
- * Average = 0,
- * Multiply = 1,
- * Minimum = 2,
- * Maximum = 3
- *
- * @method combineFrictions
- * @param combine_a {Number} First combination mode
- * @param combine_b {Number} Second combination mode
- * @param value_a {Number} First value
- * @param value_b {Number} Second value
- */
-Goblin.CollisionUtils.combineValues = function( combine_a, combine_b, value_a, value_b ) {
-    switch ( Math.max( combine_a, combine_b ) ) {
-        case 1:
-            return value_a * value_b;
-        case 2:
-            return Math.min( value_a, value_b );
-        case 3:
-            return Math.max( value_a, value_b );
-        default:
-            return ( value_a + value_b ) / 2;
-    }
-};
-/**
- * Provides methods useful for working with various types of geometries
- *
- * @class GeometryMethods
- * @static
- */
-Goblin.GeometryMethods = {
-	/**
-	 * determines the location in a triangle closest to a given point
-	 *
-	 * @method findClosestPointInTriangle
-	 * @param {vec3} p point
-	 * @param {vec3} a first triangle vertex
-	 * @param {vec3} b second triangle vertex
-	 * @param {vec3} c third triangle vertex
-	 * @param {vec3} out vector where the result will be stored
-	 */
-	findClosestPointInTriangle: (function() {
-		var ab = new Goblin.Vector3(),
-			ac = new Goblin.Vector3(),
-			_vec = new Goblin.Vector3();
-
-		return function( p, a, b, c, out ) {
-			var v;
-
-			// Check if P in vertex region outside A
-			ab.subtractVectors( b, a );
-			ac.subtractVectors( c, a );
-			_vec.subtractVectors( p, a );
-			var d1 = ab.dot( _vec ),
-				d2 = ac.dot( _vec );
-			if ( d1 <= 0 && d2 <= 0 ) {
-				out.copy( a );
-				return;
-			}
-
-			// Check if P in vertex region outside B
-			_vec.subtractVectors( p, b );
-			var d3 = ab.dot( _vec ),
-				d4 = ac.dot( _vec );
-			if ( d3 >= 0 && d4 <= d3 ) {
-				out.copy( b );
-				return;
-			}
-
-			// Check if P in edge region of AB
-			var vc = d1*d4 - d3*d2;
-			if ( vc <= 0 && d1 >= 0 && d3 <= 0 ) {
-				v = d1 / ( d1 - d3 );
-				out.scaleVector( ab, v );
-				out.add( a );
-				return;
-			}
-
-			// Check if P in vertex region outside C
-			_vec.subtractVectors( p, c );
-			var d5 = ab.dot( _vec ),
-				d6 = ac.dot( _vec );
-			if ( d6 >= 0 && d5 <= d6 ) {
-				out.copy( c );
-				return;
-			}
-
-			// Check if P in edge region of AC
-			var vb = d5*d2 - d1*d6,
-				w;
-			if ( vb <= 0 && d2 >= 0 && d6 <= 0 ) {
-				w = d2 / ( d2 - d6 );
-				out.scaleVector( ac, w );
-				out.add( a );
-				return;
-			}
-
-			// Check if P in edge region of BC
-			var va = d3*d6 - d5*d4;
-			if ( va <= 0 && d4-d3 >= 0 && d5-d6 >= 0 ) {
-				w = (d4 - d3) / ( (d4-d3) + (d5-d6) );
-				out.subtractVectors( c, b );
-				out.scale( w );
-				out.add( b );
-				return;
-			}
-
-			// P inside face region
-			var denom = 1 / ( va + vb + vc );
-			v = vb * denom;
-			w = vc * denom;
-
-
-			// At this point `ab` and `ac` can be recycled and lose meaning to their nomenclature
-
-			ab.scale( v );
-			ab.add( a );
-
-			ac.scale( w );
-
-			out.addVectors( ab, ac );
-		};
-	})(),
-
-	/**
-	 * Finds the Barycentric coordinates of point `p` in the triangle `a`, `b`, `c`
-	 *
-	 * @method findBarycentricCoordinates
-	 * @param p {vec3} point to calculate coordinates of
-	 * @param a {vec3} first point in the triangle
-	 * @param b {vec3} second point in the triangle
-	 * @param c {vec3} third point in the triangle
-	 * @param out {vec3} resulting Barycentric coordinates of point `p`
-	 */
-	findBarycentricCoordinates: function( p, a, b, c, out ) {
-
-		var v0 = new Goblin.Vector3(),
-			v1 = new Goblin.Vector3(),
-			v2 = new Goblin.Vector3();
-
-		v0.subtractVectors( b, a );
-		v1.subtractVectors( c, a );
-		v2.subtractVectors( p, a );
-
-		var d00 = v0.dot( v0 ),
-			d01 = v0.dot( v1 ),
-			d11 = v1.dot( v1 ),
-			d20 = v2.dot( v0 ),
-			d21 = v2.dot( v1 ),
-			denom = d00 * d11 - d01 * d01;
-
-		out.y = ( d11 * d20 - d01 * d21 ) / denom;
-		out.z = ( d00 * d21 - d01 * d20 ) / denom;
-		out.x = 1 - out.y - out.z;
-	},
-
-	/**
-	 * Calculates the distance from point `p` to line `ab`
-	 * @param p {vec3} point to calculate distance to
-	 * @param a {vec3} first point in line
-	 * @param b [vec3] second point in line
-	 * @returns {number}
-	 */
-	findSquaredDistanceFromSegment: (function(){
-		var ab = new Goblin.Vector3(),
-			ap = new Goblin.Vector3(),
-			bp = new Goblin.Vector3();
-
-		return function( p, a, b ) {
-			ab.subtractVectors( a, b );
-			ap.subtractVectors( a, p );
-			bp.subtractVectors( b, p );
-
-			var e = ap.dot( ab );
-			if ( e <= 0 ) {
-				return ap.dot( ap );
-			}
-
-			var f = ab.dot( ab );
-			if ( e >= f ) {
-				return bp.dot( bp );
-			}
-
-			return ap.dot( ap ) - e * e / f;
-		};
-	})(),
-
-	findClosestPointsOnSegments: (function(){
-		var d1 = new Goblin.Vector3(),
-			d2 = new Goblin.Vector3(),
-			r = new Goblin.Vector3(),
-			clamp = function( x, min, max ) {
-				return Math.min( Math.max( x, min ), max );
-			};
-
-		return function( aa, ab, ba, bb, p1, p2 ) {
-			d1.subtractVectors( ab, aa );
-			d2.subtractVectors( bb, ba );
-			r.subtractVectors( aa, ba );
-
-			var a = d1.dot( d1 ),
-				e = d2.dot( d2 ),
-				f = d2.dot( r );
-
-			var s, t;
-
-			if ( a <= Goblin.EPSILON && e <= Goblin.EPSILON ) {
-				// Both segments are degenerate
-				s = t = 0;
-				p1.copy( aa );
-				p2.copy( ba );
-				_tmp_vec3_1.subtractVectors( p1, p2 );
-				return _tmp_vec3_1.dot( _tmp_vec3_1 );
-			}
-
-			if ( a <= Goblin.EPSILON ) {
-				// Only first segment is degenerate
-				s = 0;
-				t = f / e;
-				t = clamp( t, 0, 1 );
-			} else {
-				var c = d1.dot( r );
-				if ( e <= Goblin.EPSILON ) {
-					// Second segment is degenerate
-					t = 0;
-					s = clamp( -c / a, 0, 1 );
-				} else {
-					// Neither segment is degenerate
-					var b = d1.dot( d2 ),
-						denom = a * e - b * b;
-
-					if ( denom !== 0 ) {
-						// Segments aren't parallel
-						s = clamp( ( b * f - c * e ) / denom, 0, 1 );
-					} else {
-						s = 0;
-					}
-
-					// find point on segment2 closest to segment1(s)
-					t = ( b * s + f ) / e;
-
-					// validate t, if it needs clamping then clamp and recompute s
-					if ( t < 0 ) {
-						t = 0;
-						s = clamp( -c / a, 0, 1 );
-					} else if ( t > 1 ) {
-						t = 1;
-						s = clamp( ( b - c ) / a, 0, 1 );
-					}
-				}
-			}
-
-			p1.scaleVector( d1, s );
-			p1.add( aa );
-
-			p2.scaleVector( d2, t );
-			p2.add( ba );
-
-			_tmp_vec3_1.subtractVectors( p1, p2 );
-			return _tmp_vec3_1.dot( _tmp_vec3_1 );
-		};
-	})()
-};
-(function(){
-	Goblin.MinHeap = function( array ) {
-		this.heap = array == null ? [] : array.slice();
-
-		if ( this.heap.length > 0 ) {
-			this.heapify();
-		}
-	};
-	Goblin.MinHeap.prototype = {
-		heapify: function() {
-			var start = ~~( ( this.heap.length - 2 ) / 2 );
-			while ( start >= 0 ) {
-				this.siftUp( start, this.heap.length - 1 );
-				start--;
-			}
-		},
-		siftUp: function( start, end ) {
-			var root = start;
-
-			while ( root * 2 + 1 <= end ) {
-				var child = root * 2 + 1;
-
-				if ( child + 1 <= end && this.heap[child + 1].valueOf() < this.heap[child].valueOf() ) {
-					child++;
-				}
-
-				if ( this.heap[child].valueOf() < this.heap[root].valueOf() ) {
-					var tmp = this.heap[child];
-					this.heap[child] = this.heap[root];
-					this.heap[root] = tmp;
-					root = child;
-				} else {
-					return;
-				}
-			}
-		},
-		push: function( item ) {
-			this.heap.push( item );
-
-			var root = this.heap.length - 1;
-			while ( root !== 0 ) {
-				var parent = ~~( ( root - 1 ) / 2 );
-
-				if ( this.heap[parent].valueOf() > this.heap[root].valueOf() ) {
-					var tmp = this.heap[parent];
-					this.heap[parent] = this.heap[root];
-					this.heap[root] = tmp;
-				}
-
-				root = parent;
-			}
-		},
-		peek: function() {
-			return this.heap.length > 0 ? this.heap[0] : null;
-		},
-		pop: function() {
-			var entry = this.heap[0];
-			this.heap[0] = this.heap[this.heap.length - 1];
-			this.heap.length = this.heap.length - 1;
-			this.siftUp( 0, this.heap.length - 1 );
-
-			return entry;
-		}
-	};
-})();
-Goblin.Utility = {
-	getUid: (function() {
-		var uid = 0;
-		return function() {
-			return uid++;
-		};
-	})()
-};
 /**
  * Extends a given shape by sweeping a line around it
  *

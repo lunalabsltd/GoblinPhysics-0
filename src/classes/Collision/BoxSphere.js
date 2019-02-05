@@ -88,9 +88,6 @@ Goblin.BoxSphere = function( object_a, object_b ) {
 	contact.contact_point.scaleVector( contact.contact_normal, sphere.shape.radius - contact.penetration_depth / 2 );
 	contact.contact_point.add( sphere.position );
 
-	//contact.restitution = ( sphere.restitution + box.restitution ) / 2;
-	//contact.friction = ( sphere.friction + box.friction ) / 2;
-
 	return contact;
 };
 
