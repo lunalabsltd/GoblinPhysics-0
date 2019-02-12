@@ -39,7 +39,7 @@ Goblin.FrictionConstraint.prototype.update = (function(){
 
 		this.contact.contact_normal.findOrthogonal( u1, u2 );
 
-		if ( this.object_a == null || this.object_a._mass === Infinity ) {
+		if ( !this.object_a_is_dynamic() ) {
 			row_1.jacobian[0] = row_1.jacobian[1] = row_1.jacobian[2] = 0;
 			row_1.jacobian[3] = row_1.jacobian[4] = row_1.jacobian[5] = 0;
 			row_2.jacobian[0] = row_2.jacobian[1] = row_2.jacobian[2] = 0;
@@ -64,7 +64,7 @@ Goblin.FrictionConstraint.prototype.update = (function(){
 			row_2.jacobian[5] = -_tmp_vec3_1.z;
 		}
 
-		if ( this.object_b == null || this.object_b._mass === Infinity ) {
+		if ( !this.object_b_is_dynamic() ) {
 			row_1.jacobian[6] = row_1.jacobian[7] = row_1.jacobian[8] = 0;
 			row_1.jacobian[9] = row_1.jacobian[10] = row_1.jacobian[11] = 0;
 			row_2.jacobian[6] = row_2.jacobian[7] = row_2.jacobian[8] = 0;
@@ -90,10 +90,10 @@ Goblin.FrictionConstraint.prototype.update = (function(){
 		}
 
 		var limit = this.contact.friction;
-		if (this.object_a != null && this.object_a._mass !== Infinity) {
+		if ( this.object_a_is_dynamic() ) {
 			limit *= this.object_a._mass;
 		}
-		if (this.object_b != null && this.object_b._mass !== Infinity) {
+		if ( this.object_b_is_dynamic() ) {
 			limit *= this.object_b._mass;
 		}
 		if ( limit < 0 ) {
