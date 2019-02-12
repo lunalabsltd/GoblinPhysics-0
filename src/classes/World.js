@@ -120,10 +120,23 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
         for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {
             body = bodies[ i ];
 
+            // kinematic bodies aren't affected by gravity or forces
+            if ( body._is_kinematic ) {
+            	continue;
+            }
+
             // Objects of infinite mass don't move
-            if ( body._mass !== Infinity ) {
+            if ( ( body._mass !== Infinity ) && body.use_gravity ) {
 				_tmp_vec3_1.scaleVector( body.gravity || this.gravity, body._mass * delta );
                 body.accumulated_force.add( _tmp_vec3_1 );
+            }
+
+            if ( body._mass !== Infinity ) {
+				_tmp_vec3_1.scaleVector( body.linear_acceleration, body._mass * delta );
+                body.accumulated_force.add( _tmp_vec3_1 );
+
+                _tmp_vec3_1.scaleVector( body.angular_acceleration, body._mass * delta );
+                body.accumulated_torque.add( _tmp_vec3_1 );
             }
         }
 
@@ -131,12 +144,6 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
         for ( i = 0, loop_count = this.force_generators.length; i < loop_count; i++ ) {
             this.force_generators[ i ].applyForce();
         }
-
-		// Integrate rigid bodies
-		for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {
-			body = bodies[ i ];
-			body.integrate( delta );
-		}
 
 		for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {
 			bodies[ i ].updateDerived();
@@ -167,6 +174,12 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 		for ( i = 0; i < this.ghost_bodies.length; i++ ) {
 			body = this.ghost_bodies[i];
 			body.checkForEndedContacts();
+		}
+
+		// Integrate rigid bodies
+		for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {
+			body = bodies[ i ];
+			body.integrate( delta );
 		}
 
 		this.emit( 'stepEnd', this.ticks, delta );
@@ -218,6 +231,17 @@ Goblin.World.prototype.removeRigidBody = function( rigid_body ) {
  */
 Goblin.World.prototype.updateObjectLayer = function ( rigid_body, new_layer ) {
 	this.broadphase.updateObjectLayer( rigid_body, new_layer );
+};
+
+/**
+ * Updates body's static flag
+ *
+ * @method updateObjectLayer
+ * @param rigid_body {Goblin.RigidBody} Rigid body to update
+ * @param is_static  {Boolean} Whether the object is marked as static
+ */
+Goblin.World.prototype.updateObjectStaticFlag = function ( rigid_body, is_static ) {
+	this.broadphase.updateObjectStaticFlag( rigid_body, is_static );
 };
 
 /**
