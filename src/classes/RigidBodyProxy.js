@@ -17,6 +17,8 @@ Goblin.RigidBodyProxy = function() {
 
 	this.restitution = null;
 	this.friction = null;
+
+	this.is_kinematic = false;
 };
 
 Object.defineProperty(
@@ -29,7 +31,7 @@ Object.defineProperty(
 		set: function( n ) {
 			this._mass = n;
 			this._mass_inverted = 1 / n;
-			this.inertiaTensor = this.shape.getInertiaTensor( n );
+			this.inertiaTensor = this.shape.getInertiaTensor( this.is_kinematic ? Infinity : n );
 		}
 	}
 );
@@ -43,6 +45,7 @@ Goblin.RigidBodyProxy.prototype.setFrom = function( parent, shape_data ) {
 	this.shape_data = shape_data;
 
 	this._mass = parent._mass;
+	this.is_kinematic = parent.is_kinematic;
 
 	parent.transform.transformVector3Into( shape_data.position, this.position );
 	this.rotation.multiplyQuaternions( parent.rotation, shape_data.rotation );
