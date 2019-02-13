@@ -3,11 +3,13 @@
  * @param radius {Number} sphere radius
  * @constructor
  */
-Goblin.SphereShape = function( radius ) {
+Goblin.SphereShape = function( radius, material ) {
 	this.radius = radius;
 
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
+
+	this.material = material || null;
 };
 
 /**

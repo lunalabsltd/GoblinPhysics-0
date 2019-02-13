@@ -4,7 +4,7 @@
  * @param half_height {Number} half height of the capsule
  * @constructor
  */
-Goblin.CapsuleShape = function( radius, half_height ) {
+Goblin.CapsuleShape = function( radius, half_height, material ) {
 	/**
 	 * radius of the capsule
 	 *
@@ -23,6 +23,8 @@ Goblin.CapsuleShape = function( radius, half_height ) {
 
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
+
+	this.material = material || null;
 };
 
 /**
@@ -51,7 +53,7 @@ Goblin.CapsuleShape.prototype.getInertiaTensor = function( mass ) {
 			0, 0, element
 		);
 	}
-	
+
 	var k = 1.5 * this.half_height / this.radius;
 	var ms = mass / ( 1 + k );
 	var mc = mass / ( 1 + 1 / k );

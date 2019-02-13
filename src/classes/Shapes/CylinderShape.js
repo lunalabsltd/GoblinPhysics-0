@@ -4,7 +4,7 @@
  * @param half_height {Number} half height of the cylinder
  * @constructor
  */
-Goblin.CylinderShape = function( radius, half_height ) {
+Goblin.CylinderShape = function( radius, half_height, material ) {
 	/**
 	 * radius of the cylinder
 	 *
@@ -23,6 +23,8 @@ Goblin.CylinderShape = function( radius, half_height ) {
 
     this.aabb = new Goblin.AABB();
     this.calculateLocalAABB( this.aabb );
+
+	this.material = material || null;
 };
 
 /**

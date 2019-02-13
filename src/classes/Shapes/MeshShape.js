@@ -4,7 +4,7 @@
  * @param faces {Array<Number>} array of indices indicating which vertices compose a face; faces[0..2] represent the first face, faces[3..5] are the second, etc
  * @constructor
  */
-Goblin.MeshShape = function( vertices, faces ) {
+Goblin.MeshShape = function( vertices, faces, material ) {
 	this.vertices = vertices;
 
 	this.triangles = [];
@@ -51,6 +51,8 @@ Goblin.MeshShape = function( vertices, faces ) {
 
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
+
+	this.material = material || null;
 };
 
 /**

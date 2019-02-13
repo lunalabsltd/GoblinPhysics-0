@@ -196,9 +196,6 @@ Goblin.GjkEpa = {
 					// Calculate penetration depth
 					contact.penetration_depth = polyhedron.closest_point.length() + Goblin.GjkEpa.margins;
 
-					contact.restitution = ( simplex.object_a.restitution + simplex.object_b.restitution ) / 2;
-					contact.friction = ( simplex.object_a.friction + simplex.object_b.friction ) / 2;
-
 					Goblin.GjkEpa.freePolyhedron( polyhedron );
 
 					return contact;
