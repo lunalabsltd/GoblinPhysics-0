@@ -72,6 +72,27 @@ Goblin.BasicBroadphase.prototype.updateObjectLayer = function ( rigid_body, new_
 };
 
 /**
+ * Updates body's static flag
+ *
+ * @method updateObjectStaticFlag
+ * @param rigid_body {Goblin.RigidBody} Rigid body to update
+ * @param is_static  {Boolean} Whether the object should belong to static phase
+ */
+Goblin.BasicBroadphase.prototype.updateObjectStaticFlag = function ( rigid_body, is_static ) {
+    if ( rigid_body._is_static ) {
+        this._removeBodyFrom( rigid_body, this.static_bodies );
+    } else {
+        this._removeBodyFrom( rigid_body, this.dynamic_bodies );
+    }
+
+    if ( is_static ) {
+        this.static_bodies.push( rigid_body );
+    } else {
+        this.dynamic_bodies.push( rigid_body );
+    }
+};
+
+/**
  * Adds a body to the broadphase for contact checking
  *
  * @method addBody
@@ -80,7 +101,7 @@ Goblin.BasicBroadphase.prototype.updateObjectLayer = function ( rigid_body, new_
 Goblin.BasicPooledBroadphase.prototype.addBody = function( body ) {
     Goblin.BasicBroadphase.prototype.addBody.call( this, body );
     
-    if ( body.static ) {
+    if ( body._is_static ) {
         this.static_bodies.push( body );
     } else {
         this.dynamic_bodies.push( body );

@@ -9,7 +9,7 @@
 Goblin.RigidBody = (function() {
 	var body_count = 0;
 
-	return function( shape, mass, static ) {
+	return function( shape, mass ) {
 		/**
 		 * goblin ID of the body
 		 *
@@ -46,11 +46,29 @@ Goblin.RigidBody = (function() {
 		/**
 		 * the flag indicating the body is static
 		 *
-		 * @property static
+		 * @private
 		 * @type {Boolean}
 		 * @default false
 		 */
-		this.static = !!static;
+		this._is_static = false;
+
+		/**
+		 * the flag indicating the body is kinematic
+		 *
+		 * @property
+		 * @type {Boolean}
+		 * @default false
+		 */
+		this._is_kinematic = false;
+
+		/**
+		 * the flag indicating the body is affected by gravity
+		 *
+		 * @property
+		 * @type {Boolean}
+		 * @default false
+		 */
+		this.use_gravity = true;
 
 		/**
 		 * the rigid body's current position
@@ -104,7 +122,7 @@ Goblin.RigidBody = (function() {
 		this.transform_inverse = new Goblin.Matrix4();
 		this.transform_inverse.identity();
 
-		this.inertiaTensor = shape.getInertiaTensor( mass );
+		this._computeInertiaTensor();
 
 		this.inverseInertiaTensor = new Goblin.Matrix3();
 		this.inertiaTensor.invertInto( this.inverseInertiaTensor );
@@ -149,6 +167,26 @@ Goblin.RigidBody = (function() {
 		 * @private
 		 */
 		this.gravity = null;
+
+		/**
+		 * the rigid body's custom linear acceleration
+		 *
+		 * @property acceleration
+		 * @type {vec3}
+		 * @default null
+		 * @private
+		 */
+		this.linear_acceleration = new Goblin.Vector3();
+
+		/**
+		 * the rigid body's custom angular acceleration
+		 *
+		 * @property acceleration
+		 * @type {vec3}
+		 * @default null
+		 * @private
+		 */
+		this.angular_acceleration = new Goblin.Vector3();
 
 		/**
 		 * proportion of linear velocity lost per second ( 0.0 - 1.0 )
@@ -262,6 +300,31 @@ Object.defineProperty(
 	}
 );
 
+/**
+ * Gets or sets body's kinematic flag hinting the solver the body doesn't obey
+ * physics forces, but can be moved externally.
+ *
+ * @property is_kinematic
+ */
+Object.defineProperty(
+	Goblin.RigidBody.prototype,
+	'is_kinematic',
+	{
+		get: function() {
+			return this._is_kinematic;
+		},
+		set: function( value ) {
+			this._is_kinematic = value;
+			this.updateShapeDerivedValues();
+		}
+	}
+);
+
+/**
+ * Gets or sets body's layer, which allows for fine-tuning collisions.
+ *
+ * @property layer
+ */
 Object.defineProperty(
 	Goblin.RigidBody.prototype,
 	'layer',
@@ -281,27 +344,65 @@ Object.defineProperty(
 	}
 );
 
-Goblin.RigidBody.prototype.setTransform = function ( transform ) {
-	this.transform.copy( transform );
+/**
+ * Gets or sets body's static flag indicating it should be considered
+ * "rarely" moved and can be excluded from static-static collision pairs.
+ *
+ * @property is_static
+ */
+Object.defineProperty(
+	Goblin.RigidBody.prototype,
+	'is_static',
+	{
+		get: function() {
+			return this._is_static;
+		},
+		set: function( value ) {
+			if ( value !== this._is_static ) {
+				if ( this.world ) {
+					this.world.updateObjectStaticFlag( this, value );
+				}
 
-	_tmp_mat4_1.makeTransform( Goblin.Quaternion.IDENTITY, this.center_of_mass );
-	this.transform.multiply( _tmp_mat4_1 );
+				this._is_static = value;
+			}
+		}
+	}
+);
 
-	this.transform.getTranslation( this.position );
-	this.transform.getRotation( this.rotation );
+/**
+ * Updates body's position and rotation from arguments supplied.
+ *
+ * @method setTransform
+ * @param position {Goblin.Vector3} position variable to set
+ * @param rotation {Goblin.Quaternion} rotation variable to set
+ */
+Goblin.RigidBody.prototype.setTransform = function ( position, rotation ) {
+	// thanks god it's rigid - rotation is the same across any point
+	this.rotation.copy( rotation );
+
+	// but, center of mass can be offset - we need to account for that
+	this.rotation.transformVector3Into( this.center_of_mass, _tmp_vec3_1 );
+	this.position.copy( position );
+	this.position.add( _tmp_vec3_1 );
 };
 
-Goblin.RigidBody.prototype.getTransform = function () {
+/**
+ * Extracts body's position and rotation into arguments supplied.
+ *
+ * @method getTransform
+ * @param position {Goblin.Vector3} position variable to update
+ * @param rotation {Goblin.Quaternion} rotation variable to update
+ */
+Goblin.RigidBody.prototype.getTransform = function ( position, rotation ) {
 	this.updateDerived();
 
-	this._world_transform.copy( this.transform );
+	// thanks god it's rigid - rotation is the same across any point
+	rotation.copy( this.rotation );
 
-	_tmp_mat4_1.makeTransform( Goblin.Quaternion.IDENTITY, this.center_of_mass );
-	_tmp_mat4_1.invert();
-
-	this._world_transform.multiply( _tmp_mat4_1 );
-
-	return this._world_transform;
+	// but, center of mass can be offset - we need to account for that
+	this.rotation.transformVector3Into( this.center_of_mass, _tmp_vec3_1 );
+	position.copy( this.position );
+	position.sub( _tmp_vec3_1 );
 };
 
 /**
@@ -311,17 +412,41 @@ Goblin.RigidBody.prototype.getTransform = function () {
  */
 Goblin.RigidBody.prototype.updateShapeDerivedValues = function () {
 	if ( !this.shape.center_of_mass ) {
-		this.inertiaTensor = this.shape.getInertiaTensor( this._mass );
+		this._computeInertiaTensor();
 		return;
 	}
 
+	// re-calc center of mass
 	this.shape.updateCenterOfMass();
 
-	this.inertiaTensor = this.shape.getInertiaTensor( this._mass );
+	// Update AABB
+	this.shape.updateAABB();
+	this.aabb.transform( this.shape.aabb, this.transform );
 
-	this.position.subtract( this.center_of_mass );
+	this._computeInertiaTensor();
+
+	// compute the vector of CoM offset
+	_tmp_vec3_1.copy( this.shape.center_of_mass );
+	_tmp_vec3_1.subtract( this.center_of_mass );
+
+	// rotate the vector with body's rotation
+	this.rotation.transformVector3Into( _tmp_vec3_1, _tmp_vec3_2 );
+
+	// shift the position by the vector of CoM movement
+	this.position.add( _tmp_vec3_2 );
+
+	// update CoM
 	this.center_of_mass.copy( this.shape.center_of_mass );
-	this.position.add( this.center_of_mass );
+};
+
+/**
+ * Updates body's tensor of inertia.
+ *
+ * @private
+ * @method _computeInertiaTensor
+ */
+Goblin.RigidBody.prototype._computeInertiaTensor = function () {
+	this.inertiaTensor = this.shape.getInertiaTensor( this._is_kinematic ? Infinity : this._mass );
 };
 
 /**
@@ -406,15 +531,43 @@ Goblin.RigidBody.prototype.integrate = function( timestep ) {
 	this.angular_velocity.add( _tmp_vec3_1 );
 
 	// Apply damping
-	this.linear_velocity.scale( Math.pow( 1 - this.linear_damping, timestep ) );
-	this.angular_velocity.scale( Math.pow( 1 - this.angular_damping, timestep ) );
+	this.linear_velocity.scale( Math.max(0, 1.0 - this.linear_damping * timestep ) );
+	this.angular_velocity.scale( Math.max(0, 1.0 - this.angular_damping * timestep ) );
 
-	// Update position
-	_tmp_vec3_1.scaleVector( this.linear_velocity, timestep );
+	// Update position & rotation
+	this.integratePosition( timestep, this.linear_velocity );
+	this.integrateRotation( timestep, this.angular_velocity );
+	
+	// Clear accumulated forces
+	this.accumulated_force.x = this.accumulated_force.y = this.accumulated_force.z = 0;
+	this.accumulated_torque.x = this.accumulated_torque.y = this.accumulated_torque.z = 0;
+	this.solver_impulse[0] = this.solver_impulse[1] = this.solver_impulse[2] = this.solver_impulse[3] = this.solver_impulse[4] = this.solver_impulse[5] = 0;
+	this.push_velocity.x = this.push_velocity.y = this.push_velocity.z = 0;
+	this.turn_velocity.x = this.turn_velocity.y = this.turn_velocity.z = 0;
+};
+
+/**
+ * Updates the rigid body's position being given timestamp and linear_velocity.
+ *
+ * @method integratePosition
+ * @param timestep 			{Number} 			time, in seconds, to use in integration
+ * @param linear_velocity 	{Goblin.Vector3} 	linear velocity, m/s
+ */
+Goblin.RigidBody.prototype.integratePosition = function( timestep, linear_velocity ) {
+	_tmp_vec3_1.scaleVector( linear_velocity, timestep );
 	this.position.add( _tmp_vec3_1 );
+};
 
+/**
+ * Updates the rigid body's rotation being given timestamp and angular_velocity.
+ *
+ * @method integratePosition
+ * @param timestep 			{Number} 			time, in seconds, to use in integration
+ * @param angular_velocity 	{Goblin.Vector3} 	angular velocity (torque vector, rad/s)
+ */
+Goblin.RigidBody.prototype.integrateRotation = function( timestep, angular_velocity ) {
 	// Update rotation
-	_tmp_vec3_1.copy( this.angular_velocity );
+	_tmp_vec3_1.copy( angular_velocity );
 	var fAngle = _tmp_vec3_1.length();
 
 	// limit the angular motion per time step
@@ -425,10 +578,10 @@ Goblin.RigidBody.prototype.integrate = function( timestep ) {
 	// choose integration based on angular value
 	if (fAngle < 0.001) {
 		// use Taylor's expansions of sync function
-		_tmp_vec3_1.scale(0.5 * timestep - (timestep * timestep * timestep) * 0.020833333333 * fAngle * fAngle);
+		_tmp_vec3_1.scale( 0.5 * timestep - (timestep * timestep * timestep) * 0.020833333333 * fAngle * fAngle );
 	} else {
 		// sync(fAngle) = sin(c*fAngle)/t
-		_tmp_vec3_1.scale( Math.sin(0.5 * fAngle * timestep) / fAngle );
+		_tmp_vec3_1.scale( Math.sin( 0.5 * fAngle * timestep ) / fAngle );
 	}
 
 	// compose rotational quaternion
@@ -439,16 +592,9 @@ Goblin.RigidBody.prototype.integrate = function( timestep ) {
 	
 	// rotate the body
 	_tmp_quat4_1.multiply( this.rotation );
-	_tmp_quat4_1.normalize();
+	//_tmp_quat4_1.normalize();
 
 	this.rotation.copy( _tmp_quat4_1 );
-	
-	// Clear accumulated forces
-	this.accumulated_force.x = this.accumulated_force.y = this.accumulated_force.z = 0;
-	this.accumulated_torque.x = this.accumulated_torque.y = this.accumulated_torque.z = 0;
-	this.solver_impulse[0] = this.solver_impulse[1] = this.solver_impulse[2] = this.solver_impulse[3] = this.solver_impulse[4] = this.solver_impulse[5] = 0;
-	this.push_velocity.x = this.push_velocity.y = this.push_velocity.z = 0;
-	this.turn_velocity.x = this.turn_velocity.y = this.turn_velocity.z = 0;
 };
 
 /**
@@ -481,13 +627,43 @@ Goblin.RigidBody.prototype.applyImpulse = function( impulse ) {
 };
 
 /**
- * Adds a force to the rigid_body which will be used only for the next integration
+ * Adds linear acceleration to the body, ignoring its mass.
+ *
+ * @method addLinearAcceleration
+ * @param impulse {vec3} acceleration to add to the body
+ */
+Goblin.RigidBody.prototype.addLinearAcceleration = function( a ) {
+	this.linear_acceleration.add( a );
+};
+
+/**
+ * Adds linear acceleration to the body, ignoring its mass.
+ *
+ * @method addLinearAcceleration
+ * @param impulse {vec3} acceleration to add to the body
+ */
+Goblin.RigidBody.prototype.addAngularAcceleration = function( a ) {
+	this.angular_acceleration.add( a );
+};
+
+/**
+ * Adds a linear force to the rigid_body which will be used only for the next integration
  *
  * @method applyForce
  * @param force {vec3} force to apply to the rigid_body
  */
 Goblin.RigidBody.prototype.applyForce = function( force ) {
 	this.accumulated_force.add( force );
+};
+
+/**
+ * Adds a angular force to the rigid_body which will be used only for the next integration
+ *
+ * @method applyForce
+ * @param force {vec3} force to apply to the rigid_body
+ */
+Goblin.RigidBody.prototype.applyTorque = function( torque ) {
+	this.accumulated_torque.add( torque );
 };
 
 /**

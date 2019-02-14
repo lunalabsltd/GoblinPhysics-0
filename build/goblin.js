@@ -962,7 +962,7 @@ Goblin.EventEmitter.apply = function( klass ) {
 Goblin.RigidBody = (function() {
 	var body_count = 0;
 
-	return function( shape, mass, static ) {
+	return function( shape, mass ) {
 		/**
 		 * goblin ID of the body
 		 *
@@ -999,11 +999,29 @@ Goblin.RigidBody = (function() {
 		/**
 		 * the flag indicating the body is static
 		 *
-		 * @property static
+		 * @private
 		 * @type {Boolean}
 		 * @default false
 		 */
-		this.static = !!static;
+		this._is_static = false;
+
+		/**
+		 * the flag indicating the body is kinematic
+		 *
+		 * @property
+		 * @type {Boolean}
+		 * @default false
+		 */
+		this._is_kinematic = false;
+
+		/**
+		 * the flag indicating the body is affected by gravity
+		 *
+		 * @property
+		 * @type {Boolean}
+		 * @default false
+		 */
+		this.use_gravity = true;
 
 		/**
 		 * the rigid body's current position
@@ -1057,7 +1075,7 @@ Goblin.RigidBody = (function() {
 		this.transform_inverse = new Goblin.Matrix4();
 		this.transform_inverse.identity();
 
-		this.inertiaTensor = shape.getInertiaTensor( mass );
+		this._computeInertiaTensor();
 
 		this.inverseInertiaTensor = new Goblin.Matrix3();
 		this.inertiaTensor.invertInto( this.inverseInertiaTensor );
@@ -1102,6 +1120,26 @@ Goblin.RigidBody = (function() {
 		 * @private
 		 */
 		this.gravity = null;
+
+		/**
+		 * the rigid body's custom linear acceleration
+		 *
+		 * @property acceleration
+		 * @type {vec3}
+		 * @default null
+		 * @private
+		 */
+		this.linear_acceleration = new Goblin.Vector3();
+
+		/**
+		 * the rigid body's custom angular acceleration
+		 *
+		 * @property acceleration
+		 * @type {vec3}
+		 * @default null
+		 * @private
+		 */
+		this.angular_acceleration = new Goblin.Vector3();
 
 		/**
 		 * proportion of linear velocity lost per second ( 0.0 - 1.0 )
@@ -1215,6 +1253,31 @@ Object.defineProperty(
 	}
 );
 
+/**
+ * Gets or sets body's kinematic flag hinting the solver the body doesn't obey
+ * physics forces, but can be moved externally.
+ *
+ * @property is_kinematic
+ */
+Object.defineProperty(
+	Goblin.RigidBody.prototype,
+	'is_kinematic',
+	{
+		get: function() {
+			return this._is_kinematic;
+		},
+		set: function( value ) {
+			this._is_kinematic = value;
+			this.updateShapeDerivedValues();
+		}
+	}
+);
+
+/**
+ * Gets or sets body's layer, which allows for fine-tuning collisions.
+ *
+ * @property layer
+ */
 Object.defineProperty(
 	Goblin.RigidBody.prototype,
 	'layer',
@@ -1234,27 +1297,65 @@ Object.defineProperty(
 	}
 );
 
-Goblin.RigidBody.prototype.setTransform = function ( transform ) {
-	this.transform.copy( transform );
+/**
+ * Gets or sets body's static flag indicating it should be considered
+ * "rarely" moved and can be excluded from static-static collision pairs.
+ *
+ * @property is_static
+ */
+Object.defineProperty(
+	Goblin.RigidBody.prototype,
+	'is_static',
+	{
+		get: function() {
+			return this._is_static;
+		},
+		set: function( value ) {
+			if ( value !== this._is_static ) {
+				if ( this.world ) {
+					this.world.updateObjectStaticFlag( this, value );
+				}
 
-	_tmp_mat4_1.makeTransform( Goblin.Quaternion.IDENTITY, this.center_of_mass );
-	this.transform.multiply( _tmp_mat4_1 );
+				this._is_static = value;
+			}
+		}
+	}
+);
 
-	this.transform.getTranslation( this.position );
-	this.transform.getRotation( this.rotation );
+/**
+ * Updates body's position and rotation from arguments supplied.
+ *
+ * @method setTransform
+ * @param position {Goblin.Vector3} position variable to set
+ * @param rotation {Goblin.Quaternion} rotation variable to set
+ */
+Goblin.RigidBody.prototype.setTransform = function ( position, rotation ) {
+	// thanks god it's rigid - rotation is the same across any point
+	this.rotation.copy( rotation );
+
+	// but, center of mass can be offset - we need to account for that
+	this.rotation.transformVector3Into( this.center_of_mass, _tmp_vec3_1 );
+	this.position.copy( position );
+	this.position.add( _tmp_vec3_1 );
 };
 
-Goblin.RigidBody.prototype.getTransform = function () {
+/**
+ * Extracts body's position and rotation into arguments supplied.
+ *
+ * @method getTransform
+ * @param position {Goblin.Vector3} position variable to update
+ * @param rotation {Goblin.Quaternion} rotation variable to update
+ */
+Goblin.RigidBody.prototype.getTransform = function ( position, rotation ) {
 	this.updateDerived();
 
-	this._world_transform.copy( this.transform );
+	// thanks god it's rigid - rotation is the same across any point
+	rotation.copy( this.rotation );
 
-	_tmp_mat4_1.makeTransform( Goblin.Quaternion.IDENTITY, this.center_of_mass );
-	_tmp_mat4_1.invert();
-
-	this._world_transform.multiply( _tmp_mat4_1 );
-
-	return this._world_transform;
+	// but, center of mass can be offset - we need to account for that
+	this.rotation.transformVector3Into( this.center_of_mass, _tmp_vec3_1 );
+	position.copy( this.position );
+	position.sub( _tmp_vec3_1 );
 };
 
 /**
@@ -1264,17 +1365,41 @@ Goblin.RigidBody.prototype.getTransform = function () {
  */
 Goblin.RigidBody.prototype.updateShapeDerivedValues = function () {
 	if ( !this.shape.center_of_mass ) {
-		this.inertiaTensor = this.shape.getInertiaTensor( this._mass );
+		this._computeInertiaTensor();
 		return;
 	}
 
+	// re-calc center of mass
 	this.shape.updateCenterOfMass();
 
-	this.inertiaTensor = this.shape.getInertiaTensor( this._mass );
+	// Update AABB
+	this.shape.updateAABB();
+	this.aabb.transform( this.shape.aabb, this.transform );
 
-	this.position.subtract( this.center_of_mass );
+	this._computeInertiaTensor();
+
+	// compute the vector of CoM offset
+	_tmp_vec3_1.copy( this.shape.center_of_mass );
+	_tmp_vec3_1.subtract( this.center_of_mass );
+
+	// rotate the vector with body's rotation
+	this.rotation.transformVector3Into( _tmp_vec3_1, _tmp_vec3_2 );
+
+	// shift the position by the vector of CoM movement
+	this.position.add( _tmp_vec3_2 );
+
+	// update CoM
 	this.center_of_mass.copy( this.shape.center_of_mass );
-	this.position.add( this.center_of_mass );
+};
+
+/**
+ * Updates body's tensor of inertia.
+ *
+ * @private
+ * @method _computeInertiaTensor
+ */
+Goblin.RigidBody.prototype._computeInertiaTensor = function () {
+	this.inertiaTensor = this.shape.getInertiaTensor( this._is_kinematic ? Infinity : this._mass );
 };
 
 /**
@@ -1359,15 +1484,43 @@ Goblin.RigidBody.prototype.integrate = function( timestep ) {
 	this.angular_velocity.add( _tmp_vec3_1 );
 
 	// Apply damping
-	this.linear_velocity.scale( Math.pow( 1 - this.linear_damping, timestep ) );
-	this.angular_velocity.scale( Math.pow( 1 - this.angular_damping, timestep ) );
+	this.linear_velocity.scale( Math.max(0, 1.0 - this.linear_damping * timestep ) );
+	this.angular_velocity.scale( Math.max(0, 1.0 - this.angular_damping * timestep ) );
 
-	// Update position
-	_tmp_vec3_1.scaleVector( this.linear_velocity, timestep );
+	// Update position & rotation
+	this.integratePosition( timestep, this.linear_velocity );
+	this.integrateRotation( timestep, this.angular_velocity );
+	
+	// Clear accumulated forces
+	this.accumulated_force.x = this.accumulated_force.y = this.accumulated_force.z = 0;
+	this.accumulated_torque.x = this.accumulated_torque.y = this.accumulated_torque.z = 0;
+	this.solver_impulse[0] = this.solver_impulse[1] = this.solver_impulse[2] = this.solver_impulse[3] = this.solver_impulse[4] = this.solver_impulse[5] = 0;
+	this.push_velocity.x = this.push_velocity.y = this.push_velocity.z = 0;
+	this.turn_velocity.x = this.turn_velocity.y = this.turn_velocity.z = 0;
+};
+
+/**
+ * Updates the rigid body's position being given timestamp and linear_velocity.
+ *
+ * @method integratePosition
+ * @param timestep 			{Number} 			time, in seconds, to use in integration
+ * @param linear_velocity 	{Goblin.Vector3} 	linear velocity, m/s
+ */
+Goblin.RigidBody.prototype.integratePosition = function( timestep, linear_velocity ) {
+	_tmp_vec3_1.scaleVector( linear_velocity, timestep );
 	this.position.add( _tmp_vec3_1 );
+};
 
+/**
+ * Updates the rigid body's rotation being given timestamp and angular_velocity.
+ *
+ * @method integratePosition
+ * @param timestep 			{Number} 			time, in seconds, to use in integration
+ * @param angular_velocity 	{Goblin.Vector3} 	angular velocity (torque vector, rad/s)
+ */
+Goblin.RigidBody.prototype.integrateRotation = function( timestep, angular_velocity ) {
 	// Update rotation
-	_tmp_vec3_1.copy( this.angular_velocity );
+	_tmp_vec3_1.copy( angular_velocity );
 	var fAngle = _tmp_vec3_1.length();
 
 	// limit the angular motion per time step
@@ -1378,10 +1531,10 @@ Goblin.RigidBody.prototype.integrate = function( timestep ) {
 	// choose integration based on angular value
 	if (fAngle < 0.001) {
 		// use Taylor's expansions of sync function
-		_tmp_vec3_1.scale(0.5 * timestep - (timestep * timestep * timestep) * 0.020833333333 * fAngle * fAngle);
+		_tmp_vec3_1.scale( 0.5 * timestep - (timestep * timestep * timestep) * 0.020833333333 * fAngle * fAngle );
 	} else {
 		// sync(fAngle) = sin(c*fAngle)/t
-		_tmp_vec3_1.scale( Math.sin(0.5 * fAngle * timestep) / fAngle );
+		_tmp_vec3_1.scale( Math.sin( 0.5 * fAngle * timestep ) / fAngle );
 	}
 
 	// compose rotational quaternion
@@ -1392,16 +1545,9 @@ Goblin.RigidBody.prototype.integrate = function( timestep ) {
 	
 	// rotate the body
 	_tmp_quat4_1.multiply( this.rotation );
-	_tmp_quat4_1.normalize();
+	//_tmp_quat4_1.normalize();
 
 	this.rotation.copy( _tmp_quat4_1 );
-	
-	// Clear accumulated forces
-	this.accumulated_force.x = this.accumulated_force.y = this.accumulated_force.z = 0;
-	this.accumulated_torque.x = this.accumulated_torque.y = this.accumulated_torque.z = 0;
-	this.solver_impulse[0] = this.solver_impulse[1] = this.solver_impulse[2] = this.solver_impulse[3] = this.solver_impulse[4] = this.solver_impulse[5] = 0;
-	this.push_velocity.x = this.push_velocity.y = this.push_velocity.z = 0;
-	this.turn_velocity.x = this.turn_velocity.y = this.turn_velocity.z = 0;
 };
 
 /**
@@ -1434,13 +1580,43 @@ Goblin.RigidBody.prototype.applyImpulse = function( impulse ) {
 };
 
 /**
- * Adds a force to the rigid_body which will be used only for the next integration
+ * Adds linear acceleration to the body, ignoring its mass.
+ *
+ * @method addLinearAcceleration
+ * @param impulse {vec3} acceleration to add to the body
+ */
+Goblin.RigidBody.prototype.addLinearAcceleration = function( a ) {
+	this.linear_acceleration.add( a );
+};
+
+/**
+ * Adds linear acceleration to the body, ignoring its mass.
+ *
+ * @method addLinearAcceleration
+ * @param impulse {vec3} acceleration to add to the body
+ */
+Goblin.RigidBody.prototype.addAngularAcceleration = function( a ) {
+	this.angular_acceleration.add( a );
+};
+
+/**
+ * Adds a linear force to the rigid_body which will be used only for the next integration
  *
  * @method applyForce
  * @param force {vec3} force to apply to the rigid_body
  */
 Goblin.RigidBody.prototype.applyForce = function( force ) {
 	this.accumulated_force.add( force );
+};
+
+/**
+ * Adds a angular force to the rigid_body which will be used only for the next integration
+ *
+ * @method applyForce
+ * @param force {vec3} force to apply to the rigid_body
+ */
+Goblin.RigidBody.prototype.applyTorque = function( torque ) {
+	this.accumulated_torque.add( torque );
 };
 
 /**
@@ -1841,6 +2017,27 @@ Goblin.BasicBroadphase.prototype.updateObjectLayer = function ( rigid_body, new_
 };
 
 /**
+ * Updates body's static flag
+ *
+ * @method updateObjectStaticFlag
+ * @param rigid_body {Goblin.RigidBody} Rigid body to update
+ * @param is_static  {Boolean} Whether the object should belong to static phase
+ */
+Goblin.BasicBroadphase.prototype.updateObjectStaticFlag = function ( rigid_body, is_static ) {
+    if ( rigid_body._is_static ) {
+        this._removeBodyFrom( rigid_body, this.static_bodies );
+    } else {
+        this._removeBodyFrom( rigid_body, this.dynamic_bodies );
+    }
+
+    if ( is_static ) {
+        this.static_bodies.push( rigid_body );
+    } else {
+        this.dynamic_bodies.push( rigid_body );
+    }
+};
+
+/**
  * Adds a body to the broadphase for contact checking
  *
  * @method addBody
@@ -1849,7 +2046,7 @@ Goblin.BasicBroadphase.prototype.updateObjectLayer = function ( rigid_body, new_
 Goblin.BasicPooledBroadphase.prototype.addBody = function( body ) {
     Goblin.BasicBroadphase.prototype.addBody.call( this, body );
     
-    if ( body.static ) {
+    if ( body._is_static ) {
         this.static_bodies.push( body );
     } else {
         this.dynamic_bodies.push( body );
@@ -3231,6 +3428,14 @@ Goblin.Constraint.prototype.deactivate = function() {
 };
 
 Goblin.Constraint.prototype.update = function(){};
+
+Goblin.Constraint.prototype.object_a_is_dynamic = function() {
+	return this.object_a !== null && !this.object_a._is_kinematic && this.object_a._mass !== Infinity;
+};
+
+Goblin.Constraint.prototype.object_b_is_dynamic = function() {
+	return this.object_b !== null && !this.object_b._is_kinematic && this.object_b._mass !== Infinity;
+};
 Goblin.ConstraintLimit = function( limit_lower, limit_upper ) {
 	this.erp = 0.3;
 	this.constraint_row = null;
@@ -3273,7 +3478,7 @@ Goblin.ConstraintRow = function() {
 	this.bias = 0;
 	this.multiplier = 0;
 	this.multiplier_cached = 0;
-	this.gamma = 1;
+	this.cfm = 0;
 	this.eta = 0;
 	this.eta_row = new Float64Array( 12 );
 };
@@ -3321,10 +3526,11 @@ Goblin.ConstraintRow.prototype.reset = function() {
 	this.bias = 0;
 };
 
+
 Goblin.ConstraintRow.prototype.computeB = function( constraint ) {
 	var invmass;
 
-	if ( constraint.object_a != null && constraint.object_a._mass !== Infinity ) {
+	if ( constraint.object_a_is_dynamic() ) {
 		invmass = constraint.object_a._mass_inverted;
 
 		this.B[0] = invmass * this.jacobian[0] * constraint.object_a.linear_factor.x;
@@ -3343,7 +3549,7 @@ Goblin.ConstraintRow.prototype.computeB = function( constraint ) {
 		this.B[3] = this.B[4] = this.B[5] = 0;
 	}
 
-	if ( constraint.object_b != null && constraint.object_b._mass !== Infinity ) {
+	if ( constraint.object_b_is_dynamic() ) {
 		invmass = constraint.object_b._mass_inverted;
 		this.B[6] = invmass * this.jacobian[6] * constraint.object_b.linear_factor.x;
 		this.B[7] = invmass * this.jacobian[7] * constraint.object_b.linear_factor.y;
@@ -3383,36 +3589,36 @@ Goblin.ConstraintRow.prototype.computeEta = function( constraint, time_delta ) {
 	var invmass,
 		inverse_time_delta = 1 / time_delta;
 
-	if ( constraint.object_a == null || constraint.object_a._mass === Infinity ) {
+	if ( !constraint.object_a_is_dynamic() ) {
 		this.eta_row[0] = this.eta_row[1] = this.eta_row[2] = this.eta_row[3] = this.eta_row[4] = this.eta_row[5] = 0;
 	} else {
 		invmass = constraint.object_a._mass_inverted;
 
-		this.eta_row[0] = ( constraint.object_a.linear_velocity.x + ( invmass * constraint.object_a.accumulated_force.x ) ) * inverse_time_delta;
-		this.eta_row[1] = ( constraint.object_a.linear_velocity.y + ( invmass * constraint.object_a.accumulated_force.y ) ) * inverse_time_delta;
-		this.eta_row[2] = ( constraint.object_a.linear_velocity.z + ( invmass * constraint.object_a.accumulated_force.z ) ) * inverse_time_delta;
+		this.eta_row[0] = constraint.object_a.linear_factor.x * ( constraint.object_a.linear_velocity.x + ( invmass * constraint.object_a.accumulated_force.x ) ) * inverse_time_delta;
+		this.eta_row[1] = constraint.object_a.linear_factor.y * ( constraint.object_a.linear_velocity.y + ( invmass * constraint.object_a.accumulated_force.y ) ) * inverse_time_delta;
+		this.eta_row[2] = constraint.object_a.linear_factor.z * ( constraint.object_a.linear_velocity.z + ( invmass * constraint.object_a.accumulated_force.z ) ) * inverse_time_delta;
 
 		_tmp_vec3_1.copy( constraint.object_a.accumulated_torque );
 		constraint.object_a.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
-		this.eta_row[3] = ( constraint.object_a.angular_velocity.x + _tmp_vec3_1.x ) * inverse_time_delta;
-		this.eta_row[4] = ( constraint.object_a.angular_velocity.y + _tmp_vec3_1.y ) * inverse_time_delta;
-		this.eta_row[5] = ( constraint.object_a.angular_velocity.z + _tmp_vec3_1.z ) * inverse_time_delta;
+		this.eta_row[3] = constraint.object_a.angular_factor.x * ( constraint.object_a.angular_velocity.x + _tmp_vec3_1.x ) * inverse_time_delta;
+		this.eta_row[4] = constraint.object_a.angular_factor.y * ( constraint.object_a.angular_velocity.y + _tmp_vec3_1.y ) * inverse_time_delta;
+		this.eta_row[5] = constraint.object_a.angular_factor.z * ( constraint.object_a.angular_velocity.z + _tmp_vec3_1.z ) * inverse_time_delta;
 	}
 
-	if ( constraint.object_b == null || constraint.object_b._mass === Infinity ) {
+	if ( !constraint.object_b_is_dynamic() ) {
 		this.eta_row[6] = this.eta_row[7] = this.eta_row[8] = this.eta_row[9] = this.eta_row[10] = this.eta_row[11] = 0;
 	} else {
 		invmass = constraint.object_b._mass_inverted;
 
-		this.eta_row[6] = ( constraint.object_b.linear_velocity.x + ( invmass * constraint.object_b.accumulated_force.x ) ) * inverse_time_delta;
-		this.eta_row[7] = ( constraint.object_b.linear_velocity.y + ( invmass * constraint.object_b.accumulated_force.y ) ) * inverse_time_delta;
-		this.eta_row[8] = ( constraint.object_b.linear_velocity.z + ( invmass * constraint.object_b.accumulated_force.z ) ) * inverse_time_delta;
+		this.eta_row[6] = constraint.object_b.linear_factor.x * ( constraint.object_b.linear_velocity.x + ( invmass * constraint.object_b.accumulated_force.x ) ) * inverse_time_delta;
+		this.eta_row[7] = constraint.object_b.linear_factor.y * ( constraint.object_b.linear_velocity.y + ( invmass * constraint.object_b.accumulated_force.y ) ) * inverse_time_delta;
+		this.eta_row[8] = constraint.object_b.linear_factor.z * ( constraint.object_b.linear_velocity.z + ( invmass * constraint.object_b.accumulated_force.z ) ) * inverse_time_delta;
 
 		_tmp_vec3_1.copy( constraint.object_b.accumulated_torque );
 		constraint.object_b.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
-		this.eta_row[9] = ( constraint.object_b.angular_velocity.x + _tmp_vec3_1.x ) * inverse_time_delta;
-		this.eta_row[10] = ( constraint.object_b.angular_velocity.y + _tmp_vec3_1.y ) * inverse_time_delta;
-		this.eta_row[11] = ( constraint.object_b.angular_velocity.z + _tmp_vec3_1.z ) * inverse_time_delta;
+		this.eta_row[9] =  constraint.object_b.angular_factor.x * ( constraint.object_b.angular_velocity.x + _tmp_vec3_1.x ) * inverse_time_delta;
+		this.eta_row[10] = constraint.object_b.angular_factor.y * ( constraint.object_b.angular_velocity.y + _tmp_vec3_1.y ) * inverse_time_delta;
+		this.eta_row[11] = constraint.object_b.angular_factor.z * ( constraint.object_b.angular_velocity.z + _tmp_vec3_1.z ) * inverse_time_delta;
 	}
 
 	var jdotv = this.jacobian[0] * this.eta_row[0] +
@@ -3429,6 +3635,11 @@ Goblin.ConstraintRow.prototype.computeEta = function( constraint, time_delta ) {
 		this.jacobian[11] * this.eta_row[11];
 
 	this.eta = ( this.bias * inverse_time_delta ) - jdotv;
+
+	var total_mass = ( constraint.object_a_is_dynamic() ? constraint.object_a._mass : 0 ) +
+					 ( constraint.object_b_is_dynamic() ? constraint.object_b._mass : 0 );
+
+	this.eta = this.eta / ( 1.0 + this.cfm * total_mass );
 };
 Goblin.ContactConstraint = function() {
 	Goblin.Constraint.call( this );
@@ -3460,7 +3671,7 @@ Goblin.ContactConstraint.prototype.buildFromContact = function( contact ) {
 Goblin.ContactConstraint.prototype.update = function() {
 	var row = this.rows[0];
 
-	if ( this.object_a == null || this.object_a._mass === Infinity ) {
+	if ( !this.object_a_is_dynamic() ) {
 		row.jacobian[0] = row.jacobian[1] = row.jacobian[2] = 0;
 		row.jacobian[3] = row.jacobian[4] = row.jacobian[5] = 0;
 	} else {
@@ -3475,7 +3686,7 @@ Goblin.ContactConstraint.prototype.update = function() {
 		row.jacobian[5] = -_tmp_vec3_1.z;
 	}
 
-	if ( this.object_b == null || this.object_b._mass === Infinity ) {
+	if ( !this.object_b_is_dynamic() ) {
 		row.jacobian[6] = row.jacobian[7] = row.jacobian[8] = 0;
 		row.jacobian[9] = row.jacobian[10] = row.jacobian[11] = 0;
 	} else {
@@ -3495,11 +3706,11 @@ Goblin.ContactConstraint.prototype.update = function() {
 
 	// Apply restitution
 	var velocity_along_normal = 0;
-	if ( this.object_a._mass !== Infinity ) {
+	if ( this.object_a_is_dynamic() ) {
 		this.object_a.getVelocityInLocalPoint( this.contact.contact_point_in_a, _tmp_vec3_1 );
 		velocity_along_normal += _tmp_vec3_1.dot( this.contact.contact_normal );
 	}
-	if ( this.object_b._mass !== Infinity ) {
+	if ( this.object_b_is_dynamic() ) {
 		this.object_b.getVelocityInLocalPoint( this.contact.contact_point_in_b, _tmp_vec3_1 );
 		velocity_along_normal -= _tmp_vec3_1.dot( this.contact.contact_normal );
 	}
@@ -3548,7 +3759,7 @@ Goblin.FrictionConstraint.prototype.update = (function(){
 
 		this.contact.contact_normal.findOrthogonal( u1, u2 );
 
-		if ( this.object_a == null || this.object_a._mass === Infinity ) {
+		if ( !this.object_a_is_dynamic() ) {
 			row_1.jacobian[0] = row_1.jacobian[1] = row_1.jacobian[2] = 0;
 			row_1.jacobian[3] = row_1.jacobian[4] = row_1.jacobian[5] = 0;
 			row_2.jacobian[0] = row_2.jacobian[1] = row_2.jacobian[2] = 0;
@@ -3573,7 +3784,7 @@ Goblin.FrictionConstraint.prototype.update = (function(){
 			row_2.jacobian[5] = -_tmp_vec3_1.z;
 		}
 
-		if ( this.object_b == null || this.object_b._mass === Infinity ) {
+		if ( !this.object_b_is_dynamic() ) {
 			row_1.jacobian[6] = row_1.jacobian[7] = row_1.jacobian[8] = 0;
 			row_1.jacobian[9] = row_1.jacobian[10] = row_1.jacobian[11] = 0;
 			row_2.jacobian[6] = row_2.jacobian[7] = row_2.jacobian[8] = 0;
@@ -3599,10 +3810,10 @@ Goblin.FrictionConstraint.prototype.update = (function(){
 		}
 
 		var limit = this.contact.friction;
-		if (this.object_a != null && this.object_a._mass !== Infinity) {
+		if ( this.object_a_is_dynamic() ) {
 			limit *= this.object_a._mass;
 		}
-		if (this.object_b != null && this.object_b._mass !== Infinity) {
+		if ( this.object_b_is_dynamic() ) {
 			limit *= this.object_b._mass;
 		}
 		if ( limit < 0 ) {
@@ -3700,397 +3911,6 @@ Goblin.RayIntersection = function() {
 	this.point = new Goblin.Vector3();
 	this.t = null;
     this.normal = new Goblin.Vector3();
-};
-Goblin.CollisionUtils = {};
-
-Goblin.CollisionUtils.canBodiesCollide = function( object_a, object_b ) {
-    var matrix = object_a.world.collision_matrix;
-
-    if ( matrix[ object_a.layer ] && matrix[ object_a.layer ][ object_b.layer ] === false ) {
-        return false;
-    } else {
-        return true;
-    }
-};
-
-/**
- * Calculate the friction of two colliding objects
- *
- * @method combineFrictions
- * @param object_a {object} First object
- * @param object_b {object} Second object
- * @param shape_a {object} First shape
- * @param shape_b {object} Second shape
- */
-Goblin.CollisionUtils.combineFrictions = function( object_a, object_b, shape_a, shape_b ) {
-    if ( shape_a.material === null && shape_b.material === null ) {
-        return ( object_a.friction + object_b.friction ) / 2;
-    } else if ( shape_a.material === null ) {
-        return this.combineValues( 0, shape_b.material.frictionCombine, object_a.friction || 0, shape_b.material.dynamicFriction );
-    } else if ( shape_b.material === null ) {
-        return this.combineValues( shape_a.material.frictionCombine, 0, shape_a.material.dynamicFriction, shape_b.friction || 0 );
-    }
-
-    return this.combineValues( shape_a.material.frictionCombine, shape_b.material.frictionCombine, shape_a.material.dynamicFriction, shape_b.material.dynamicFriction );
-};
-
-/**
- * Calculate the restriction of two colliding objects
- *
- * @method combineRestitutions
- * @param object_a {object} First object
- * @param object_b {object} Second object
- * @param shape_a {object} First shape
- * @param shape_b {object} Second shape
- */
-Goblin.CollisionUtils.combineRestitutions = function( object_a, object_b, shape_a, shape_b ) {
-    if ( shape_a.material === null && shape_b.material === null ) {
-        return ( object_a.restitution + object_b.restitution ) / 2;
-    } else if ( shape_a.material === null ) {
-        return this.combineValues( 0, shape_b.material.bounceCombine, object_a.restitution || 0, shape_b.material.bounciness );
-    } else if ( shape_b.material === null ) {
-        return this.combineValues( shape_a.material.bounceCombine, 0, shape_a.material.bounciness, object_b.restitution || 0 );
-    }
-
-    return this.combineValues( shape_a.material.bounceCombine, shape_b.material.bounceCombine, shape_a.material.bounciness, shape_b.material.bounciness );
-};
-
-/**
- * Combine two friction/restriction values by combination mode.
- * Average = 0,
- * Multiply = 1,
- * Minimum = 2,
- * Maximum = 3
- *
- * @method combineValues
- * @param combine_a {Number} First combination mode
- * @param combine_b {Number} Second combination mode
- * @param value_a {Number} First value
- * @param value_b {Number} Second value
- */
-Goblin.CollisionUtils.combineValues = function( combine_a, combine_b, value_a, value_b ) {
-    switch ( Math.max( combine_a, combine_b ) ) {
-        case 1:
-            return value_a * value_b;
-        case 2:
-            return Math.min( value_a, value_b );
-        case 3:
-            return Math.max( value_a, value_b );
-        default:
-            return ( value_a + value_b ) / 2;
-    }
-};
-/**
- * Provides methods useful for working with various types of geometries
- *
- * @class GeometryMethods
- * @static
- */
-Goblin.GeometryMethods = {
-	/**
-	 * determines the location in a triangle closest to a given point
-	 *
-	 * @method findClosestPointInTriangle
-	 * @param {vec3} p point
-	 * @param {vec3} a first triangle vertex
-	 * @param {vec3} b second triangle vertex
-	 * @param {vec3} c third triangle vertex
-	 * @param {vec3} out vector where the result will be stored
-	 */
-	findClosestPointInTriangle: (function() {
-		var ab = new Goblin.Vector3(),
-			ac = new Goblin.Vector3(),
-			_vec = new Goblin.Vector3();
-
-		return function( p, a, b, c, out ) {
-			var v;
-
-			// Check if P in vertex region outside A
-			ab.subtractVectors( b, a );
-			ac.subtractVectors( c, a );
-			_vec.subtractVectors( p, a );
-			var d1 = ab.dot( _vec ),
-				d2 = ac.dot( _vec );
-			if ( d1 <= 0 && d2 <= 0 ) {
-				out.copy( a );
-				return;
-			}
-
-			// Check if P in vertex region outside B
-			_vec.subtractVectors( p, b );
-			var d3 = ab.dot( _vec ),
-				d4 = ac.dot( _vec );
-			if ( d3 >= 0 && d4 <= d3 ) {
-				out.copy( b );
-				return;
-			}
-
-			// Check if P in edge region of AB
-			var vc = d1*d4 - d3*d2;
-			if ( vc <= 0 && d1 >= 0 && d3 <= 0 ) {
-				v = d1 / ( d1 - d3 );
-				out.scaleVector( ab, v );
-				out.add( a );
-				return;
-			}
-
-			// Check if P in vertex region outside C
-			_vec.subtractVectors( p, c );
-			var d5 = ab.dot( _vec ),
-				d6 = ac.dot( _vec );
-			if ( d6 >= 0 && d5 <= d6 ) {
-				out.copy( c );
-				return;
-			}
-
-			// Check if P in edge region of AC
-			var vb = d5*d2 - d1*d6,
-				w;
-			if ( vb <= 0 && d2 >= 0 && d6 <= 0 ) {
-				w = d2 / ( d2 - d6 );
-				out.scaleVector( ac, w );
-				out.add( a );
-				return;
-			}
-
-			// Check if P in edge region of BC
-			var va = d3*d6 - d5*d4;
-			if ( va <= 0 && d4-d3 >= 0 && d5-d6 >= 0 ) {
-				w = (d4 - d3) / ( (d4-d3) + (d5-d6) );
-				out.subtractVectors( c, b );
-				out.scale( w );
-				out.add( b );
-				return;
-			}
-
-			// P inside face region
-			var denom = 1 / ( va + vb + vc );
-			v = vb * denom;
-			w = vc * denom;
-
-
-			// At this point `ab` and `ac` can be recycled and lose meaning to their nomenclature
-
-			ab.scale( v );
-			ab.add( a );
-
-			ac.scale( w );
-
-			out.addVectors( ab, ac );
-		};
-	})(),
-
-	/**
-	 * Finds the Barycentric coordinates of point `p` in the triangle `a`, `b`, `c`
-	 *
-	 * @method findBarycentricCoordinates
-	 * @param p {vec3} point to calculate coordinates of
-	 * @param a {vec3} first point in the triangle
-	 * @param b {vec3} second point in the triangle
-	 * @param c {vec3} third point in the triangle
-	 * @param out {vec3} resulting Barycentric coordinates of point `p`
-	 */
-	findBarycentricCoordinates: function( p, a, b, c, out ) {
-
-		var v0 = new Goblin.Vector3(),
-			v1 = new Goblin.Vector3(),
-			v2 = new Goblin.Vector3();
-
-		v0.subtractVectors( b, a );
-		v1.subtractVectors( c, a );
-		v2.subtractVectors( p, a );
-
-		var d00 = v0.dot( v0 ),
-			d01 = v0.dot( v1 ),
-			d11 = v1.dot( v1 ),
-			d20 = v2.dot( v0 ),
-			d21 = v2.dot( v1 ),
-			denom = d00 * d11 - d01 * d01;
-
-		out.y = ( d11 * d20 - d01 * d21 ) / denom;
-		out.z = ( d00 * d21 - d01 * d20 ) / denom;
-		out.x = 1 - out.y - out.z;
-	},
-
-	/**
-	 * Calculates the distance from point `p` to line `ab`
-	 * @param p {vec3} point to calculate distance to
-	 * @param a {vec3} first point in line
-	 * @param b [vec3] second point in line
-	 * @returns {number}
-	 */
-	findSquaredDistanceFromSegment: (function(){
-		var ab = new Goblin.Vector3(),
-			ap = new Goblin.Vector3(),
-			bp = new Goblin.Vector3();
-
-		return function( p, a, b ) {
-			ab.subtractVectors( a, b );
-			ap.subtractVectors( a, p );
-			bp.subtractVectors( b, p );
-
-			var e = ap.dot( ab );
-			if ( e <= 0 ) {
-				return ap.dot( ap );
-			}
-
-			var f = ab.dot( ab );
-			if ( e >= f ) {
-				return bp.dot( bp );
-			}
-
-			return ap.dot( ap ) - e * e / f;
-		};
-	})(),
-
-	findClosestPointsOnSegments: (function(){
-		var d1 = new Goblin.Vector3(),
-			d2 = new Goblin.Vector3(),
-			r = new Goblin.Vector3(),
-			clamp = function( x, min, max ) {
-				return Math.min( Math.max( x, min ), max );
-			};
-
-		return function( aa, ab, ba, bb, p1, p2 ) {
-			d1.subtractVectors( ab, aa );
-			d2.subtractVectors( bb, ba );
-			r.subtractVectors( aa, ba );
-
-			var a = d1.dot( d1 ),
-				e = d2.dot( d2 ),
-				f = d2.dot( r );
-
-			var s, t;
-
-			if ( a <= Goblin.EPSILON && e <= Goblin.EPSILON ) {
-				// Both segments are degenerate
-				s = t = 0;
-				p1.copy( aa );
-				p2.copy( ba );
-				_tmp_vec3_1.subtractVectors( p1, p2 );
-				return _tmp_vec3_1.dot( _tmp_vec3_1 );
-			}
-
-			if ( a <= Goblin.EPSILON ) {
-				// Only first segment is degenerate
-				s = 0;
-				t = f / e;
-				t = clamp( t, 0, 1 );
-			} else {
-				var c = d1.dot( r );
-				if ( e <= Goblin.EPSILON ) {
-					// Second segment is degenerate
-					t = 0;
-					s = clamp( -c / a, 0, 1 );
-				} else {
-					// Neither segment is degenerate
-					var b = d1.dot( d2 ),
-						denom = a * e - b * b;
-
-					if ( denom !== 0 ) {
-						// Segments aren't parallel
-						s = clamp( ( b * f - c * e ) / denom, 0, 1 );
-					} else {
-						s = 0;
-					}
-
-					// find point on segment2 closest to segment1(s)
-					t = ( b * s + f ) / e;
-
-					// validate t, if it needs clamping then clamp and recompute s
-					if ( t < 0 ) {
-						t = 0;
-						s = clamp( -c / a, 0, 1 );
-					} else if ( t > 1 ) {
-						t = 1;
-						s = clamp( ( b - c ) / a, 0, 1 );
-					}
-				}
-			}
-
-			p1.scaleVector( d1, s );
-			p1.add( aa );
-
-			p2.scaleVector( d2, t );
-			p2.add( ba );
-
-			_tmp_vec3_1.subtractVectors( p1, p2 );
-			return _tmp_vec3_1.dot( _tmp_vec3_1 );
-		};
-	})()
-};
-(function(){
-	Goblin.MinHeap = function( array ) {
-		this.heap = array == null ? [] : array.slice();
-
-		if ( this.heap.length > 0 ) {
-			this.heapify();
-		}
-	};
-	Goblin.MinHeap.prototype = {
-		heapify: function() {
-			var start = ~~( ( this.heap.length - 2 ) / 2 );
-			while ( start >= 0 ) {
-				this.siftUp( start, this.heap.length - 1 );
-				start--;
-			}
-		},
-		siftUp: function( start, end ) {
-			var root = start;
-
-			while ( root * 2 + 1 <= end ) {
-				var child = root * 2 + 1;
-
-				if ( child + 1 <= end && this.heap[child + 1].valueOf() < this.heap[child].valueOf() ) {
-					child++;
-				}
-
-				if ( this.heap[child].valueOf() < this.heap[root].valueOf() ) {
-					var tmp = this.heap[child];
-					this.heap[child] = this.heap[root];
-					this.heap[root] = tmp;
-					root = child;
-				} else {
-					return;
-				}
-			}
-		},
-		push: function( item ) {
-			this.heap.push( item );
-
-			var root = this.heap.length - 1;
-			while ( root !== 0 ) {
-				var parent = ~~( ( root - 1 ) / 2 );
-
-				if ( this.heap[parent].valueOf() > this.heap[root].valueOf() ) {
-					var tmp = this.heap[parent];
-					this.heap[parent] = this.heap[root];
-					this.heap[root] = tmp;
-				}
-
-				root = parent;
-			}
-		},
-		peek: function() {
-			return this.heap.length > 0 ? this.heap[0] : null;
-		},
-		pop: function() {
-			var entry = this.heap[0];
-			this.heap[0] = this.heap[this.heap.length - 1];
-			this.heap.length = this.heap.length - 1;
-			this.siftUp( 0, this.heap.length - 1 );
-
-			return entry;
-		}
-	};
-})();
-Goblin.Utility = {
-	getUid: (function() {
-		var uid = 0;
-		return function() {
-			return uid++;
-		};
-	})()
 };
 /**
  * @class BoxShape
@@ -4617,7 +4437,7 @@ Goblin.CompoundShape = function() {
 	this.center_of_mass = new Goblin.Vector3();
 	this.center_of_mass_override = null;
 
-	this.calculateLocalAABB( this.aabb );
+	this.updateAABB();
 };
 
 /**
@@ -4631,7 +4451,7 @@ Goblin.CompoundShape = function() {
 Goblin.CompoundShape.prototype.addChildShape = function( shape, position, rotation ) {
 	this.child_shapes.push( new Goblin.CompoundShapeChild( shape, position, rotation ) );
 	this.updateCenterOfMass();
-	this.calculateLocalAABB( this.aabb );
+	this.updateAABB();
 };
 
 /**
@@ -4651,9 +4471,23 @@ Goblin.CompoundShape.prototype.removeChildShape = function( shape ) {
 	}
 
 	this.updateCenterOfMass();
+	this.updateAABB();
+};
+
+/**
+ * Updates shape's AABB to account for changes in nested shapes.
+ *
+ * @method updateAABB
+ */
+Goblin.CompoundShape.prototype.updateAABB = function() {
 	this.calculateLocalAABB( this.aabb );
 };
 
+/**
+ * Recomputes shape's center of mass.
+ *
+ * @method updateCenterOfMass
+ */
 Goblin.CompoundShape.prototype.updateCenterOfMass = function () {
 	var i;
 
@@ -4729,7 +4563,7 @@ Goblin.CompoundShape.prototype.getInertiaTensor = function( _mass ) {
 		child,
 		child_tensor;
 
-	if ( this.child_shapes.length === 0 ) {
+	if ( this.child_shapes.length === 0 || _mass === Infinity ) {
 		// let's fall back to spherical shape in this case to avoid
 		// nullifying inverse tensors
 		tensor.e00 = tensor.e11 = tensor.e22 = _mass;
@@ -5905,6 +5739,408 @@ Goblin.TriangleShape.prototype.rayIntersect = (function(){
 		return intersection;
 	};
 })();
+Goblin.CollisionUtils = {};
+
+Goblin.CollisionUtils.canBodiesCollide = function( object_a, object_b ) {
+    var matrix = object_a.world.collision_matrix;
+
+    if ( matrix[ object_a.layer ] && matrix[ object_a.layer ][ object_b.layer ] === false ) {
+        return false;
+    } else {
+        return true;
+    }
+
+    if ( object_a._is_static && object_b._is_static ) {
+        // static bodies should never collide
+        return false;
+    }
+
+    if ( matrix[ object_a.layer ] && matrix[ object_a.layer ][ object_b.layer ] === false ) {
+        return false;
+    } else {
+        return true;
+    }
+};
+
+/**
+ * Calculate the friction of two colliding objects
+ *
+ * @method combineFrictions
+ * @param object_a {object} First object
+ * @param object_b {object} Second object
+ * @param shape_a {object} First shape
+ * @param shape_b {object} Second shape
+ */
+Goblin.CollisionUtils.combineFrictions = function( object_a, object_b, shape_a, shape_b ) {
+    if ( shape_a.material === null && shape_b.material === null ) {
+        return ( object_a.friction + object_b.friction ) / 2;
+    } else if ( shape_a.material === null ) {
+        return this.combineValues( 0, shape_b.material.frictionCombine, object_a.friction || 0, shape_b.material.dynamicFriction );
+    } else if ( shape_b.material === null ) {
+        return this.combineValues( shape_a.material.frictionCombine, 0, shape_a.material.dynamicFriction, shape_b.friction || 0 );
+    }
+
+    return this.combineValues( shape_a.material.frictionCombine, shape_b.material.frictionCombine, shape_a.material.dynamicFriction, shape_b.material.dynamicFriction );
+};
+
+/**
+ * Calculate the restriction of two colliding objects
+ *
+ * @method combineRestitutions
+ * @param object_a {object} First object
+ * @param object_b {object} Second object
+ * @param shape_a {object} First shape
+ * @param shape_b {object} Second shape
+ */
+Goblin.CollisionUtils.combineRestitutions = function( object_a, object_b, shape_a, shape_b ) {
+    if ( shape_a.material === null && shape_b.material === null ) {
+        return ( object_a.restitution + object_b.restitution ) / 2;
+    } else if ( shape_a.material === null ) {
+        return this.combineValues( 0, shape_b.material.bounceCombine, object_a.restitution || 0, shape_b.material.bounciness );
+    } else if ( shape_b.material === null ) {
+        return this.combineValues( shape_a.material.bounceCombine, 0, shape_a.material.bounciness, object_b.restitution || 0 );
+    }
+
+    return this.combineValues( shape_a.material.bounceCombine, shape_b.material.bounceCombine, shape_a.material.bounciness, shape_b.material.bounciness );
+};
+
+/**
+ * Combine two friction/restriction values by combination mode.
+ * Average = 0,
+ * Multiply = 1,
+ * Minimum = 2,
+ * Maximum = 3
+ *
+ * @method combineValues
+ * @param combine_a {Number} First combination mode
+ * @param combine_b {Number} Second combination mode
+ * @param value_a {Number} First value
+ * @param value_b {Number} Second value
+ */
+Goblin.CollisionUtils.combineValues = function( combine_a, combine_b, value_a, value_b ) {
+    switch ( Math.max( combine_a, combine_b ) ) {
+        case 1:
+            return value_a * value_b;
+        case 2:
+            return Math.min( value_a, value_b );
+        case 3:
+            return Math.max( value_a, value_b );
+        default:
+            return ( value_a + value_b ) / 2;
+    }
+};
+/**
+ * Provides methods useful for working with various types of geometries
+ *
+ * @class GeometryMethods
+ * @static
+ */
+Goblin.GeometryMethods = {
+	/**
+	 * determines the location in a triangle closest to a given point
+	 *
+	 * @method findClosestPointInTriangle
+	 * @param {vec3} p point
+	 * @param {vec3} a first triangle vertex
+	 * @param {vec3} b second triangle vertex
+	 * @param {vec3} c third triangle vertex
+	 * @param {vec3} out vector where the result will be stored
+	 */
+	findClosestPointInTriangle: (function() {
+		var ab = new Goblin.Vector3(),
+			ac = new Goblin.Vector3(),
+			_vec = new Goblin.Vector3();
+
+		return function( p, a, b, c, out ) {
+			var v;
+
+			// Check if P in vertex region outside A
+			ab.subtractVectors( b, a );
+			ac.subtractVectors( c, a );
+			_vec.subtractVectors( p, a );
+			var d1 = ab.dot( _vec ),
+				d2 = ac.dot( _vec );
+			if ( d1 <= 0 && d2 <= 0 ) {
+				out.copy( a );
+				return;
+			}
+
+			// Check if P in vertex region outside B
+			_vec.subtractVectors( p, b );
+			var d3 = ab.dot( _vec ),
+				d4 = ac.dot( _vec );
+			if ( d3 >= 0 && d4 <= d3 ) {
+				out.copy( b );
+				return;
+			}
+
+			// Check if P in edge region of AB
+			var vc = d1*d4 - d3*d2;
+			if ( vc <= 0 && d1 >= 0 && d3 <= 0 ) {
+				v = d1 / ( d1 - d3 );
+				out.scaleVector( ab, v );
+				out.add( a );
+				return;
+			}
+
+			// Check if P in vertex region outside C
+			_vec.subtractVectors( p, c );
+			var d5 = ab.dot( _vec ),
+				d6 = ac.dot( _vec );
+			if ( d6 >= 0 && d5 <= d6 ) {
+				out.copy( c );
+				return;
+			}
+
+			// Check if P in edge region of AC
+			var vb = d5*d2 - d1*d6,
+				w;
+			if ( vb <= 0 && d2 >= 0 && d6 <= 0 ) {
+				w = d2 / ( d2 - d6 );
+				out.scaleVector( ac, w );
+				out.add( a );
+				return;
+			}
+
+			// Check if P in edge region of BC
+			var va = d3*d6 - d5*d4;
+			if ( va <= 0 && d4-d3 >= 0 && d5-d6 >= 0 ) {
+				w = (d4 - d3) / ( (d4-d3) + (d5-d6) );
+				out.subtractVectors( c, b );
+				out.scale( w );
+				out.add( b );
+				return;
+			}
+
+			// P inside face region
+			var denom = 1 / ( va + vb + vc );
+			v = vb * denom;
+			w = vc * denom;
+
+
+			// At this point `ab` and `ac` can be recycled and lose meaning to their nomenclature
+
+			ab.scale( v );
+			ab.add( a );
+
+			ac.scale( w );
+
+			out.addVectors( ab, ac );
+		};
+	})(),
+
+	/**
+	 * Finds the Barycentric coordinates of point `p` in the triangle `a`, `b`, `c`
+	 *
+	 * @method findBarycentricCoordinates
+	 * @param p {vec3} point to calculate coordinates of
+	 * @param a {vec3} first point in the triangle
+	 * @param b {vec3} second point in the triangle
+	 * @param c {vec3} third point in the triangle
+	 * @param out {vec3} resulting Barycentric coordinates of point `p`
+	 */
+	findBarycentricCoordinates: function( p, a, b, c, out ) {
+
+		var v0 = new Goblin.Vector3(),
+			v1 = new Goblin.Vector3(),
+			v2 = new Goblin.Vector3();
+
+		v0.subtractVectors( b, a );
+		v1.subtractVectors( c, a );
+		v2.subtractVectors( p, a );
+
+		var d00 = v0.dot( v0 ),
+			d01 = v0.dot( v1 ),
+			d11 = v1.dot( v1 ),
+			d20 = v2.dot( v0 ),
+			d21 = v2.dot( v1 ),
+			denom = d00 * d11 - d01 * d01;
+
+		out.y = ( d11 * d20 - d01 * d21 ) / denom;
+		out.z = ( d00 * d21 - d01 * d20 ) / denom;
+		out.x = 1 - out.y - out.z;
+	},
+
+	/**
+	 * Calculates the distance from point `p` to line `ab`
+	 * @param p {vec3} point to calculate distance to
+	 * @param a {vec3} first point in line
+	 * @param b [vec3] second point in line
+	 * @returns {number}
+	 */
+	findSquaredDistanceFromSegment: (function(){
+		var ab = new Goblin.Vector3(),
+			ap = new Goblin.Vector3(),
+			bp = new Goblin.Vector3();
+
+		return function( p, a, b ) {
+			ab.subtractVectors( a, b );
+			ap.subtractVectors( a, p );
+			bp.subtractVectors( b, p );
+
+			var e = ap.dot( ab );
+			if ( e <= 0 ) {
+				return ap.dot( ap );
+			}
+
+			var f = ab.dot( ab );
+			if ( e >= f ) {
+				return bp.dot( bp );
+			}
+
+			return ap.dot( ap ) - e * e / f;
+		};
+	})(),
+
+	findClosestPointsOnSegments: (function(){
+		var d1 = new Goblin.Vector3(),
+			d2 = new Goblin.Vector3(),
+			r = new Goblin.Vector3(),
+			clamp = function( x, min, max ) {
+				return Math.min( Math.max( x, min ), max );
+			};
+
+		return function( aa, ab, ba, bb, p1, p2 ) {
+			d1.subtractVectors( ab, aa );
+			d2.subtractVectors( bb, ba );
+			r.subtractVectors( aa, ba );
+
+			var a = d1.dot( d1 ),
+				e = d2.dot( d2 ),
+				f = d2.dot( r );
+
+			var s, t;
+
+			if ( a <= Goblin.EPSILON && e <= Goblin.EPSILON ) {
+				// Both segments are degenerate
+				s = t = 0;
+				p1.copy( aa );
+				p2.copy( ba );
+				_tmp_vec3_1.subtractVectors( p1, p2 );
+				return _tmp_vec3_1.dot( _tmp_vec3_1 );
+			}
+
+			if ( a <= Goblin.EPSILON ) {
+				// Only first segment is degenerate
+				s = 0;
+				t = f / e;
+				t = clamp( t, 0, 1 );
+			} else {
+				var c = d1.dot( r );
+				if ( e <= Goblin.EPSILON ) {
+					// Second segment is degenerate
+					t = 0;
+					s = clamp( -c / a, 0, 1 );
+				} else {
+					// Neither segment is degenerate
+					var b = d1.dot( d2 ),
+						denom = a * e - b * b;
+
+					if ( denom !== 0 ) {
+						// Segments aren't parallel
+						s = clamp( ( b * f - c * e ) / denom, 0, 1 );
+					} else {
+						s = 0;
+					}
+
+					// find point on segment2 closest to segment1(s)
+					t = ( b * s + f ) / e;
+
+					// validate t, if it needs clamping then clamp and recompute s
+					if ( t < 0 ) {
+						t = 0;
+						s = clamp( -c / a, 0, 1 );
+					} else if ( t > 1 ) {
+						t = 1;
+						s = clamp( ( b - c ) / a, 0, 1 );
+					}
+				}
+			}
+
+			p1.scaleVector( d1, s );
+			p1.add( aa );
+
+			p2.scaleVector( d2, t );
+			p2.add( ba );
+
+			_tmp_vec3_1.subtractVectors( p1, p2 );
+			return _tmp_vec3_1.dot( _tmp_vec3_1 );
+		};
+	})()
+};
+(function(){
+	Goblin.MinHeap = function( array ) {
+		this.heap = array == null ? [] : array.slice();
+
+		if ( this.heap.length > 0 ) {
+			this.heapify();
+		}
+	};
+	Goblin.MinHeap.prototype = {
+		heapify: function() {
+			var start = ~~( ( this.heap.length - 2 ) / 2 );
+			while ( start >= 0 ) {
+				this.siftUp( start, this.heap.length - 1 );
+				start--;
+			}
+		},
+		siftUp: function( start, end ) {
+			var root = start;
+
+			while ( root * 2 + 1 <= end ) {
+				var child = root * 2 + 1;
+
+				if ( child + 1 <= end && this.heap[child + 1].valueOf() < this.heap[child].valueOf() ) {
+					child++;
+				}
+
+				if ( this.heap[child].valueOf() < this.heap[root].valueOf() ) {
+					var tmp = this.heap[child];
+					this.heap[child] = this.heap[root];
+					this.heap[root] = tmp;
+					root = child;
+				} else {
+					return;
+				}
+			}
+		},
+		push: function( item ) {
+			this.heap.push( item );
+
+			var root = this.heap.length - 1;
+			while ( root !== 0 ) {
+				var parent = ~~( ( root - 1 ) / 2 );
+
+				if ( this.heap[parent].valueOf() > this.heap[root].valueOf() ) {
+					var tmp = this.heap[parent];
+					this.heap[parent] = this.heap[root];
+					this.heap[root] = tmp;
+				}
+
+				root = parent;
+			}
+		},
+		peek: function() {
+			return this.heap.length > 0 ? this.heap[0] : null;
+		},
+		pop: function() {
+			var entry = this.heap[0];
+			this.heap[0] = this.heap[this.heap.length - 1];
+			this.heap.length = this.heap.length - 1;
+			this.siftUp( 0, this.heap.length - 1 );
+
+			return entry;
+		}
+	};
+})();
+Goblin.Utility = {
+	getUid: (function() {
+		var uid = 0;
+		return function() {
+			return uid++;
+		};
+	})()
+};
 /**
  * Extends a given shape by sweeping a line around it
  *
@@ -6062,50 +6298,43 @@ Goblin.AABB.prototype.combineAABBs = function( a, b ) {
 };
 
 Goblin.AABB.prototype.transform = (function(){
-	var local_half_extents = new Goblin.Vector3(),
-		local_center = new Goblin.Vector3(),
-		center = new Goblin.Vector3(),
-		extents = new Goblin.Vector3(),
-		abs = new Goblin.Matrix3();
+	var local_center = new Goblin.Vector3(),
+        center = new Goblin.Vector3();
 
+    // the algorithm for AABB (min-max variant) is taken from
+    // Graphics Gems, 1999 (example at https://github.com/erich666/GraphicsGems/blob/master/gems/TransBox.c)
 	return function( local_aabb, matrix ) {
-		local_half_extents.subtractVectors( local_aabb.max, local_aabb.min );
-		local_half_extents.scale( 0.5  );
+        local_center.addVectors( local_aabb.max, local_aabb.min );
+        local_center.scale( 0.5  );
 
-		local_center.addVectors( local_aabb.max, local_aabb.min );
-		local_center.scale( 0.5  );
+        matrix.transformVector3Into( local_center, center );
 
-		matrix.transformVector3Into( local_center, center );
+        var amin = [ local_aabb.min.x, local_aabb.min.y, local_aabb.min.z ];
+        var amax = [ local_aabb.max.x, local_aabb.max.y, local_aabb.max.z ];
 
-		// Extract the absolute rotation matrix
-		abs.e00 = Math.abs( matrix.e00 );
-		abs.e01 = Math.abs( matrix.e01 );
-		abs.e02 = Math.abs( matrix.e02 );
-		abs.e10 = Math.abs( matrix.e10 );
-		abs.e11 = Math.abs( matrix.e11 );
-		abs.e12 = Math.abs( matrix.e12 );
-		abs.e20 = Math.abs( matrix.e20 );
-		abs.e21 = Math.abs( matrix.e21 );
-		abs.e22 = Math.abs( matrix.e22 );
+        var bmin = [ center.x, center.y, center.z ];
+        var bmax = [ center.x, center.y, center.z ];
 
-		_tmp_vec3_1.x = abs.e00;
-		_tmp_vec3_1.y = abs.e10;
-		_tmp_vec3_1.z = abs.e20;
-		extents.x = local_half_extents.dot( _tmp_vec3_1 );
+        var m = [ matrix.e00, matrix.e01, matrix.e02, matrix.e10, matrix.e11, matrix.e12, matrix.e20, matrix.e21, matrix.e22 ];
 
-		_tmp_vec3_1.x = abs.e01;
-		_tmp_vec3_1.y = abs.e11;
-		_tmp_vec3_1.z = abs.e21;
-		extents.y = local_half_extents.dot( _tmp_vec3_1 );
+        for( var i = 0; i < 3; i++ ) {
+            for( var j = 0; j < 3; j++ ) {
+                var a = m[ i * 3 + j ] * amin[j];
+                var b = m[ i * 3 + j ] * amax[j];
 
-		_tmp_vec3_1.x = abs.e02;
-		_tmp_vec3_1.y = abs.e12;
-		_tmp_vec3_1.z = abs.e22;
-		extents.z = local_half_extents.dot( _tmp_vec3_1 );
+                if ( a < b ) { 
+                    bmin[i] += a; 
+                    bmax[i] += b;
+                } else { 
+                    bmin[i] += b; 
+                    bmax[i] += a;
+                }
+            }
+        }
 
-		this.min.subtractVectors( center, extents );
-		this.max.addVectors( center, extents );
-	};
+        this.min.set( bmin[0], bmin[1], bmin[2] );
+        this.max.set( bmax[0], bmax[1], bmax[2] );
+    };
 })();
 
 Goblin.AABB.prototype.intersects = function( aabb ) {
@@ -6955,6 +7184,14 @@ Goblin.IterativeSolver = function() {
 	 */
 	this.warmstarting_factor = 0.95;
 
+	/**
+	 * The absolute value of jacobian determinant (row.D) under which the row is considered inactive.
+	 *
+	 * @property warmstarting_factor
+	 * @type {number}
+	 */
+	this.min_row_response = 1e-5;
+
 
 	var solver = this;
 	/**
@@ -7099,7 +7336,7 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 			row = constraint.rows[0];
 
 			jdot = 0;
-			if ( constraint.object_a != null && constraint.object_a._mass !== Infinity ) {
+			if ( constraint.object_a_is_dynamic() ) {
 				jdot += (
 					row.jacobian[0] * constraint.object_a.linear_factor.x * constraint.object_a.push_velocity.x +
 					row.jacobian[1] * constraint.object_a.linear_factor.y * constraint.object_a.push_velocity.y +
@@ -7109,7 +7346,7 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 					row.jacobian[5] * constraint.object_a.angular_factor.z * constraint.object_a.turn_velocity.z
 				);
 			}
-			if ( constraint.object_b != null && constraint.object_b._mass !== Infinity ) {
+			if ( constraint.object_b_is_dynamic() ) {
 				jdot += (
 					row.jacobian[6] * constraint.object_b.linear_factor.x * constraint.object_b.push_velocity.x +
 					row.jacobian[7] * constraint.object_b.linear_factor.y * constraint.object_b.push_velocity.y +
@@ -7132,7 +7369,7 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 			delta_lambda = row.multiplier - cache;
 			max_impulse = Math.max( max_impulse, delta_lambda );
 
-			if ( constraint.object_a && constraint.object_a._mass !== Infinity ) {
+			if ( constraint.object_a_is_dynamic() ) {
 				constraint.object_a.push_velocity.x += delta_lambda * row.B[0];
 				constraint.object_a.push_velocity.y += delta_lambda * row.B[1];
 				constraint.object_a.push_velocity.z += delta_lambda * row.B[2];
@@ -7141,7 +7378,7 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 				constraint.object_a.turn_velocity.y += delta_lambda * row.B[4];
 				constraint.object_a.turn_velocity.z += delta_lambda * row.B[5];
 			}
-			if ( constraint.object_b && constraint.object_b._mass !== Infinity ) {
+			if ( constraint.object_b_is_dynamic() ) {
 				constraint.object_b.push_velocity.x += delta_lambda * row.B[6];
 				constraint.object_b.push_velocity.y += delta_lambda * row.B[7];
 				constraint.object_b.push_velocity.z += delta_lambda * row.B[8];
@@ -7162,7 +7399,7 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 		constraint = this.contact_constraints[i];
 		row = constraint.rows[0];
 
-		if ( constraint.object_a != null && constraint.object_a._mass !== Infinity ) {
+		if ( constraint.object_a_is_dynamic() ) {
 			invmass = constraint.object_a._mass_inverted;
 			constraint.object_a.position.x += invmass * row.jacobian[0] * constraint.object_a.linear_factor.x * row.multiplier * this.relaxation;
 			constraint.object_a.position.y += invmass * row.jacobian[1] * constraint.object_a.linear_factor.y * row.multiplier * this.relaxation;
@@ -7173,20 +7410,10 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 			_tmp_vec3_1.z = row.jacobian[5] * constraint.object_a.angular_factor.z * row.multiplier * this.relaxation;
 			constraint.object_a.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
 
-			_tmp_quat4_1.x = _tmp_vec3_1.x;
-			_tmp_quat4_1.y = _tmp_vec3_1.y;
-			_tmp_quat4_1.z = _tmp_vec3_1.z;
-			_tmp_quat4_1.w = 0;
-			_tmp_quat4_1.multiply( constraint.object_a.rotation );
-
-			constraint.object_a.rotation.x += 0.5 * _tmp_quat4_1.x;
-			constraint.object_a.rotation.y += 0.5 * _tmp_quat4_1.y;
-			constraint.object_a.rotation.z += 0.5 * _tmp_quat4_1.z;
-			constraint.object_a.rotation.w += 0.5 * _tmp_quat4_1.w;
-			constraint.object_a.rotation.normalize();
+			constraint.object_a.integrateRotation( 1.0, _tmp_vec3_1 );
 		}
 
-		if ( constraint.object_b != null && constraint.object_b._mass !== Infinity ) {
+		if ( constraint.object_b_is_dynamic() ) {
 			invmass = constraint.object_b._mass_inverted;
 			constraint.object_b.position.x += invmass * row.jacobian[6] * constraint.object_b.linear_factor.x * row.multiplier * this.relaxation;
 			constraint.object_b.position.y += invmass * row.jacobian[7] * constraint.object_b.linear_factor.y * row.multiplier * this.relaxation;
@@ -7197,17 +7424,7 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 			_tmp_vec3_1.z = row.jacobian[11] * constraint.object_b.angular_factor.z * row.multiplier * this.relaxation;
 			constraint.object_b.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
 
-			_tmp_quat4_1.x = _tmp_vec3_1.x;
-			_tmp_quat4_1.y = _tmp_vec3_1.y;
-			_tmp_quat4_1.z = _tmp_vec3_1.z;
-			_tmp_quat4_1.w = 0;
-			_tmp_quat4_1.multiply( constraint.object_b.rotation );
-
-			constraint.object_b.rotation.x += 0.5 * _tmp_quat4_1.x;
-			constraint.object_b.rotation.y += 0.5 * _tmp_quat4_1.y;
-			constraint.object_b.rotation.z += 0.5 * _tmp_quat4_1.z;
-			constraint.object_b.rotation.w += 0.5 * _tmp_quat4_1.w;
-			constraint.object_b.rotation.normalize();
+			constraint.object_b.integrateRotation( 1.0, _tmp_vec3_1 );
 		}
 
 		row.multiplier = 0;
@@ -7239,7 +7456,11 @@ Goblin.IterativeSolver.prototype.solveConstraints = function() {
 			warmth = row.multiplier_cached * this.warmstarting_factor;
 			row.multiplier = warmth;
 
-			if ( constraint.object_a && constraint.object_a._mass !== Infinity ) {
+			if ( Math.abs( row.D ) < this.min_row_response ) {
+				continue;
+			}
+
+			if ( constraint.object_a_is_dynamic() ) {
 				constraint.object_a.solver_impulse[0] += warmth * row.B[0];
 				constraint.object_a.solver_impulse[1] += warmth * row.B[1];
 				constraint.object_a.solver_impulse[2] += warmth * row.B[2];
@@ -7248,7 +7469,7 @@ Goblin.IterativeSolver.prototype.solveConstraints = function() {
 				constraint.object_a.solver_impulse[4] += warmth * row.B[4];
 				constraint.object_a.solver_impulse[5] += warmth * row.B[5];
 			}
-			if ( constraint.object_b && constraint.object_b._mass !== Infinity ) {
+			if ( constraint.object_b_is_dynamic() ) {
 				constraint.object_b.solver_impulse[0] += warmth * row.B[6];
 				constraint.object_b.solver_impulse[1] += warmth * row.B[7];
 				constraint.object_b.solver_impulse[2] += warmth * row.B[8];
@@ -7272,23 +7493,27 @@ Goblin.IterativeSolver.prototype.solveConstraints = function() {
 			for ( j = 0; j < num_rows; j++ ) {
 				row = constraint.rows[j];
 
+				if ( Math.abs( row.D ) < this.min_row_response ) {
+					continue;
+				}
+
 				jdot = 0;
-				if ( constraint.object_a != null && constraint.object_a._mass !== Infinity ) {
+				if ( constraint.object_a_is_dynamic() ) {
 					jdot += (
-						row.jacobian[0] * constraint.object_a.linear_factor.x * constraint.object_a.solver_impulse[0] +
-						row.jacobian[1] * constraint.object_a.linear_factor.y * constraint.object_a.solver_impulse[1] +
-						row.jacobian[2] * constraint.object_a.linear_factor.z * constraint.object_a.solver_impulse[2] +
+						row.jacobian[0] * constraint.object_a.linear_factor.x  * constraint.object_a.solver_impulse[0] +
+						row.jacobian[1] * constraint.object_a.linear_factor.y  * constraint.object_a.solver_impulse[1] +
+						row.jacobian[2] * constraint.object_a.linear_factor.z  * constraint.object_a.solver_impulse[2] +
 						row.jacobian[3] * constraint.object_a.angular_factor.x * constraint.object_a.solver_impulse[3] +
 						row.jacobian[4] * constraint.object_a.angular_factor.y * constraint.object_a.solver_impulse[4] +
 						row.jacobian[5] * constraint.object_a.angular_factor.z * constraint.object_a.solver_impulse[5]
 						);
 				}
-				if ( constraint.object_b != null && constraint.object_b._mass !== Infinity ) {
+				if ( constraint.object_b_is_dynamic() ) {
 					jdot += (
-						row.jacobian[6] * constraint.object_b.linear_factor.x * constraint.object_b.solver_impulse[0] +
-						row.jacobian[7] * constraint.object_b.linear_factor.y * constraint.object_b.solver_impulse[1] +
-						row.jacobian[8] * constraint.object_b.linear_factor.z * constraint.object_b.solver_impulse[2] +
-						row.jacobian[9] * constraint.object_b.angular_factor.x * constraint.object_b.solver_impulse[3] +
+						row.jacobian[6] * constraint.object_b.linear_factor.x   * constraint.object_b.solver_impulse[0] +
+						row.jacobian[7] * constraint.object_b.linear_factor.y   * constraint.object_b.solver_impulse[1] +
+						row.jacobian[8] * constraint.object_b.linear_factor.z   * constraint.object_b.solver_impulse[2] +
+						row.jacobian[9] * constraint.object_b.angular_factor.x  * constraint.object_b.solver_impulse[3] +
 						row.jacobian[10] * constraint.object_b.angular_factor.y * constraint.object_b.solver_impulse[4] +
 						row.jacobian[11] * constraint.object_b.angular_factor.z * constraint.object_b.solver_impulse[5]
 					);
@@ -7306,7 +7531,7 @@ Goblin.IterativeSolver.prototype.solveConstraints = function() {
 				row.multiplier = Math.max(
 					row.lower_limit,
 					Math.min(
-						multiplier_target * row.gamma,
+						multiplier_target,
 						row.upper_limit
 					)
 				);
@@ -7314,11 +7539,11 @@ Goblin.IterativeSolver.prototype.solveConstraints = function() {
 				// Find final `delta_lambda`
 				delta_lambda = row.multiplier - cache;
 
-				var total_mass = ( constraint.object_a && constraint.object_a._mass !== Infinity ? constraint.object_a._mass : 0 ) +
-					( constraint.object_b && constraint.object_b._mass !== Infinity ? constraint.object_b._mass : 0 );
+				var total_mass = ( constraint.object_a_is_dynamic() ? constraint.object_a._mass : 0 ) +
+					( constraint.object_b_is_dynamic() ? constraint.object_b._mass : 0 );
 				max_impulse = Math.max( max_impulse, Math.abs( delta_lambda ) / total_mass );
 
-				if ( constraint.object_a && constraint.object_a._mass !== Infinity ) {
+				if ( constraint.object_a_is_dynamic() ) {
 					constraint.object_a.solver_impulse[0] += delta_lambda * row.B[0];
 					constraint.object_a.solver_impulse[1] += delta_lambda * row.B[1];
 					constraint.object_a.solver_impulse[2] += delta_lambda * row.B[2];
@@ -7327,7 +7552,7 @@ Goblin.IterativeSolver.prototype.solveConstraints = function() {
 					constraint.object_a.solver_impulse[4] += delta_lambda * row.B[4];
 					constraint.object_a.solver_impulse[5] += delta_lambda * row.B[5];
 				}
-				if ( constraint.object_b && constraint.object_b._mass !== Infinity ) {
+				if ( constraint.object_b_is_dynamic() ) {
 					constraint.object_b.solver_impulse[0] += delta_lambda * row.B[6];
 					constraint.object_b.solver_impulse[1] += delta_lambda * row.B[7];
 					constraint.object_b.solver_impulse[2] += delta_lambda * row.B[8];
@@ -7366,7 +7591,11 @@ Goblin.IterativeSolver.prototype.applyConstraints = function( time_delta ) {
 			row = constraint.rows[j];
 			row.multiplier_cached = row.multiplier;
 
-			if ( constraint.object_a != null && constraint.object_a._mass !== Infinity ) {
+			if ( Math.abs( row.D ) < this.min_row_response ) {
+				continue;
+			}
+
+			if ( constraint.object_a_is_dynamic() ) {
 				invmass = constraint.object_a._mass_inverted;
 				_tmp_vec3_2.x = invmass * time_delta * row.jacobian[0] * constraint.object_a.linear_factor.x * row.multiplier;
 				_tmp_vec3_2.y = invmass * time_delta * row.jacobian[1] * constraint.object_a.linear_factor.y * row.multiplier;
@@ -7382,7 +7611,7 @@ Goblin.IterativeSolver.prototype.applyConstraints = function( time_delta ) {
 				constraint.last_impulse.add( _tmp_vec3_1 );
 			}
 
-			if ( constraint.object_b != null && constraint.object_b._mass !== Infinity ) {
+			if ( constraint.object_b_is_dynamic() ) {
 				invmass = constraint.object_b._mass_inverted;
 				_tmp_vec3_2.x = invmass * time_delta * row.jacobian[6] * constraint.object_b.linear_factor.x * row.multiplier;
 				_tmp_vec3_2.y = invmass * time_delta * row.jacobian[7] * constraint.object_b.linear_factor.y * row.multiplier;
@@ -7390,7 +7619,7 @@ Goblin.IterativeSolver.prototype.applyConstraints = function( time_delta ) {
 				constraint.object_b.linear_velocity.add(_tmp_vec3_2 );
 				constraint.last_impulse.add( _tmp_vec3_2 );
 
-				_tmp_vec3_1.x = time_delta * row.jacobian[9] * constraint.object_b.angular_factor.x * row.multiplier;
+				_tmp_vec3_1.x = time_delta * row.jacobian[9]  * constraint.object_b.angular_factor.x * row.multiplier;
 				_tmp_vec3_1.y = time_delta * row.jacobian[10] * constraint.object_b.angular_factor.y * row.multiplier;
 				_tmp_vec3_1.z = time_delta * row.jacobian[11] * constraint.object_b.angular_factor.z * row.multiplier;
 				constraint.object_b.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
@@ -7910,6 +8139,8 @@ Goblin.RigidBodyProxy = function() {
 
 	this.restitution = null;
 	this.friction = null;
+
+	this.is_kinematic = false;
 };
 
 Object.defineProperty(
@@ -7922,7 +8153,7 @@ Object.defineProperty(
 		set: function( n ) {
 			this._mass = n;
 			this._mass_inverted = 1 / n;
-			this.inertiaTensor = this.shape.getInertiaTensor( n );
+			this.inertiaTensor = this.shape.getInertiaTensor( this.is_kinematic ? Infinity : n );
 		}
 	}
 );
@@ -7936,6 +8167,7 @@ Goblin.RigidBodyProxy.prototype.setFrom = function( parent, shape_data ) {
 	this.shape_data = shape_data;
 
 	this._mass = parent._mass;
+	this.is_kinematic = parent.is_kinematic;
 
 	parent.transform.transformVector3Into( shape_data.position, this.position );
 	this.rotation.multiplyQuaternions( parent.rotation, shape_data.rotation );
@@ -8080,10 +8312,23 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
         for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {
             body = bodies[ i ];
 
+            // kinematic bodies aren't affected by gravity or forces
+            if ( body._is_kinematic ) {
+            	continue;
+            }
+
             // Objects of infinite mass don't move
-            if ( body._mass !== Infinity ) {
+            if ( ( body._mass !== Infinity ) && body.use_gravity ) {
 				_tmp_vec3_1.scaleVector( body.gravity || this.gravity, body._mass * delta );
                 body.accumulated_force.add( _tmp_vec3_1 );
+            }
+
+            if ( body._mass !== Infinity ) {
+				_tmp_vec3_1.scaleVector( body.linear_acceleration, body._mass * delta );
+                body.accumulated_force.add( _tmp_vec3_1 );
+
+                _tmp_vec3_1.scaleVector( body.angular_acceleration, body._mass * delta );
+                body.accumulated_torque.add( _tmp_vec3_1 );
             }
         }
 
@@ -8091,12 +8336,6 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
         for ( i = 0, loop_count = this.force_generators.length; i < loop_count; i++ ) {
             this.force_generators[ i ].applyForce();
         }
-
-		// Integrate rigid bodies
-		for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {
-			body = bodies[ i ];
-			body.integrate( delta );
-		}
 
 		for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {
 			bodies[ i ].updateDerived();
@@ -8127,6 +8366,12 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 		for ( i = 0; i < this.ghost_bodies.length; i++ ) {
 			body = this.ghost_bodies[i];
 			body.checkForEndedContacts();
+		}
+
+		// Integrate rigid bodies
+		for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {
+			body = bodies[ i ];
+			body.integrate( delta );
 		}
 
 		this.emit( 'stepEnd', this.ticks, delta );
@@ -8178,6 +8423,17 @@ Goblin.World.prototype.removeRigidBody = function( rigid_body ) {
  */
 Goblin.World.prototype.updateObjectLayer = function ( rigid_body, new_layer ) {
 	this.broadphase.updateObjectLayer( rigid_body, new_layer );
+};
+
+/**
+ * Updates body's static flag
+ *
+ * @method updateObjectLayer
+ * @param rigid_body {Goblin.RigidBody} Rigid body to update
+ * @param is_static  {Boolean} Whether the object is marked as static
+ */
+Goblin.World.prototype.updateObjectStaticFlag = function ( rigid_body, is_static ) {
+	this.broadphase.updateObjectStaticFlag( rigid_body, is_static );
 };
 
 /**

@@ -33,3 +33,11 @@ Goblin.Constraint.prototype.deactivate = function() {
 };
 
 Goblin.Constraint.prototype.update = function(){};
+
+Goblin.Constraint.prototype.object_a_is_dynamic = function() {
+	return this.object_a !== null && !this.object_a._is_kinematic && this.object_a._mass !== Infinity;
+};
+
+Goblin.Constraint.prototype.object_b_is_dynamic = function() {
+	return this.object_b !== null && !this.object_b._is_kinematic && this.object_b._mass !== Infinity;
+};

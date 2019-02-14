@@ -11,7 +11,7 @@ Goblin.CompoundShape = function() {
 	this.center_of_mass = new Goblin.Vector3();
 	this.center_of_mass_override = null;
 
-	this.calculateLocalAABB( this.aabb );
+	this.updateAABB();
 };
 
 /**
@@ -25,7 +25,7 @@ Goblin.CompoundShape = function() {
 Goblin.CompoundShape.prototype.addChildShape = function( shape, position, rotation ) {
 	this.child_shapes.push( new Goblin.CompoundShapeChild( shape, position, rotation ) );
 	this.updateCenterOfMass();
-	this.calculateLocalAABB( this.aabb );
+	this.updateAABB();
 };
 
 /**
@@ -45,9 +45,23 @@ Goblin.CompoundShape.prototype.removeChildShape = function( shape ) {
 	}
 
 	this.updateCenterOfMass();
+	this.updateAABB();
+};
+
+/**
+ * Updates shape's AABB to account for changes in nested shapes.
+ *
+ * @method updateAABB
+ */
+Goblin.CompoundShape.prototype.updateAABB = function() {
 	this.calculateLocalAABB( this.aabb );
 };
 
+/**
+ * Recomputes shape's center of mass.
+ *
+ * @method updateCenterOfMass
+ */
 Goblin.CompoundShape.prototype.updateCenterOfMass = function () {
 	var i;
 
@@ -123,7 +137,7 @@ Goblin.CompoundShape.prototype.getInertiaTensor = function( _mass ) {
 		child,
 		child_tensor;
 
-	if ( this.child_shapes.length === 0 ) {
+	if ( this.child_shapes.length === 0 || _mass === Infinity ) {
 		// let's fall back to spherical shape in this case to avoid
 		// nullifying inverse tensors
 		tensor.e00 = tensor.e11 = tensor.e22 = _mass;
