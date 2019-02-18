@@ -6304,9 +6304,7 @@ Goblin.AABB.prototype.transform = (function(){
     // the algorithm for AABB (min-max variant) is taken from
     // Graphics Gems, 1999 (example at https://github.com/erich666/GraphicsGems/blob/master/gems/TransBox.c)
 	return function( local_aabb, matrix ) {
-        local_center.addVectors( local_aabb.max, local_aabb.min );
-        local_center.scale( 0.5  );
-
+        local_center.set( 0, 0, 0 );
         matrix.transformVector3Into( local_center, center );
 
         var amin = [ local_aabb.min.x, local_aabb.min.y, local_aabb.min.z ];
