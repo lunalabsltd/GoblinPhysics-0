@@ -2116,9 +2116,9 @@ Goblin.BasicPooledBroadphase.prototype.rayIntersect = (function () {
  * @param body {RigidBody} body to remove from the broadphase contact checking
  */
 Goblin.BasicPooledBroadphase.prototype.removeBody = function( body ) {
-    Goblin.BasicBroadphase.prototype.addBody.call( this, body );
+    Goblin.BasicBroadphase.prototype.removeBody.call( this, body );
 
-    if ( body.static ) {
+    if ( body._is_static ) {
         this._removeBodyFrom( body, this.static_bodies );
     } else {
         this._removeBodyFrom( body, this.dynamic_bodies );
