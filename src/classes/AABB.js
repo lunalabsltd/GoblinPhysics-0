@@ -39,44 +39,42 @@ Goblin.AABB.prototype.combineAABBs = function( a, b ) {
 };
 
 Goblin.AABB.prototype.transform = (function(){
-	var local_half_extents = new Goblin.Vector3(),
-        local_center = new Goblin.Vector3(),
-        center = new Goblin.Vector3(),
-        extents = new Goblin.Vector3(),
-        abs = new Goblin.Matrix3();
+	var local_center = new Goblin.Vector3(),
+        center = new Goblin.Vector3();
 
     // the algorithm for AABB (min-max variant) is taken from
     // Graphics Gems, 1999 (example at https://github.com/erich666/GraphicsGems/blob/master/gems/TransBox.c)
 	return function( local_aabb, matrix ) {
-        local_half_extents.subtractVectors( local_aabb.max, local_aabb.min );
-        local_half_extents.scale( 0.5  );
         local_center.addVectors( local_aabb.max, local_aabb.min );
         local_center.scale( 0.5  );
+
         matrix.transformVector3Into( local_center, center );
-        // Extract the absolute rotation matrix
-        abs.e00 = Math.abs( matrix.e00 );
-        abs.e01 = Math.abs( matrix.e01 );
-        abs.e02 = Math.abs( matrix.e02 );
-        abs.e10 = Math.abs( matrix.e10 );
-        abs.e11 = Math.abs( matrix.e11 );
-        abs.e12 = Math.abs( matrix.e12 );
-        abs.e20 = Math.abs( matrix.e20 );
-        abs.e21 = Math.abs( matrix.e21 );
-        abs.e22 = Math.abs( matrix.e22 );
-        _tmp_vec3_1.x = abs.e00;
-        _tmp_vec3_1.y = abs.e10;
-        _tmp_vec3_1.z = abs.e20;
-        extents.x = local_half_extents.dot( _tmp_vec3_1 );
-        _tmp_vec3_1.x = abs.e01;
-        _tmp_vec3_1.y = abs.e11;
-        _tmp_vec3_1.z = abs.e21;
-        extents.y = local_half_extents.dot( _tmp_vec3_1 );
-        _tmp_vec3_1.x = abs.e02;
-        _tmp_vec3_1.y = abs.e12;
-        _tmp_vec3_1.z = abs.e22;
-        extents.z = local_half_extents.dot( _tmp_vec3_1 );
-        this.min.subtractVectors( center, extents );
-        this.max.addVectors( center, extents );
+
+        var amin = [ local_aabb.min.x, local_aabb.min.y, local_aabb.min.z ];
+        var amax = [ local_aabb.max.x, local_aabb.max.y, local_aabb.max.z ];
+
+        var bmin = [ center.x, center.y, center.z ];
+        var bmax = [ center.x, center.y, center.z ];
+
+        var m = [ matrix.e00, matrix.e01, matrix.e02, matrix.e10, matrix.e11, matrix.e12, matrix.e20, matrix.e21, matrix.e22 ];
+
+        for( var i = 0; i < 3; i++ ) {
+            for( var j = 0; j < 3; j++ ) {
+                var a = m[ i * 3 + j ] * amin[j];
+                var b = m[ i * 3 + j ] * amax[j];
+
+                if ( a < b ) { 
+                    bmin[i] += a; 
+                    bmax[i] += b;
+                } else { 
+                    bmin[i] += b; 
+                    bmax[i] += a;
+                }
+            }
+        }
+
+        this.min.set( bmin[0], bmin[1], bmin[2] );
+        this.max.set( bmax[0], bmax[1], bmax[2] );
     };
 })();
 
