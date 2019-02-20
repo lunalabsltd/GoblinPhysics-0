@@ -2116,9 +2116,9 @@ Goblin.BasicPooledBroadphase.prototype.rayIntersect = (function () {
  * @param body {RigidBody} body to remove from the broadphase contact checking
  */
 Goblin.BasicPooledBroadphase.prototype.removeBody = function( body ) {
-    Goblin.BasicBroadphase.prototype.addBody.call( this, body );
+    Goblin.BasicBroadphase.prototype.removeBody.call( this, body );
 
-    if ( body.static ) {
+    if ( body._is_static ) {
         this._removeBodyFrom( body, this.static_bodies );
     } else {
         this._removeBodyFrom( body, this.dynamic_bodies );
@@ -6304,9 +6304,7 @@ Goblin.AABB.prototype.transform = (function(){
     // the algorithm for AABB (min-max variant) is taken from
     // Graphics Gems, 1999 (example at https://github.com/erich666/GraphicsGems/blob/master/gems/TransBox.c)
 	return function( local_aabb, matrix ) {
-        local_center.addVectors( local_aabb.max, local_aabb.min );
-        local_center.scale( 0.5  );
-
+        local_center.set( 0, 0, 0 );
         matrix.transformVector3Into( local_center, center );
 
         var amin = [ local_aabb.min.x, local_aabb.min.y, local_aabb.min.z ];
