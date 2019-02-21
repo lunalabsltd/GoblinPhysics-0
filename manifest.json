@@ -1,6 +1,6 @@
 [
   {
-    "src": "goblin.js",
+    "src": "build/goblin.js",
     "priority": 2
   }
 ]
