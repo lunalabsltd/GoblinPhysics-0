@@ -4,13 +4,16 @@
   "description": "3D physics engine for JavaScript",
   "homepage": "https://github.com/chandlerprall/GoblinPhysics",
   "repository": {
-	"type": "git",
-	"url": "https://github.com/chandlerprall/GoblinPhysics"
+    "type": "git",
+    "url": "https://github.com/chandlerprall/GoblinPhysics"
   },
   "bugs": "https://github.com/chandlerprall/GoblinPhysics/issues",
   "main": "./build/goblin.min.js",
   "keywords": [
-	"goblin", "physics", "engine", "3d"
+    "goblin",
+    "physics",
+    "engine",
+    "3d"
   ],
   "author": {
     "name": "Chandler Prall",
@@ -18,9 +21,9 @@
   },
   "license": "zlib",
   "devDependencies": {
-    "gulp": "3.9.x",
+    "gulp": "^3.9.1",
     "gulp-concat": "2.5.x",
-    "gulp-uglify": "1.2.x",
-    "gulp-jshint": "1.11.0"
+    "gulp-jshint": "1.11.0",
+    "gulp-uglify": "1.2.x"
   }
 }

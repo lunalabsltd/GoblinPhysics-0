@@ -114,7 +114,8 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 
 		this.emit( 'stepStart', this.ticks, delta );
 
-		var bodies = this.broadphase.getDynamicBodies();
+		//var bodies = this.broadphase.getDynamicBodies();
+		var bodies = this.rigid_bodies;
 
 		// Apply gravity
         for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {
@@ -236,12 +237,23 @@ Goblin.World.prototype.updateObjectLayer = function ( rigid_body, new_layer ) {
 /**
  * Updates body's static flag
  *
- * @method updateObjectLayer
+ * @method updateObjectStaticFlag
  * @param rigid_body {Goblin.RigidBody} Rigid body to update
  * @param is_static  {Boolean} Whether the object is marked as static
  */
 Goblin.World.prototype.updateObjectStaticFlag = function ( rigid_body, is_static ) {
 	this.broadphase.updateObjectStaticFlag( rigid_body, is_static );
+};
+
+/**
+ * Updates body's static flag
+ *
+ * @method updateObjectKinematicFlag
+ * @param rigid_body {Goblin.RigidBody} Rigid body to update
+ * @param is_kinematic  {Boolean} Whether the object is marked as static
+ */
+Goblin.World.prototype.updateObjectKinematicFlag = function ( rigid_body, is_kinematic ) {
+	this.broadphase.updateObjectKinematicFlag( rigid_body, is_kinematic );
 };
 
 /**
@@ -352,7 +364,33 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 		return intersections;
 	};
 
-	Goblin.World.prototype.shapeIntersect = function( shape, start, end ){
+	Goblin.World.prototype.shapeIntersect = function( center, shape ) {
+		var body = new Goblin.RigidBody( shape, 0 );
+
+		body.position.copy( center );
+		body.updateDerived();
+
+		var possibilities = this.broadphase.intersectsWith( body ),
+			intersections = [];
+
+		for ( var i = 0; i < possibilities.length; i++ ) {
+			var contact = this.narrowphase.getContact( body, possibilities[i] );
+
+			if ( contact != null ) {
+				var intersection = Goblin.ObjectPool.getObject( 'RayIntersection' );
+
+				// check which (A or B) object & shape are actually an intersection
+				intersection.object = contact.object_b;
+				intersection.shape = contact.shape_b;
+
+				intersections.push( intersection );
+			}
+		}
+
+		return intersections;
+	};
+
+	Goblin.World.prototype.sweptShapeIntersect = function( shape, start, end ){
 		var swept_shape = new Goblin.LineSweptShape( start, end, shape ),
 			swept_body = new Goblin.RigidBody( swept_shape, 0 );
 		swept_body.updateDerived();
