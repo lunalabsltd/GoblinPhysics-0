@@ -26,6 +26,14 @@ Goblin.BasicPooledBroadphase = function() {
     this.dynamic_bodies = [];
 
     /**
+     * Holds kinematic collision objects that the broadphase is responsible for
+     *
+     * @property static_bodies
+     * @type {Array}
+     */
+    this.kinematic_bodies = [];
+
+    /**
      * Holds 32 layers of objects
      *
      * @property _layers
@@ -72,6 +80,27 @@ Goblin.BasicBroadphase.prototype.updateObjectLayer = function ( rigid_body, new_
 };
 
 /**
+ * Returns the pool the object belongs to (dynamic, static or kinematic).
+ *
+ * @method _getBodyPool
+ * @param rigid_body {Goblin.RigidBody} Rigid body to get the pool for
+ */
+Goblin.BasicBroadphase.prototype._getBodyPool = function ( rigid_body ) {
+    if ( rigid_body._is_static ) {
+        return this.static_bodies;
+    } else if ( rigid_body._is_kinematic ) {
+        return this.kinematic_bodies;
+    } else {
+        return this.dynamic_bodies;
+    }
+};
+
+Goblin.BasicBroadphase.prototype.markDynamic = function ( rigid_body ) {
+    this._removeBodyFrom( rigid_body, this._getBodyPool( rigid_body ) );
+    this.dynamic_bodies.push( rigid_body );
+};
+
+/**
  * Updates body's static flag
  *
  * @method updateObjectStaticFlag
@@ -79,17 +108,22 @@ Goblin.BasicBroadphase.prototype.updateObjectLayer = function ( rigid_body, new_
  * @param is_static  {Boolean} Whether the object should belong to static phase
  */
 Goblin.BasicBroadphase.prototype.updateObjectStaticFlag = function ( rigid_body, is_static ) {
-    if ( rigid_body._is_static ) {
-        this._removeBodyFrom( rigid_body, this.static_bodies );
-    } else {
-        this._removeBodyFrom( rigid_body, this.dynamic_bodies );
-    }
+    this._removeBodyFrom( rigid_body, this._getBodyPool( rigid_body ) );
+    rigid_body._is_static = is_static;
+    this._getBodyPool( rigid_body ).push( rigid_body );
+};
 
-    if ( is_static ) {
-        this.static_bodies.push( rigid_body );
-    } else {
-        this.dynamic_bodies.push( rigid_body );
-    }
+/**
+ * Updates body's kinematic flag
+ *
+ * @method updateObjectKinematicFlag
+ * @param rigid_body {Goblin.RigidBody} Rigid body to update
+ * @param is_static  {Boolean} Whether the object should belong to kinematic phase
+ */
+Goblin.BasicBroadphase.prototype.updateObjectKinematicFlag = function ( rigid_body, is_kinematic ) {
+    this._removeBodyFrom( rigid_body, this._getBodyPool( rigid_body ) );
+    rigid_body._is_kinematic = is_kinematic;
+    this._getBodyPool( rigid_body ).push( rigid_body );
 };
 
 /**
@@ -99,14 +133,13 @@ Goblin.BasicBroadphase.prototype.updateObjectStaticFlag = function ( rigid_body,
  * @param body {RigidBody} body to add to the broadphase contact checking
  */
 Goblin.BasicPooledBroadphase.prototype.addBody = function( body ) {
+    // call inherited logic
     Goblin.BasicBroadphase.prototype.addBody.call( this, body );
     
-    if ( body._is_static ) {
-        this.static_bodies.push( body );
-    } else {
-        this.dynamic_bodies.push( body );
-    }
+    // add the body to a proper pool
+    this._getBodyPool( body ).push( body );
 
+    // if the layer is set, add the body to a proper layer
     if ( body._layer !== null ) {
         this._layers[ body._layer ].push( body );
     }
@@ -171,13 +204,10 @@ Goblin.BasicPooledBroadphase.prototype.rayIntersect = (function () {
  * @param body {RigidBody} body to remove from the broadphase contact checking
  */
 Goblin.BasicPooledBroadphase.prototype.removeBody = function( body ) {
+    // call inherited logic
     Goblin.BasicBroadphase.prototype.removeBody.call( this, body );
-
-    if ( body._is_static ) {
-        this._removeBodyFrom( body, this.static_bodies );
-    } else {
-        this._removeBodyFrom( body, this.dynamic_bodies );
-    }
+    // remove body from a speicifc pool
+    this._removeBodyFrom( body, this._getBodyPool( body ) );
 };
 
 /**
@@ -211,6 +241,18 @@ Goblin.BasicPooledBroadphase.prototype.update = function() {
         // FIXME EN-84 to use BVH here
         for ( j = 0; j < this.static_bodies.length; j++ ) {
             object_b = this.static_bodies[ j ];
+
+            if ( Goblin.CollisionUtils.canBodiesCollide( object_a, object_b ) ) {
+                if ( object_a.aabb.intersects( object_b.aabb ) ) {
+                    this.collision_pairs.push( [ object_b, object_a ] );
+                }
+            }
+        }
+
+        // check collisions with kinematic bodies
+        // FIXME EN-84 to use BVH here
+        for ( j = 0; j < this.kinematic_bodies.length; j++ ) {
+            object_b = this.kinematic_bodies[ j ];
 
             if ( Goblin.CollisionUtils.canBodiesCollide( object_a, object_b ) ) {
                 if ( object_a.aabb.intersects( object_b.aabb ) ) {

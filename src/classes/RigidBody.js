@@ -314,7 +314,14 @@ Object.defineProperty(
 			return this._is_kinematic;
 		},
 		set: function( value ) {
-			this._is_kinematic = value;
+			if ( value !== this._is_kinematic ) {
+				if ( this.world ) {
+					this.world.updateObjectKinematicFlag( this, value );
+				}
+
+				this._is_kinematic = value;
+			}
+
 			this.updateShapeDerivedValues();
 		}
 	}
@@ -368,6 +375,10 @@ Object.defineProperty(
 		}
 	}
 );
+
+Goblin.RigidBody.prototype.markDynamic = function () {
+	this.world.broadphase.markDynamic( this );
+};
 
 /**
  * Updates body's position and rotation from arguments supplied.
