@@ -8232,7 +8232,7 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 		proxy.setFrom( compound, child_shape );
 
 		if ( proxy.shape instanceof Goblin.CompoundShape || other.shape instanceof Goblin.CompoundShape ) {
-			return this.midPhase( proxy, other );
+			contact = this.midPhase( proxy, other );
 		} else {
 			contact = this.getContact( proxy, other );
 
