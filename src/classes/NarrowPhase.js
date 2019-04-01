@@ -57,7 +57,7 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 	}
 
 	var proxy = Goblin.ObjectPool.getObject( 'RigidBodyProxy' ),
-		child_shape, contact;
+		child_shape, contact, result_contact;
 	
 	for ( var i = 0; i < compound.shape.child_shapes.length; i++ ) {
 		child_shape = compound.shape.child_shapes[i];
@@ -111,11 +111,13 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 				this.addContact( parent_a, parent_b, contact );
 			}
 		}
+
+		result_contact = result_contact || contact;
 	}
 
 	Goblin.ObjectPool.freeObject( 'RigidBodyProxy', proxy );
 
-	return contact;
+	return result_contact;
 };
 
 Goblin.NarrowPhase.prototype.meshCollision = (function(){
@@ -307,7 +309,9 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
  */
 Goblin.NarrowPhase.prototype.getContact = function( object_a, object_b ) {
 	if ( object_a.shape instanceof Goblin.CompoundShape || object_b.shape instanceof Goblin.CompoundShape ) {
-		return this.midPhase( object_a, object_b );
+		this.midPhase( object_a, object_b );
+		// this can yield multiple contacts, so we have to explicitely return null
+		return null;
 	}
 
 	if ( object_a.shape instanceof Goblin.MeshShape || object_b.shape instanceof Goblin.MeshShape ) {
