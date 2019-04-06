@@ -347,9 +347,10 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 	 * @return {Array<RayIntersection>} an array of intersections, sorted by distance from `start`
 	 */
 	Goblin.World.prototype.rayIntersect = function( start, end, limit, layer_mask ) {
-		var intersections = this.broadphase.rayIntersect( start, end, limit, layer_mask );
+		// we cannot afford to bail out early from broadphase as we need to get closest intersections
+		var intersections = this.broadphase.rayIntersect( start, end, 0, layer_mask );
 		intersections.sort( tSort );
-		return intersections;
+		return intersections.slice( 0, limit );
 	};
 
 	Goblin.World.prototype.shapeIntersect = function( shape, start, end ){
