@@ -8477,9 +8477,7 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
  */
 Goblin.NarrowPhase.prototype.getContact = function( object_a, object_b ) {
 	if ( object_a.shape instanceof Goblin.CompoundShape || object_b.shape instanceof Goblin.CompoundShape ) {
-		this.midPhase( object_a, object_b );
-		// this can yield multiple contacts, so we have to explicitely return null
-		return null;
+		return this.midPhase( object_a, object_b );
 	}
 
 	if ( object_a.shape instanceof Goblin.MeshShape || object_b.shape instanceof Goblin.MeshShape ) {
@@ -8523,6 +8521,12 @@ Goblin.NarrowPhase.prototype.addContact = function( object_a, object_b, contact 
 	if ( object_a.world === null || object_b.world === null ) {
 		return;
 	}
+
+	if ( contact.tag ) {
+		return;
+	}
+
+	contact.tag = true;
 
 	this.contact_manifolds.getManifoldForObjects( object_a, object_b ).addContact( contact );
 };
@@ -8607,7 +8611,10 @@ Goblin.ObjectPool = {
 		var pool = this.pools[ key ];
 
 		if ( pool.length !== 0 ) {
-			return pool.pop();
+			var result = pool.pop();
+			result.tag = null;
+
+			return result;
 		} else {
 			return this.types[ key ]();
 		}
@@ -8623,6 +8630,7 @@ Goblin.ObjectPool = {
 		if ( object.removeAllListeners != null ) {
 			object.removeAllListeners();
 		}
+
 		this.pools[ key ].push( object );
 	}
 };
