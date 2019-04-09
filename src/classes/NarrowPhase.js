@@ -271,12 +271,12 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 			b_is_mesh = object_b.shape instanceof Goblin.MeshShape;
 
 		if ( a_is_mesh && b_is_mesh ) {
-			meshMesh( object_a, object_b, this.addContact.bind( this ) );
+			return meshMesh( object_a, object_b, this.addContact.bind( this ) );
 		} else {
 			if ( a_is_mesh ) {
-				meshConvex( object_a, object_b, this.addContact.bind( this ) );
+				return meshConvex( object_a, object_b, this.addContact.bind( this ) );
 			} else {
-				meshConvex( object_b, object_a, this.addContact.bind( this ) );
+				return meshConvex( object_b, object_a, this.addContact.bind( this ) );
 			}
 		}
 	};
@@ -291,13 +291,11 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
  */
 Goblin.NarrowPhase.prototype.getContact = function( object_a, object_b ) {
 	if ( object_a.shape instanceof Goblin.CompoundShape || object_b.shape instanceof Goblin.CompoundShape ) {
-		this.midPhase( object_a, object_b );
-		return;
+		return this.midPhase( object_a, object_b );
 	}
 
 	if ( object_a.shape instanceof Goblin.MeshShape || object_b.shape instanceof Goblin.MeshShape ) {
-		this.meshCollision( object_a, object_b );
-		return;
+		return this.meshCollision( object_a, object_b );
 	}
 
 	var contact;

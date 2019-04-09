@@ -165,6 +165,40 @@ Goblin.BasicPooledBroadphase.prototype.rayIntersect = (function () {
 })();
 
 /**
+ * Returns an array of objects the given body may be colliding with
+ *
+ * @method intersectsWith
+ * @param {Goblin.RigidBody}    object_a      The object to check hits with
+ * @param {Number}              layer_mask    The layer mask to check the objects against, 0 for any.
+ * @return Array<RigidBody>
+ */
+Goblin.BasicBroadphase.prototype.intersectsWith = function( object_a, layer_mask ) {
+    var intersections = [];
+
+    for ( var i = 0; i < this._layers.length; i++ ) {
+        var objects = this._layers[ i ];
+
+        if ( layer_mask && ( layer_mask & (1 << i) ) === 0 ) {
+            continue;
+        }
+
+        for ( var j = 0; j < objects.length; j++ ) {
+            var object_b = objects[ j ];
+
+            if ( object_a === object_b ) {
+                continue;
+            }
+
+            if ( object_a.aabb.intersects( object_b.aabb ) ) {
+                intersections.push( object_b );
+            }
+        }
+    }
+
+    return intersections;
+};
+
+/**
  * Removes a body from the broadphase contact checking
  *
  * @method removeBody

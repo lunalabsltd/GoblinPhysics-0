@@ -341,10 +341,11 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 	/**
 	 * Checks if a ray segment intersects with objects in the world
 	 *
-	 * @method rayIntersect
-	 * @property start {vec3} start point of the segment
-	 * @property end {vec3{ end point of the segment
-	 * @return {Array<RayIntersection>} an array of intersections, sorted by distance from `start`
+	 * @param {Goblin.Vector3} 			start 		Start of the ray
+	 * @param {Goblin.Vector3} 			end 		End of the ray
+	 * @param {Number} 					limit 		Maximum amount of objects to return
+	 * @param {Number} 					layer_mask 	Layer mask to use
+	 * @return {Array<RayIntersection>} 			Array of intersections, sorted by distance from `start`
 	 */
 	Goblin.World.prototype.rayIntersect = function( start, end, limit, layer_mask ) {
 		var intersections = this.broadphase.rayIntersect( start, end, limit, layer_mask );
@@ -352,13 +353,26 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 		return intersections;
 	};
 
-	Goblin.World.prototype.shapeIntersect = function( shape, start, end ){
+	/**
+	 * Checks if a line-swept shape intersects with objects in the world. Please note
+	 * that passing a limit different from 0 will not guarantee any order of the hit - 
+	 * i.e. asking for a single hit might return a more remote hit.
+	 *
+	 * @param {Goblin.Shape} 			shape 		Shape to sweep
+	 * @param {Goblin.Vector3} 			start 		Start of the ray
+	 * @param {Goblin.Vector3} 			end 		End of the ray
+	 * @param {Number} 					limit 		Maximum amount of objects to return
+	 * @param {Number} 					layer_mask 	Layer mask to use
+	 * @return {Array<RayIntersection>} 			Array of intersections, sorted by distance from `start`
+	 */
+	Goblin.World.prototype.shapeIntersect = function( shape, start, end, limit, layer_mask ){
 		var swept_shape = new Goblin.LineSweptShape( start, end, shape ),
 			swept_body = new Goblin.RigidBody( swept_shape, 0 );
+
 		swept_body.updateDerived();
 
-		var possibilities = this.broadphase.intersectsWith( swept_body ),
-			intersections = [];
+		var possibilities = this.broadphase.intersectsWith( swept_body, layer_mask );
+		var intersections = [];
 
 		for ( var i = 0; i < possibilities.length; i++ ) {
 			var contact = this.narrowphase.getContact( swept_body, possibilities[i] );
@@ -377,9 +391,14 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 
 				intersections.push( intersection );
 			}
+
+			if ( limit <= intersections.length ) {
+				break;
+			}
 		}
 
 		intersections.sort( tSort );
+		
 		return intersections;
 	};
 })();
