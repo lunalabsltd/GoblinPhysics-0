@@ -15,6 +15,7 @@
 		this.prev = null;
 		this.next = null;
 	};
+
 	SAPMarker.TYPES = {
 		START: 0,
 		END: 1
@@ -122,6 +123,15 @@
 					return true;
 				});
 			}
+		},
+
+		updateObjectStaticFlag: function ( rigid_body, is_static ) {
+		},
+
+		updateObjectKinematicFlag: function ( rigid_body, is_static ) {
+		},
+
+		updateObjectLayer: function ( rigid_body, new_layer ) {
 		},
 
 		/**
@@ -308,6 +318,8 @@
 		 * @method update
 		 */
 		update: function() {
+			this.collision_pairs.length = 0;
+			
 			this.insertPending();
 
 			var marker = this.markers_x.first;
