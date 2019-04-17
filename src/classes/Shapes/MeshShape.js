@@ -132,6 +132,11 @@ Goblin.MeshShape.prototype.rayIntersect = (function(){
 		};
 
 	return function( start, end ) {
+		// empty meshes cannot be intersected
+		if ( !this.hierarchy ) {
+			return null;
+		}
+
 		// Traverse the BVH and return the closest point of contact, if any
 		var nodes = [ this.hierarchy ],
 			node;
