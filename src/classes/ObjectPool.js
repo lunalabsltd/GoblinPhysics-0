@@ -42,7 +42,10 @@ Goblin.ObjectPool = {
 		var pool = this.pools[ key ];
 
 		if ( pool.length !== 0 ) {
-			return pool.pop();
+			var result = pool.pop();
+			result.tag = null;
+
+			return result;
 		} else {
 			return this.types[ key ]();
 		}
@@ -58,6 +61,7 @@ Goblin.ObjectPool = {
 		if ( object.removeAllListeners != null ) {
 			object.removeAllListeners();
 		}
+
 		this.pools[ key ].push( object );
 	}
 };

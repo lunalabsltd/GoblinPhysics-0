@@ -56,6 +56,26 @@ Goblin.MeshShape = function( vertices, faces, material ) {
 };
 
 /**
+ * Returns a shallow clone of the mesh shape.
+ *
+ * @method clone
+ */
+Goblin.MeshShape.prototype.clone = function() {
+	var clone = Object.create( Goblin.MeshShape.prototype );
+
+	clone.vertices = this.vertices;
+	clone.triangles = this.triangles;
+	clone.volume = this.volume;
+	clone.center_of_mass = this.center_of_mass;
+	clone._integral = this._integral;
+	clone.hierarchy = this.hierarchy;
+	clone.aabb = this.aabb;
+	clone.material = this.material;
+
+	return clone;
+};
+
+/**
  * Calculates this shape's local AABB and stores it in the passed AABB object
  *
  * @method calculateLocalAABB
@@ -112,6 +132,11 @@ Goblin.MeshShape.prototype.rayIntersect = (function(){
 		};
 
 	return function( start, end ) {
+		// empty meshes cannot be intersected
+		if ( !this.hierarchy ) {
+			return null;
+		}
+
 		// Traverse the BVH and return the closest point of contact, if any
 		var nodes = [ this.hierarchy ],
 			node;

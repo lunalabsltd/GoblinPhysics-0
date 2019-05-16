@@ -57,6 +57,8 @@ Goblin.LineSweptShape = function( start, end, shape ) {
 	 */
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
+
+	this.material = null;
 };
 
 /**
