@@ -172,6 +172,7 @@ Goblin.IterativeSolver.prototype.processContactManifolds = function( contact_man
 				// Build contact constraint
 				constraint = Goblin.ObjectPool.getObject( 'ContactConstraint' );
 				constraint.buildFromContact( contact );
+				contact.constraint = constraint;
 				this.contact_constraints.push( constraint );
 				constraint.addListener( 'deactivate', this.onContactDeactivate );
 

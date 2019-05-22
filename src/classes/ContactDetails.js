@@ -95,6 +95,11 @@ Goblin.ContactDetails = function() {
 	 */
 	this.friction = 0;
 
+	/**
+	 * contact constraint
+	 */
+	this.constraint = null;
+
 	this.listeners = {};
 };
 Goblin.EventEmitter.apply( Goblin.ContactDetails );
