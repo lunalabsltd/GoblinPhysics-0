@@ -221,6 +221,7 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 		constraint,
 		jdot, row, i,
 		delta_lambda,
+		aabb,
 		max_impulse = 0,
 		invmass;
 
@@ -322,6 +323,38 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 
 			constraint.object_b.integrateRotation( 1.0, _tmp_vec3_1 );
 		}
+
+		// if ( constraint.object_a ) {
+		// 	aabb = constraint.object_a.aabb;
+
+		// 	pc.Application.getApplication().renderWireCube( 
+		// 		new pc.Mat4().setTRS( 
+		// 			new pc.Vec3( aabb.min.x + aabb.max.x, aabb.min.y + aabb.max.y, aabb.min.z + aabb.max.z ).scale( 0.5 ), 
+		// 			pc.Quat.IDENTITY, 
+		// 			new pc.Vec3( aabb.min.x - aabb.max.x, aabb.min.y - aabb.max.y, aabb.min.z - aabb.max.z ).scale( -1 ) 
+		// 		), 
+
+		// 		new pc.Color(1, 0, 0, 1),
+
+		// 		pc.LINEBATCH_OVERLAY
+		// 	);
+		// }
+
+		// if ( constraint.object_b ) {
+		// 	aabb = constraint.object_b.aabb;
+
+		// 	pc.Application.getApplication().renderWireCube( 
+		// 		new pc.Mat4().setTRS( 
+		// 			new pc.Vec3( aabb.min.x + aabb.max.x, aabb.min.y + aabb.max.y, aabb.min.z + aabb.max.z ).scale( 0.5 ), 
+		// 			pc.Quat.IDENTITY, 
+		// 			new pc.Vec3( aabb.min.x - aabb.max.x, aabb.min.y - aabb.max.y, aabb.min.z - aabb.max.z ).scale( -1 ) 
+		// 		), 
+
+		// 		new pc.Color(0, 1, 0, 1),
+
+		// 		pc.LINEBATCH_OVERLAY
+		// 	);
+		// }
 
 		row.multiplier = 0;
 	}

@@ -4087,17 +4087,17 @@ Goblin.ConstraintRow.prototype.computeB = function( constraint ) {
 	if ( constraint.object_a_is_dynamic() ) {
 		invmass = constraint.object_a._mass_inverted;
 
-		this.B[0] = invmass * this.jacobian[0] * constraint.object_a.linear_factor.x;
-		this.B[1] = invmass * this.jacobian[1] * constraint.object_a.linear_factor.y;
-		this.B[2] = invmass * this.jacobian[2] * constraint.object_a.linear_factor.z;
+		this.B[0] = invmass * this.jacobian[0];
+		this.B[1] = invmass * this.jacobian[1];
+		this.B[2] = invmass * this.jacobian[2];
 
 		_tmp_vec3_1.x = this.jacobian[3];
 		_tmp_vec3_1.y = this.jacobian[4];
 		_tmp_vec3_1.z = this.jacobian[5];
 		constraint.object_a.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
-		this.B[3] = _tmp_vec3_1.x * constraint.object_a.angular_factor.x;
-		this.B[4] = _tmp_vec3_1.y * constraint.object_a.angular_factor.y;
-		this.B[5] = _tmp_vec3_1.z * constraint.object_a.angular_factor.z;
+		this.B[3] = _tmp_vec3_1.x;
+		this.B[4] = _tmp_vec3_1.y;
+		this.B[5] = _tmp_vec3_1.z;
 	} else {
 		this.B[0] = this.B[1] = this.B[2] = 0;
 		this.B[3] = this.B[4] = this.B[5] = 0;
@@ -4105,17 +4105,17 @@ Goblin.ConstraintRow.prototype.computeB = function( constraint ) {
 
 	if ( constraint.object_b_is_dynamic() ) {
 		invmass = constraint.object_b._mass_inverted;
-		this.B[6] = invmass * this.jacobian[6] * constraint.object_b.linear_factor.x;
-		this.B[7] = invmass * this.jacobian[7] * constraint.object_b.linear_factor.y;
-		this.B[8] = invmass * this.jacobian[8] * constraint.object_b.linear_factor.z;
+		this.B[6] = invmass * this.jacobian[6];
+		this.B[7] = invmass * this.jacobian[7];
+		this.B[8] = invmass * this.jacobian[8];
 
 		_tmp_vec3_1.x = this.jacobian[9];
 		_tmp_vec3_1.y = this.jacobian[10];
 		_tmp_vec3_1.z = this.jacobian[11];
 		constraint.object_b.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
-		this.B[9] = _tmp_vec3_1.x * constraint.object_b.angular_factor.x;
-		this.B[10] = _tmp_vec3_1.y * constraint.object_b.angular_factor.y;
-		this.B[11] = _tmp_vec3_1.z * constraint.object_b.angular_factor.z;
+		this.B[9] =  _tmp_vec3_1.x;
+		this.B[10] = _tmp_vec3_1.y;
+		this.B[11] = _tmp_vec3_1.z;
 	} else {
 		this.B[6] = this.B[7] = this.B[8] = 0;
 		this.B[9] = this.B[10] = this.B[11] = 0;
@@ -4628,6 +4628,7 @@ Goblin.BoxShape.prototype.rayIntersect = (function(){
  * @class CapsuleShape
  * @param radius {Number} capsule radius
  * @param half_height {Number} half height of the capsule
+ * @param material {pc.Material} physics material of the capsule
  * @constructor
  */
 Goblin.CapsuleShape = function( radius, half_height, material ) {
@@ -4703,14 +4704,14 @@ Goblin.CapsuleShape.prototype.getInertiaTensor = function( mass ) {
  * @param direction {vec3} direction to use in finding the support point
  * @param support_point {vec3} vec3 variable which will contain the supporting point after calling this method
  */
-Goblin.CapsuleShape.prototype.findSupportPoint = (function(){
+Goblin.CapsuleShape.prototype.findSupportPoint = ( function(){
 	var temp = new Goblin.Vector3();
 	return function( direction, support_point ) {
 		temp.normalizeVector( direction );
 		support_point.scaleVector( temp, this.radius );
 		support_point.y += Math.sign( direction.y ) * this.half_height;
 	};
-})();
+} )();
 
 /**
  * Checks if a ray segment intersects with the shape
@@ -4720,7 +4721,7 @@ Goblin.CapsuleShape.prototype.findSupportPoint = (function(){
  * @property end {vec3} end point of the segment
  * @return {RayIntersection|null} if the segment intersects, a RayIntersection is returned, else `null`
  */
-Goblin.CapsuleShape.prototype.rayIntersect = (function(){
+Goblin.CapsuleShape.prototype.rayIntersect = ( function(){
 	var direction = new Goblin.Vector3(),
 		length,
 		k, a, c,
@@ -4732,7 +4733,6 @@ Goblin.CapsuleShape.prototype.rayIntersect = (function(){
 
 	function getIntersectionFromPoint( x, y, z, scale ) {
 		var intersection = Goblin.ObjectPool.getObject( 'RayIntersection' );
-		intersection.object = this;
 		intersection.point.set( x, y, z );
 		intersection.t = scale;
 		return intersection;
@@ -4740,7 +4740,6 @@ Goblin.CapsuleShape.prototype.rayIntersect = (function(){
 
 	function getIntersectionFromDirection( start, scale ) {
 		var intersection = Goblin.ObjectPool.getObject( 'RayIntersection' );
-		intersection.object = this;
 		intersection.point.scaleVector( direction, scale );
 		intersection.point.add( start );
 		intersection.t = scale;
@@ -4751,7 +4750,10 @@ Goblin.CapsuleShape.prototype.rayIntersect = (function(){
 
 		direction.subtractVectors( end, start );
 		length = direction.length();
-		direction.scale( 1 / length  ); // normalize direction
+		if ( length <= Goblin.EPSILON ) { // segment is a point, can't intersect
+			return null;
+		}
+		direction.scale( 1.0 / length  ); // normalize direction
 
 		a = direction.x * direction.x + direction.z * direction.z;
 		c = start.x * start.x + start.z * start.z - this.radius * this.radius;
@@ -4775,7 +4777,7 @@ Goblin.CapsuleShape.prototype.rayIntersect = (function(){
 				} else { // segment is fully included into capsule side surface
 					return null; // segment is fully inside
 				}
-			} else if ( c > 0 ) { // segment runs parallel to the capsule and fully outside
+			} else if ( c > 0.0 ) { // segment runs parallel to the capsule and fully outside
 				return null;
 			} else {
 				py = this.half_height + Math.sqrt( -c ); // intersection point y absolute value
@@ -4806,160 +4808,226 @@ Goblin.CapsuleShape.prototype.rayIntersect = (function(){
 
 			if ( -Goblin.EPSILON <= discr && discr <= Goblin.EPSILON ) { // there is only one line and cylinder intersection
 				t1 = -k / a;
+				if ( t1 < 0.0 || length < t1 ) { // intersection is outside of the segment
+					return null;
+				}
 				y1 = start.y + t1 * direction.y;
 				if ( -this.half_height <= y1 && y1 <= this.half_height ) { // segment intersects capsule in a single point
 					intersection = getIntersectionFromDirection( start, t1 );
 				} else { // no intersections with the capsule
 					return null;
 				}
-			}
-			else if ( discr < 0 ) { // no intersections with cylinder containing capsule
+			} else if ( discr < 0.0 ) { // no intersections with cylinder containing capsule
 				return null;
-			}
-
-			discr_sqrt = Math.sqrt( discr );
-			t2 = ( -k + discr_sqrt ) / a; // t2 is farther away from start point than t1
-			if ( t2 < 0 ) { // segment is pointing away from the capsule, no intersections
-				return null;
-			}
-			t1 = ( -k - discr_sqrt ) / a;
-
-			y1 = start.y + t1 * direction.y;
-			if ( y1 > this.half_height ) { // line intersects cylinder above capsule top
-				a += direction.y * direction.y;
-				c += start.y * start.y + this.half_height * ( this.half_height - 2 * start.y );
-				k += direction.y * ( start.y - this.half_height );
-				discr = k * k - a * c;
-
-				if ( discr <= 0 ) { // line doesn't intersect top sphere
+			} else { // two line and cylinder intersection points
+				discr_sqrt = Math.sqrt( discr );
+				t2 = ( -k + discr_sqrt ) / a; // t2 is farther away in segment direction from start point than t1
+				if ( t2 < 0.0 ) { // segment is pointing away from the capsule, no intersections
+					return null;
+				}
+				t1 = ( -k - discr_sqrt ) / a;
+				if ( t1 > length ) { // intersections are outside of the segment
 					return null;
 				}
 
-				discr_sqrt = Math.sqrt( discr );
-				t3 = ( -k - discr_sqrt ) / a; // line and top sphere intersection closest to start point
-
-				if ( t3 >= 0 ) {
-					intersection = getIntersectionFromDirection( start, t3 );
-				} else { // segment is pointing away from the line and top sphere first intersection
-					t4 = ( -k + discr_sqrt ) / a; // line and top sphere second intersection point
-					y4 = start.y + t4 * direction.y;
-					if ( y4 > this.half_height ) { // line and top sphere intersection happens on capsule surface
-						intersection = getIntersectionFromDirection( start, t4 );
-					} else { // line intersects bottom hemisphere of the top sphere
-						y2 = start.y + t2 * direction.y; // line and cylinder second intersection point
-						if ( y2 < -this.half_height ) { // line intersects cylinder below capsule bottom
-
-							c += 4 * this.half_height * start.y;
-							k += 2 * direction.y * this.half_height;
-							discr = k * k - a * c;
-
-							if ( discr < 0 ) { // line doesn't intersect bottom sphere, that should never happen
-								return null;
-							}
-
-							discr_sqrt = Math.sqrt( discr );
-							t4 = ( -k + discr_sqrt ) / a;
-
-							if ( t4 < 0 ) { // segment is pointing away from bottom sphere, no intersections
-								return null;
-							}
-
-							intersection = getIntersectionFromDirection( start, t4 );
-						} else { // line intersects cylinder inside of the capsule
-							intersection = getIntersectionFromDirection( start, t2 );
-						}
-					}
-				}
-			} else if ( y1 < -this.half_height ) { // line intersects cylinder below capsule bottom
-				a += direction.y * direction.y;
-				c += start.y * start.y + this.half_height * ( this.half_height + 2 * start.y );
-				k += direction.y * ( start.y + this.half_height );
-				discr = k * k - a * c;
-
-				if ( discr < 0 ) { // line doesn't intersect bottom sphere
-					return null;
-				}
-
-				discr_sqrt = Math.sqrt( discr );
-				t3 = ( -k - discr_sqrt ) / a; // line and bottom sphere intersection closest to start point
-
-				if ( t3 >= 0 ) {
-					intersection = getIntersectionFromDirection( start, t3 );
-				} else { // segment is pointing away from the line and bottom sphere first intersection
-					t4 = ( -k + discr_sqrt ) / a; // line and bottom sphere second intersection point
-					y4 = start.y + t4 * direction.y;
-					if ( y4 < -this.half_height ) { // line and bottom sphere intersection happens on capsule surface
-						intersection = getIntersectionFromDirection( start, t4 );
-					} else { // line intersects top hemisphere of the bottom sphere
-						y2 = start.y + t2 * direction.y; // line and cylinder second intersection point
-						if ( y2 > this.half_height ) { // line intersects cylinder above capsule top
-
-							c -= 4 * this.half_height * start.y;
-							k -= 2 * direction.y * this.half_height;
-							discr = k * k - a * c;
-
-							if ( discr <= 0 ) { // line doesn't intersect top sphere, that should never happen
-								return null;
-							}
-
-							discr_sqrt = Math.sqrt( discr );
-							t4 = ( -k + discr_sqrt ) / a;
-
-							if ( t4 < 0 ) { // segment is pointing away from top sphere, no intersections
-								return null;
-							}
-
-							intersection = getIntersectionFromDirection( start, t4 );
-						} else { // line intersects cylinder inside of the capsule
-							intersection = getIntersectionFromDirection( start, t2 );
-						}
-					}
-				}
-
-			} else if ( t1 >= 0 ) { // line intersects capsule between top and bottom (first intersection point)
-				intersection = getIntersectionFromDirection( start, t1 );
-			} else { // segment is pointing away from line and capsule first intersection point
-				y2 = start.y + t2 * direction.y; // line and capsule second intersection point
-				if ( y2 > this.half_height ) { // line intersects cylinder above capsule top
-
+				y1 = start.y + t1 * direction.y;
+				if ( y1 > this.half_height ) { // line intersects cylinder above capsule top
 					a += direction.y * direction.y;
-					c += start.y * start.y + this.half_height * ( this.half_height - 2 * start.y );
+					c += ( start.y - this.half_height ) * ( start.y - this.half_height );
 					k += direction.y * ( start.y - this.half_height );
 					discr = k * k - a * c;
 
-					if ( discr < 0 ) { // line doesn't intersect top sphere, that should never happen
+					if ( -Goblin.EPSILON <= discr && discr <= Goblin.EPSILON ) { // only one line and top sphere intersection point
+						t3 = -k / a;
+						if ( 0.0 <= t3 && t3 <= length ) {
+							intersection = getIntersectionFromDirection( start, t3 );
+						} else { // intersection is outside of the segment
+							return null;
+						}
+					} else if ( discr < 0.0 ) { // line doesn't intersect top sphere
 						return null;
+					} else { // two line and top sphere intersection points
+						discr_sqrt = Math.sqrt( discr );
+						t3 = ( -k - discr_sqrt ) / a; // line and top sphere intersection closest to start point
+
+						if ( t3 >= 0.0 ) {
+							if ( t3 <= length ) { // intersection is inside of the segment
+								intersection = getIntersectionFromDirection( start, t3 );
+							} else { // intersection is after segment ends
+								return null;
+							}
+						} else { // segment is pointing away from the line and top sphere first intersection
+							t4 = ( -k + discr_sqrt ) / a; // line and top sphere second intersection point
+							y4 = start.y + t4 * direction.y;
+							if ( y4 > this.half_height ) { // line and top sphere intersection happens on capsule surface
+								if ( 0.0 <= t4 && t4 <= length ) { // intersection is inside of the segment
+									intersection = getIntersectionFromDirection( start, t4 );
+								} else { // intersection is outside of the segment
+									return null;
+								}
+							} else { // line intersects bottom hemisphere of the top sphere
+								y2 = start.y + t2 * direction.y; // line and cylinder second intersection point
+								if ( y2 < -this.half_height ) { // line intersects cylinder below capsule bottom, i. e. intersects bottom sphere
+
+									c += 4.0 * this.half_height * start.y;
+									k += 2.0 * direction.y * this.half_height;
+									discr = k * k - a * c;
+
+									if ( discr <= 0.0 ) { // line doesn't intersect bottom sphere or has single intersection point, that should never happen
+										return null;
+									}
+
+									discr_sqrt = Math.sqrt( discr );
+									t4 = ( -k + discr_sqrt ) / a;
+
+									if ( t4 < 0.0 ) { // segment is pointing away from bottom sphere, no intersections
+										return null;
+									}
+
+									if ( t4 <= length ) { // intersection is inside of the segment
+										intersection = getIntersectionFromDirection( start, t4 );
+									} else { // intersection is outside of the segment
+										return null;
+									}
+								} else { // line intersects cylinder inside of the capsule
+									if ( t2 <= length ) { // intersection is inside of the segment
+										intersection = getIntersectionFromDirection( start, t2 );
+									} else { // intersection is after segment ends
+										return null;
+									}
+								}
+							}
+						}
 					}
-
-					discr_sqrt = Math.sqrt( discr );
-					t4 = ( -k + discr_sqrt ) / a; // line and top sphere intersection point, the most distant from the start point
-
-					if ( t4 < 0 ) { // segment is pointing away from the top sphere
-						return null;
-					}
-
-					intersection = getIntersectionFromDirection( start, t4 );
-				} else if ( y2 < -this.half_height ) { // line intersects cylinder below capsule bottom
-
+				} else if ( y1 < -this.half_height ) { // line intersects cylinder below capsule bottom
 					a += direction.y * direction.y;
-					c += start.y * start.y + this.half_height * ( this.half_height + 2 * start.y );
+					c += ( start.y + this.half_height ) * ( start.y + this.half_height );
 					k += direction.y * ( start.y + this.half_height );
 					discr = k * k - a * c;
 
-					if ( discr < 0 ) { // line doesn't intersect bottom sphere, that should never happen
+					if ( -Goblin.EPSILON <= discr && discr <= Goblin.EPSILON ) { // only one line and bottom sphere intersection point
+						t3 = -k / a;
+						if ( 0.0 <= t3 && t3 <= length ) {
+							intersection = getIntersectionFromDirection( start, t3 );
+						} else { // intersection is outside of the segment
+							return null;
+						}
+					} else if ( discr < 0.0 ) { // line doesn't intersect bottom sphere
+						return null;
+					} else { // two line and bottom sphere intersection points
+						discr_sqrt = Math.sqrt( discr );
+						t3 = ( -k - discr_sqrt ) / a; // line and bottom sphere intersection closest to start point
+
+						if ( t3 >= 0.0 ) {
+							if ( t3 <= length ) { // intersection is inside of the segment
+								intersection = getIntersectionFromDirection( start, t3 );
+							} else { // intersection is after segment ends
+								return null;
+							}
+						} else { // segment is pointing away from the line and bottom sphere first intersection
+							t4 = ( -k + discr_sqrt ) / a; // line and bottom sphere second intersection point
+							y4 = start.y + t4 * direction.y;
+							if ( y4 < -this.half_height ) { // line and bottom sphere intersection happens on capsule surface
+								if ( 0.0 <= t4 && t4 <= length ) { // intersection is inside of the segment
+									intersection = getIntersectionFromDirection( start, t4 );
+								} else { // intersection is outside of the segment
+									return null;
+								}
+							} else { // line intersects top hemisphere of the bottom sphere
+								y2 = start.y + t2 * direction.y; // line and cylinder second intersection point
+								if ( y2 > this.half_height ) { // line intersects cylinder above capsule top, i. e. intersects top sphere
+
+									c -= 4.0 * this.half_height * start.y;
+									k -= 2.0 * direction.y * this.half_height;
+									discr = k * k - a * c;
+
+									if ( discr <= 0.0 ) { // line doesn't intersect top sphere or has single intersection point, that should never happen
+										return null;
+									}
+
+									discr_sqrt = Math.sqrt( discr );
+									t4 = ( -k + discr_sqrt ) / a;
+
+									if ( t4 < 0.0 ) { // segment is pointing away from top sphere, no intersections
+										return null;
+									}
+
+									if ( t4 <= length ) { // intersection is inside of the segment
+										intersection = getIntersectionFromDirection( start, t4 );
+									} else { // intersection is outside of the segment
+										return null;
+									}
+								} else { // line intersects cylinder inside of the capsule
+									if ( t2 <= length ) { // intersection is inside of the segment
+										intersection = getIntersectionFromDirection( start, t2 );
+									} else { // intersection is after segment ends
+										return null;
+									}
+								}
+							}
+						}
+					}
+				} else if ( t1 >= 0.0 ) { // line intersects capsule between top and bottom (first intersection point)
+					if ( t1 <= length ) { // intersection is inside of the segment
+						intersection = getIntersectionFromDirection( start, t1 );
+					} else { // intersection is after segment ends
 						return null;
 					}
+				} else { // segment is pointing away from line and capsule first intersection point
+					y2 = start.y + t2 * direction.y; // line and cylinder second intersection point
+					if ( y2 > this.half_height ) { // line intersects cylinder above capsule top
 
-					discr_sqrt = Math.sqrt( discr );
-					t4 = ( -k + discr_sqrt ) / a; // line and bottom intersection point, the most distant from the start point
+						a += direction.y * direction.y;
+						c += ( start.y - this.half_height ) * ( start.y - this.half_height );
+						k += direction.y * ( start.y - this.half_height );
+						discr = k * k - a * c;
 
-					if ( t4 < 0 ) { // segment is pointing away from the bottom sphere
-						return null;
+						if ( discr <= 0.0 ) { // line doesn't intersect top sphere or has single intersection point, that should never happen
+							return null;
+						}
+
+						discr_sqrt = Math.sqrt( discr );
+						t4 = ( -k + discr_sqrt ) / a; // line and top sphere intersection point, the most distant from the start point
+
+						if ( t4 < 0.0 ) { // segment is pointing away from the top sphere
+							return null;
+						}
+
+						if ( t4 <= length ) { // intersection is inside of the segment
+							intersection = getIntersectionFromDirection( start, t4 );
+						} else { // intersection is after segment ends
+							return null;
+						}
+					} else if ( y2 < -this.half_height ) { // line intersects cylinder below capsule bottom
+
+						a += direction.y * direction.y;
+						c += ( start.y + this.half_height ) * ( start.y + this.half_height );
+						k += direction.y * ( start.y + this.half_height );
+						discr = k * k - a * c;
+
+						if ( discr <= 0.0 ) { // line doesn't intersect bottom sphere or has single intersection point, that should never happen
+							return null;
+						}
+
+						discr_sqrt = Math.sqrt( discr );
+						t4 = ( -k + discr_sqrt ) / a; // line and bottom intersection point, the most distant from the start point
+
+						if ( t4 < 0.0 ) { // segment is pointing away from the bottom sphere
+							return null;
+						}
+
+						if ( t4 <= length ) { // intersection is inside of the segment
+							intersection = getIntersectionFromDirection( start, t4 );
+						} else { // intersection is after segment ends
+							return null;
+						}
+					} else { // line intersects capsule side surface
+						if ( t2 <= length ) { // intersection is inside of the segment
+							intersection = getIntersectionFromDirection( start, t2 );
+						} else { // intersection is after segment ends
+							return null;
+						}
 					}
-
-					intersection = getIntersectionFromDirection( start, t4 );
-				} else { // line intersects capsule side surface
-					intersection = getIntersectionFromDirection( start, t2 );
 				}
 			}
 		}
@@ -4971,13 +5039,15 @@ Goblin.CapsuleShape.prototype.rayIntersect = (function(){
 		} else if ( intersection.point.y > this.half_height ) {
 			intersection.normal.y = intersection.point.y - this.half_height;
 		} else {
-			intersection.normal.y = 0;
+			intersection.normal.y = 0.0;
 		}
-		intersection.normal.scale( 1 / this.radius );
+		intersection.normal.scale( 1.0 / this.radius );
+		intersection.object = this;
 
 		return intersection;
 	};
-})();
+} )();
+
 /**
  * @class CompoundShape
  * @constructor
@@ -7897,6 +7967,7 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 		constraint,
 		jdot, row, i,
 		delta_lambda,
+		aabb,
 		max_impulse = 0,
 		invmass;
 
@@ -7998,6 +8069,38 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 
 			constraint.object_b.integrateRotation( 1.0, _tmp_vec3_1 );
 		}
+
+		// if ( constraint.object_a ) {
+		// 	aabb = constraint.object_a.aabb;
+
+		// 	pc.Application.getApplication().renderWireCube( 
+		// 		new pc.Mat4().setTRS( 
+		// 			new pc.Vec3( aabb.min.x + aabb.max.x, aabb.min.y + aabb.max.y, aabb.min.z + aabb.max.z ).scale( 0.5 ), 
+		// 			pc.Quat.IDENTITY, 
+		// 			new pc.Vec3( aabb.min.x - aabb.max.x, aabb.min.y - aabb.max.y, aabb.min.z - aabb.max.z ).scale( -1 ) 
+		// 		), 
+
+		// 		new pc.Color(1, 0, 0, 1),
+
+		// 		pc.LINEBATCH_OVERLAY
+		// 	);
+		// }
+
+		// if ( constraint.object_b ) {
+		// 	aabb = constraint.object_b.aabb;
+
+		// 	pc.Application.getApplication().renderWireCube( 
+		// 		new pc.Mat4().setTRS( 
+		// 			new pc.Vec3( aabb.min.x + aabb.max.x, aabb.min.y + aabb.max.y, aabb.min.z + aabb.max.z ).scale( 0.5 ), 
+		// 			pc.Quat.IDENTITY, 
+		// 			new pc.Vec3( aabb.min.x - aabb.max.x, aabb.min.y - aabb.max.y, aabb.min.z - aabb.max.z ).scale( -1 ) 
+		// 		), 
+
+		// 		new pc.Color(0, 1, 0, 1),
+
+		// 		pc.LINEBATCH_OVERLAY
+		// 	);
+		// }
 
 		row.multiplier = 0;
 	}
