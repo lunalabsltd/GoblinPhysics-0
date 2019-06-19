@@ -150,6 +150,8 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 			bodies[ i ].updateDerived();
 		}
 
+		this.drawDebug();
+
         // Check for contacts, broadphase
         this.broadphase.update();
 
@@ -184,7 +186,65 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 		}
 
 		this.emit( 'stepEnd', this.ticks, delta );
+
+		Goblin.ObjectPool.freeContacts();
     }
+};
+
+/**
+ * Draws AABBs of objects and colliders when enabled for the world.
+ *
+ * @method drawDebug
+ */
+Goblin.World.prototype.drawDebug = function() {
+	if ( !this.debug ) {
+		return;
+	}
+
+	var i, j, body, aabb, shapes, shape;
+
+	for ( i = 0; i < this.rigid_bodies.length; i++ ) {
+		body = this.rigid_bodies[ i ];
+
+		if ( body.debug ) {
+			aabb = body.aabb;
+
+			pc.Application.getApplication().renderWireCube( 
+				new pc.Mat4().setTRS( 
+					new pc.Vec3( aabb.min.x + aabb.max.x, aabb.min.y + aabb.max.y, aabb.min.z + aabb.max.z ).scale( 0.5 ), 
+					pc.Quat.IDENTITY, 
+					new pc.Vec3( aabb.min.x - aabb.max.x, aabb.min.y - aabb.max.y, aabb.min.z - aabb.max.z ).scale( -1 ) 
+				), 
+
+				new pc.Color( 1, 0, 0, 1 ),
+
+				pc.LINEBATCH_OVERLAY
+			);
+		}
+
+		shapes = body.shape.child_shapes || [];
+
+		for ( j = 0; j < shapes.length; j++ ) {
+			shape = shapes[ j ].shape;
+
+			if ( shape.debug ) {
+				aabb = new Goblin.AABB();
+				aabb.transform( shapes[ j ].aabb, body.transform );
+
+				pc.Application.getApplication().renderWireCube( 
+					new pc.Mat4().setTRS( 
+						new pc.Vec3( aabb.min.x + aabb.max.x, aabb.min.y + aabb.max.y, aabb.min.z + aabb.max.z ).scale( 0.5 ), 
+						pc.Quat.IDENTITY, 
+						new pc.Vec3( aabb.min.x - aabb.max.x, aabb.min.y - aabb.max.y, aabb.min.z - aabb.max.z ).scale( -1 ) 
+					), 
+
+					new pc.Color( 0, 1, 0, 1 ),
+
+					pc.LINEBATCH_OVERLAY
+				);
+			}
+		}
+	}
 };
 
 /**
