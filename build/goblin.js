@@ -972,6 +972,15 @@ Goblin.RigidBody = (function() {
 		this.id = body_count++;
 
 		/**
+		 * body version that changes upon significant updates (collider movements,
+		 * additions and deletions)
+		 *
+		 * @property version
+		 * @type {Number}
+		 */
+		this.version = 0;
+
+		/**
 		 * shape definition for this rigid body
 		 *
 		 * @property shape
@@ -1298,6 +1307,7 @@ Object.defineProperty(
 					this.world.updateObjectLayer( this, value );
 				}
 
+				this.version++;
 				this._layer = value;
 			}
 		}
@@ -1375,6 +1385,9 @@ Goblin.RigidBody.prototype.getTransform = function ( position, rotation ) {
  * @method updateShapeDerivedValues
  */
 Goblin.RigidBody.prototype.updateShapeDerivedValues = function () {
+	// update body version
+	this.version++;
+
 	if ( !this.shape.center_of_mass ) {
 		this._computeInertiaTensor();
 		return;
@@ -5143,13 +5156,12 @@ Goblin.CompoundShape.prototype.updateCenterOfMass = function () {
  * @param aabb {AABB}
  */
 Goblin.CompoundShape.prototype.calculateLocalAABB = function( aabb ) {
-	if ( this.child_shapes.length === 0 ) {
-		aabb.min.x = aabb.min.y = aabb.min.z = aabb.max.x = aabb.max.y = aabb.max.z = 0;
-		return;
-	}
-
 	aabb.min.x = aabb.min.y = aabb.min.z = Infinity;
 	aabb.max.x = aabb.max.y = aabb.max.z = -Infinity;
+
+	if ( this.child_shapes.length === 0 ) {
+		return;
+	}
 
 	var i, shape;
 
@@ -6397,6 +6409,11 @@ Goblin.CollisionUtils.canBodiesCollide = function( object_a, object_b ) {
 
     var matrix = object_a.world.collision_matrix;
 
+    if ( ( object_a._is_static || object_a._is_kinematic ) && ( object_b._is_static || object_b._is_kinematic ) ) {
+        // static bodies should never collide
+        return false;
+    }
+
     if ( matrix[ object_a.layer ] && matrix[ object_a.layer ][ object_b.layer ] === false ) {
         return false;
     } else {
@@ -6520,8 +6537,7 @@ Goblin.GeometryMethods = {
 			var vc = d1*d4 - d3*d2;
 			if ( vc <= 0 && d1 >= 0 && d3 <= 0 ) {
 				v = d1 / ( d1 - d3 );
-				out.scaleVector( ab, v );
-				out.add( a );
+				out.set( a.x + ab.x * v, a.y + ab.y * v, a.z + ab.z * v );
 				return;
 			}
 
@@ -6539,8 +6555,7 @@ Goblin.GeometryMethods = {
 				w;
 			if ( vb <= 0 && d2 >= 0 && d6 <= 0 ) {
 				w = d2 / ( d2 - d6 );
-				out.scaleVector( ac, w );
-				out.add( a );
+				out.set( a.x + ac.x * w, a.y + ac.y * w, a.z + ac.z * w );
 				return;
 			}
 
@@ -6548,26 +6563,17 @@ Goblin.GeometryMethods = {
 			var va = d3*d6 - d5*d4;
 			if ( va <= 0 && d4-d3 >= 0 && d5-d6 >= 0 ) {
 				w = (d4 - d3) / ( (d4-d3) + (d5-d6) );
-				out.subtractVectors( c, b );
-				out.scale( w );
-				out.add( b );
+				out.set( b.x + ( c.x - b.x ) * w, b.y + ( c.y - b.y ) * w, b.z + ( c.z - b.z ) * w );
 				return;
 			}
 
 			// P inside face region
-			var denom = 1 / ( va + vb + vc );
-			v = vb * denom;
-			w = vc * denom;
-
+			var recipDenom = ( va + vb + vc );
+			v = vb / recipDenom;
+			w = vc / recipDenom;
 
 			// At this point `ab` and `ac` can be recycled and lose meaning to their nomenclature
-
-			ab.scale( v );
-			ab.add( a );
-
-			ac.scale( w );
-
-			out.addVectors( ab, ac );
+			out.set( ab.x * v + a.x + ac.x * w, ab.y * v + a.y + ac.y * w, ab.z * v + a.z + ac.z * w );
 		};
 	})(),
 
@@ -7355,6 +7361,22 @@ Goblin.ContactDetails = function() {
 	this.object_b = null;
 
 	/**
+	 * first body's version'
+	 *
+	 * @property object_a
+	 * @type {Goblin.RigidBody}
+	 */
+	this.object_a_version = -1;
+
+	/**
+	 * second body's version
+	 *
+	 * @property object_b
+	 * @type {Goblin.RigidBody}
+	 */
+	this.object_b_version = -1;
+
+	/**
 	 * first shape in the  contact
 	 *
 	 * @property shape_a
@@ -7408,7 +7430,7 @@ Goblin.ContactDetails = function() {
 	 * @property penetration_depth
 	 * @type {Number}
 	 */
-	this.penetration_depth = 0;
+	//this.penetration_depth = 0;
 
 	/**
 	 * amount of restitution between the objects in contact
@@ -7429,6 +7451,20 @@ Goblin.ContactDetails = function() {
 	this.listeners = {};
 };
 Goblin.EventEmitter.apply( Goblin.ContactDetails );
+
+Object.defineProperty(
+	Goblin.ContactDetails.prototype,
+	'penetration_depth',
+	{
+		get: function() {
+			return this._penetration_depth;
+		},
+		set: function( value ) {
+			this._penetration_depth = value;
+		}
+	}
+);
+
 
 Goblin.ContactDetails.prototype.destroy = function() {
 	this.emit( 'destroy' );
@@ -7472,7 +7508,7 @@ Goblin.ContactManifold = function() {
 	 * @type {ContactManifold}
 	 */
 	this.next_manifold = null;
-};
+};	
 
 /**
  * Determines which cached contact should be replaced with the new contact
@@ -7569,6 +7605,9 @@ Goblin.ContactManifold.prototype.addContact = function( contact ) {
 		} else {
 			contact.object_a.emit( 'contact', contact.object_b, contact );
 			contact.object_b.emit( 'contact', contact.object_a, contact );
+
+			contact.object_a_version = contact.object_a.version;
+			contact.object_b_version = contact.object_b.version;
 		}
 	}
 
@@ -7592,6 +7631,7 @@ Goblin.ContactManifold.prototype.update = function() {
 	var i,
 		j,
 		point,
+		penetrationThreshold = 0.2,
 		object_a_world_coords = new Goblin.Vector3(),
 		object_b_world_coords = new Goblin.Vector3(),
 		vector_difference = new Goblin.Vector3(),
@@ -7612,13 +7652,15 @@ Goblin.ContactManifold.prototype.update = function() {
 		vector_difference.subtractVectors( object_a_world_coords, object_b_world_coords );
 		point.penetration_depth = vector_difference.dot( point.contact_normal );
 
+		if ( ( point.object_a_version !== point.object_a.version ) || ( point.object_b_version !== point.object_b.version ) ) {
+			point.penetration_depth = -Infinity;
+		}
+
 		// If distance from contact is too great remove this contact point
-		if ( point.penetration_depth < -0.02 ) {
+		if ( point.penetration_depth < -penetrationThreshold ) {
 			// Points are too far away along the contact normal
 			point.destroy();
-			for ( j = i; j < this.points.length; j++ ) {
-				this.points[j] = this.points[j + 1];
-			}
+			this.points[ i ] = this.points[ this.points.length - 1 ];
 			this.points.length = this.points.length - 1;
 			this.object_a.emit( 'endContact', this.object_b );
 			this.object_b.emit( 'endContact', this.object_a );
@@ -7628,13 +7670,11 @@ Goblin.ContactManifold.prototype.update = function() {
 			_tmp_vec3_1.subtractVectors( object_a_world_coords, _tmp_vec3_1 );
 
 			_tmp_vec3_1.subtractVectors( object_b_world_coords, _tmp_vec3_1 );
-			var distance = _tmp_vec3_1.lengthSquared();
-			if ( distance > 0.2 * 0.2 ) {
+			var distance = _tmp_vec3_1.length();
+			if ( distance > penetrationThreshold ) {
 				// Points are indeed too far away
 				point.destroy();
-				for ( j = i; j < this.points.length; j++ ) {
-					this.points[j] = this.points[j + 1];
-				}
+				this.points[ i ] = this.points[ this.points.length - 1 ];
 				this.points.length = this.points.length - 1;
 				this.object_a.emit( 'endContact', this.object_b );
 				this.object_b.emit( 'endContact', this.object_a );
@@ -7799,7 +7839,7 @@ Goblin.IterativeSolver = function() {
 	 * @property penetrations_max_iterations
 	 * @type {number}
 	 */
-	this.penetrations_max_iterations = 5;
+	this.penetrations_max_iterations = 10;
 
 	/**
 	 * used to relax the contact position solver, 0 is no position correction and 1 is full correction
@@ -7968,6 +8008,7 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 		jdot, row, i,
 		delta_lambda,
 		aabb,
+		shape, j, shapeChild,
 		max_impulse = 0,
 		invmass;
 
@@ -8071,7 +8112,18 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 		}
 
 		// if ( constraint.object_a ) {
-		// 	aabb = constraint.object_a.aabb;
+		// 	aabb = new Goblin.AABB();
+
+		// 	for(j = 0; j < constraint.object_a.shape.child_shapes.length; j++) {
+		// 		shapeChild = constraint.object_a.shape.child_shapes[j];
+		// 		if (shapeChild.shape === constraint.contact.shape_a) {
+		// 			shape = shapeChild;
+		// 			break;
+		// 		}
+		// 	}
+
+		// 	aabb.transform( shape.aabb, constraint.object_a.transform );
+		// 	//aabb = constraint.object_a.aabb;
 
 		// 	pc.Application.getApplication().renderWireCube( 
 		// 		new pc.Mat4().setTRS( 
@@ -8087,7 +8139,18 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 		// }
 
 		// if ( constraint.object_b ) {
-		// 	aabb = constraint.object_b.aabb;
+		// 	aabb = new Goblin.AABB();
+			
+		// 	for(j = 0; j < constraint.object_b.shape.child_shapes.length; j++) {
+		// 		shapeChild = constraint.object_b.shape.child_shapes[j];
+		// 		if (shapeChild.shape === constraint.contact.shape_b) {
+		// 			shape = shapeChild;
+		// 			break;
+		// 		}
+		// 	}
+
+		// 	aabb.transform( shape.aabb, constraint.object_b.transform );
+		// 	//aabb = constraint.object_b.aabb;
 
 		// 	pc.Application.getApplication().renderWireCube( 
 		// 		new pc.Mat4().setTRS( 
@@ -8361,11 +8424,11 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 	if ( object_a.shape instanceof Goblin.CompoundShape ) {
 		compound = object_a;
 		other = object_b;
-		permuted = false;
+		permuted = !false;
 	} else {
 		compound = object_b;
 		other = object_a;
-		permuted = true;
+		permuted = !true;
 	}
 
 	var proxy = Goblin.ObjectPool.getObject( 'RigidBodyProxy' ),
@@ -8380,7 +8443,7 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 		} else {
 			contact = this.getContact( proxy, other );
 
-			if ( contact != null ) {
+			if ( contact != null && !contact.tag ) {
 				var parent_a, parent_b;
 
 				if ( contact.object_a === proxy ) {
@@ -8391,24 +8454,18 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 					contact.object_b = compound;
 					parent_a = other;
 					parent_b = proxy;
+
+					permuted = !permuted;
 				}
 
-				if ( parent_a instanceof Goblin.RigidBodyProxy ) {
-					while ( parent_a.parent ) {
-						if ( parent_a instanceof Goblin.RigidBodyProxy ) {
-							parent_a.shape_data.transform.transformVector3( contact.contact_point_in_a );
-						}
-						parent_a = parent_a.parent;
-					}
+				while ( parent_a.parent != null ) {
+					parent_a.shape_data.transform.transformVector3( contact.contact_point_in_a );
+					parent_a = parent_a.parent;
 				}
 
-				if ( parent_b instanceof Goblin.RigidBodyProxy ) {
-					while ( parent_b.parent ) {
-						if ( parent_b instanceof Goblin.RigidBodyProxy ) {
-							parent_b.shape_data.transform.transformVector3( contact.contact_point_in_b );
-						}
-						parent_b = parent_b.parent;
-					}
+				while ( parent_b.parent != null ) {
+					parent_b.shape_data.transform.transformVector3( contact.contact_point_in_b );
+					parent_b = parent_b.parent;
 				}
 
 				contact.object_a = parent_a;
@@ -8467,20 +8524,26 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 				contact = Goblin.TriangleTriangle( a_node.object, tri_b );
                 if ( contact != null ) {
 					object_a.transform.rotateVector3( contact.contact_normal );
-
                     object_a.transform.transformVector3( contact.contact_point );
 
                     object_a.transform.transformVector3( contact.contact_point_in_b );
                     object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
 
+					while ( object_a.parent != null ) {
+						object_a.shape_data.transform.transformVector3( contact.contact_point_in_a );
+						object_a = object_a.parent;
+					}
+					
+					while ( object_b.parent != null ) {
+						object_b.shape_data.transform.transformVector3( contact.contact_point_in_b );
+						object_b = object_b.parent;
+					}
+
                     contact.object_a = object_a;
                     contact.object_b = object_b;
 
-                    contact.shape_a = object_a.shape;
-					contact.shape_b = object_b.shape;
-
-					contact.restitution = Goblin.CollisionUtils.combineRestitutions( object_a, object_b, object_a.shape, object_b.shape );
-					contact.friction = Goblin.CollisionUtils.combineFrictions( object_a, object_b, object_a.shape, object_b.shape );
+					contact.restitution = Goblin.CollisionUtils.combineRestitutions( object_a, object_b, contact.shape_a, contact.shape_b );
+					contact.friction = Goblin.CollisionUtils.combineFrictions( object_a, object_b, contact.shape_a, contact.shape_b );
 
                     addContact( object_a, object_b, contact );
                 }
@@ -8558,7 +8621,7 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 
 			// Traverse the BHV in mesh
 			var pending_nodes = [ mesh.shape.hierarchy ],
-				contact,
+				contact, result_contact,
 				node;
 			while ( ( node = pending_nodes.shift() ) ) {
 				if ( node.aabb.intersects( convex_aabb_in_mesh ) ) {
@@ -8566,33 +8629,33 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 						// Check node for collision
 						contact = triangleConvex( node.object, mesh, convex );
 						if ( contact != null ) {
-							var _mesh = mesh;
-							while ( _mesh.parent != null ) {
-								_mesh = _mesh.parent;
+							while ( contact.object_a.parent != null ) {
+								contact.object_a.shape_data.transform.transformVector3( contact.contact_point_in_a );
+								contact.object_a = contact.object_a.parent;
 							}
-							var _convex = convex;
-							while ( _convex.parent != null ) {
-								_convex = _convex.parent;
+							
+							while ( contact.object_b.parent != null ) {
+								contact.object_b.shape_data.transform.transformVector3( contact.contact_point_in_b );
+								contact.object_b = contact.object_b.parent;
 							}
-
-							contact.object_a = _mesh;
-							contact.object_b = _convex;
 
 							contact.shape_a = mesh.shape;
 							contact.shape_b = convex.shape;
 
-							contact.restitution = Goblin.CollisionUtils.combineRestitutions( _mesh, _convex, mesh.shape, convex.shape );
-							contact.friction = Goblin.CollisionUtils.combineFrictions( _mesh, _convex, mesh.shape, convex.shape );
+							contact.restitution = Goblin.CollisionUtils.combineRestitutions( contact.object_a, contact.object_b, mesh.shape, convex.shape );
+							contact.friction = Goblin.CollisionUtils.combineFrictions( contact.object_a, contact.object_b, mesh.shape, convex.shape );
 
-							addContact( _mesh, _convex, contact );
+							addContact( contact.object_a, contact.object_b, contact );
 						}
+
+						result_contact = result_contact || contact;
 					} else {
 						pending_nodes.push( node.left, node.right );
 					}
 				}
 			}
 
-			return contact;
+			return result_contact;
 		};
 	})();
 
@@ -8666,6 +8729,8 @@ Goblin.NarrowPhase.prototype.addContact = function( object_a, object_b, contact 
 		return;
 	}
 
+	// check if already saw this contact
+	// FIXME EN-206 to revise the below
 	if ( contact.tag ) {
 		return;
 	}
@@ -8691,8 +8756,9 @@ Goblin.NarrowPhase.prototype.generateContacts = function( possible_contacts ) {
 
 	for ( i = 0; i < possible_contacts_length; i++ ) {
 		contact = this.getContact( possible_contacts[i][0], possible_contacts[i][1] );
-		if ( contact != null ) {
-			this.addContact( possible_contacts[i][0], possible_contacts[i][1], contact );
+
+		if ( contact ) {
+			this.addContact( contact.object_a, contact.object_b, contact );
 		}
 	}
 };
@@ -8735,6 +8801,14 @@ Goblin.ObjectPool = {
 	pools: {},
 
 	/**
+	 * Holds freed contact objects which are allowed to be re-used only explicitly,
+	 *
+	 * @property pools
+	 * @private
+	 */
+	contactsPool: [],
+
+	/**
 	 * registers a type of object to be available in pools
 	 *
 	 * @param key {String} key associated with the object to register
@@ -8743,6 +8817,15 @@ Goblin.ObjectPool = {
 	registerType: function( key, constructing_function ) {
 		this.types[ key ] = constructing_function;
 		this.pools[ key ] = [];
+		this.contactPool = [];
+	},
+
+	/**
+	 * Lets the contact details' objects to get into reuse pool.
+	 */
+	freeContacts: function () {
+		this.pools[ 'ContactDetails' ] = this.contactsPool;
+		this.contactsPool = [];
 	},
 
 	/**
@@ -8756,6 +8839,7 @@ Goblin.ObjectPool = {
 
 		if ( pool.length !== 0 ) {
 			var result = pool.pop();
+			
 			result.tag = null;
 
 			return result;
@@ -8775,7 +8859,11 @@ Goblin.ObjectPool = {
 			object.removeAllListeners();
 		}
 
-		this.pools[ key ].push( object );
+		if ( key === 'ContactDetails' ) {
+			this.contactsPool.push( object );
+		} else {
+			this.pools[ key ].push( object );
+		}
 	}
 };
 
@@ -8863,6 +8951,10 @@ Object.defineProperty(
 		}
 	}
 );
+
+// Goblin.RigidBodyProxy.prototype.emit = function() {
+// 	return this.parent.emit.apply( this.parent, arguments );
+// };
 
 Goblin.RigidBodyProxy.prototype.setFrom = function( parent, shape_data ) {
 	this.parent = parent;
@@ -9048,6 +9140,8 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 			bodies[ i ].updateDerived();
 		}
 
+		this.drawDebug();
+
         // Check for contacts, broadphase
         this.broadphase.update();
 
@@ -9082,7 +9176,65 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 		}
 
 		this.emit( 'stepEnd', this.ticks, delta );
+
+		Goblin.ObjectPool.freeContacts();
     }
+};
+
+/**
+ * Draws AABBs of objects and colliders when enabled for the world.
+ *
+ * @method drawDebug
+ */
+Goblin.World.prototype.drawDebug = function() {
+	if ( !this.debug ) {
+		return;
+	}
+
+	var i, j, body, aabb, shapes, shape;
+
+	for ( i = 0; i < this.rigid_bodies.length; i++ ) {
+		body = this.rigid_bodies[ i ];
+
+		if ( body.debug ) {
+			aabb = body.aabb;
+
+			pc.Application.getApplication().renderWireCube( 
+				new pc.Mat4().setTRS( 
+					new pc.Vec3( aabb.min.x + aabb.max.x, aabb.min.y + aabb.max.y, aabb.min.z + aabb.max.z ).scale( 0.5 ), 
+					pc.Quat.IDENTITY, 
+					new pc.Vec3( aabb.min.x - aabb.max.x, aabb.min.y - aabb.max.y, aabb.min.z - aabb.max.z ).scale( -1 ) 
+				), 
+
+				new pc.Color( 1, 0, 0, 1 ),
+
+				pc.LINEBATCH_OVERLAY
+			);
+		}
+
+		shapes = body.shape.child_shapes || [];
+
+		for ( j = 0; j < shapes.length; j++ ) {
+			shape = shapes[ j ].shape;
+
+			if ( shape.debug ) {
+				aabb = new Goblin.AABB();
+				aabb.transform( shapes[ j ].aabb, body.transform );
+
+				pc.Application.getApplication().renderWireCube( 
+					new pc.Mat4().setTRS( 
+						new pc.Vec3( aabb.min.x + aabb.max.x, aabb.min.y + aabb.max.y, aabb.min.z + aabb.max.z ).scale( 0.5 ), 
+						pc.Quat.IDENTITY, 
+						new pc.Vec3( aabb.min.x - aabb.max.x, aabb.min.y - aabb.max.y, aabb.min.z - aabb.max.z ).scale( -1 ) 
+					), 
+
+					new pc.Color( 0, 1, 0, 1 ),
+
+					pc.LINEBATCH_OVERLAY
+				);
+			}
+		}
+	}
 };
 
 /**
