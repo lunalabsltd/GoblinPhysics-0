@@ -49,11 +49,11 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 	if ( object_a.shape instanceof Goblin.CompoundShape ) {
 		compound = object_a;
 		other = object_b;
-		permuted = false;
+		permuted = !false;
 	} else {
 		compound = object_b;
 		other = object_a;
-		permuted = true;
+		permuted = !true;
 	}
 
 	var proxy = Goblin.ObjectPool.getObject( 'RigidBodyProxy' ),
@@ -68,7 +68,7 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 		} else {
 			contact = this.getContact( proxy, other );
 
-			if ( contact != null ) {
+			if ( contact != null && !contact.tag ) {
 				var parent_a, parent_b;
 
 				if ( contact.object_a === proxy ) {
@@ -79,24 +79,18 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 					contact.object_b = compound;
 					parent_a = other;
 					parent_b = proxy;
+
+					permuted = !permuted;
 				}
 
-				if ( parent_a instanceof Goblin.RigidBodyProxy ) {
-					while ( parent_a.parent ) {
-						if ( parent_a instanceof Goblin.RigidBodyProxy ) {
-							parent_a.shape_data.transform.transformVector3( contact.contact_point_in_a );
-						}
-						parent_a = parent_a.parent;
-					}
+				while ( parent_a.parent != null ) {
+					parent_a.shape_data.transform.transformVector3( contact.contact_point_in_a );
+					parent_a = parent_a.parent;
 				}
 
-				if ( parent_b instanceof Goblin.RigidBodyProxy ) {
-					while ( parent_b.parent ) {
-						if ( parent_b instanceof Goblin.RigidBodyProxy ) {
-							parent_b.shape_data.transform.transformVector3( contact.contact_point_in_b );
-						}
-						parent_b = parent_b.parent;
-					}
+				while ( parent_b.parent != null ) {
+					parent_b.shape_data.transform.transformVector3( contact.contact_point_in_b );
+					parent_b = parent_b.parent;
 				}
 
 				contact.object_a = parent_a;
@@ -155,20 +149,26 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 				contact = Goblin.TriangleTriangle( a_node.object, tri_b );
                 if ( contact != null ) {
 					object_a.transform.rotateVector3( contact.contact_normal );
-
                     object_a.transform.transformVector3( contact.contact_point );
 
                     object_a.transform.transformVector3( contact.contact_point_in_b );
                     object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
 
+					while ( object_a.parent != null ) {
+						object_a.shape_data.transform.transformVector3( contact.contact_point_in_a );
+						object_a = object_a.parent;
+					}
+					
+					while ( object_b.parent != null ) {
+						object_b.shape_data.transform.transformVector3( contact.contact_point_in_b );
+						object_b = object_b.parent;
+					}
+
                     contact.object_a = object_a;
                     contact.object_b = object_b;
 
-                    contact.shape_a = object_a.shape;
-					contact.shape_b = object_b.shape;
-
-					contact.restitution = Goblin.CollisionUtils.combineRestitutions( object_a, object_b, object_a.shape, object_b.shape );
-					contact.friction = Goblin.CollisionUtils.combineFrictions( object_a, object_b, object_a.shape, object_b.shape );
+					contact.restitution = Goblin.CollisionUtils.combineRestitutions( object_a, object_b, contact.shape_a, contact.shape_b );
+					contact.friction = Goblin.CollisionUtils.combineFrictions( object_a, object_b, contact.shape_a, contact.shape_b );
 
                     addContact( object_a, object_b, contact );
                 }
@@ -246,7 +246,7 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 
 			// Traverse the BHV in mesh
 			var pending_nodes = [ mesh.shape.hierarchy ],
-				contact,
+				contact, result_contact,
 				node;
 			while ( ( node = pending_nodes.shift() ) ) {
 				if ( node.aabb.intersects( convex_aabb_in_mesh ) ) {
@@ -254,33 +254,33 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 						// Check node for collision
 						contact = triangleConvex( node.object, mesh, convex );
 						if ( contact != null ) {
-							var _mesh = mesh;
-							while ( _mesh.parent != null ) {
-								_mesh = _mesh.parent;
+							while ( contact.object_a.parent != null ) {
+								contact.object_a.shape_data.transform.transformVector3( contact.contact_point_in_a );
+								contact.object_a = contact.object_a.parent;
 							}
-							var _convex = convex;
-							while ( _convex.parent != null ) {
-								_convex = _convex.parent;
+							
+							while ( contact.object_b.parent != null ) {
+								contact.object_b.shape_data.transform.transformVector3( contact.contact_point_in_b );
+								contact.object_b = contact.object_b.parent;
 							}
-
-							contact.object_a = _mesh;
-							contact.object_b = _convex;
 
 							contact.shape_a = mesh.shape;
 							contact.shape_b = convex.shape;
 
-							contact.restitution = Goblin.CollisionUtils.combineRestitutions( _mesh, _convex, mesh.shape, convex.shape );
-							contact.friction = Goblin.CollisionUtils.combineFrictions( _mesh, _convex, mesh.shape, convex.shape );
+							contact.restitution = Goblin.CollisionUtils.combineRestitutions( contact.object_a, contact.object_b, mesh.shape, convex.shape );
+							contact.friction = Goblin.CollisionUtils.combineFrictions( contact.object_a, contact.object_b, mesh.shape, convex.shape );
 
-							addContact( _mesh, _convex, contact );
+							addContact( contact.object_a, contact.object_b, contact );
 						}
+
+						result_contact = result_contact || contact;
 					} else {
 						pending_nodes.push( node.left, node.right );
 					}
 				}
 			}
 
-			return contact;
+			return result_contact;
 		};
 	})();
 
@@ -354,6 +354,8 @@ Goblin.NarrowPhase.prototype.addContact = function( object_a, object_b, contact 
 		return;
 	}
 
+	// check if already saw this contact
+	// FIXME EN-206 to revise the below
 	if ( contact.tag ) {
 		return;
 	}
@@ -379,8 +381,9 @@ Goblin.NarrowPhase.prototype.generateContacts = function( possible_contacts ) {
 
 	for ( i = 0; i < possible_contacts_length; i++ ) {
 		contact = this.getContact( possible_contacts[i][0], possible_contacts[i][1] );
-		if ( contact != null ) {
-			this.addContact( possible_contacts[i][0], possible_contacts[i][1], contact );
+
+		if ( contact ) {
+			this.addContact( contact.object_a, contact.object_b, contact );
 		}
 	}
 };
