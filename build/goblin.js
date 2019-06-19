@@ -7430,7 +7430,7 @@ Goblin.ContactDetails = function() {
 	 * @property penetration_depth
 	 * @type {Number}
 	 */
-	//this.penetration_depth = 0;
+	this.penetration_depth = 0;
 
 	/**
 	 * amount of restitution between the objects in contact
@@ -7451,20 +7451,6 @@ Goblin.ContactDetails = function() {
 	this.listeners = {};
 };
 Goblin.EventEmitter.apply( Goblin.ContactDetails );
-
-Object.defineProperty(
-	Goblin.ContactDetails.prototype,
-	'penetration_depth',
-	{
-		get: function() {
-			return this._penetration_depth;
-		},
-		set: function( value ) {
-			this._penetration_depth = value;
-		}
-	}
-);
-
 
 Goblin.ContactDetails.prototype.destroy = function() {
 	this.emit( 'destroy' );
@@ -7839,7 +7825,7 @@ Goblin.IterativeSolver = function() {
 	 * @property penetrations_max_iterations
 	 * @type {number}
 	 */
-	this.penetrations_max_iterations = 10;
+	this.penetrations_max_iterations = 5;
 
 	/**
 	 * used to relax the contact position solver, 0 is no position correction and 1 is full correction
@@ -8008,7 +7994,6 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 		jdot, row, i,
 		delta_lambda,
 		aabb,
-		shape, j, shapeChild,
 		max_impulse = 0,
 		invmass;
 
@@ -8110,60 +8095,6 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 
 			constraint.object_b.integrateRotation( 1.0, _tmp_vec3_1 );
 		}
-
-		// if ( constraint.object_a ) {
-		// 	aabb = new Goblin.AABB();
-
-		// 	for(j = 0; j < constraint.object_a.shape.child_shapes.length; j++) {
-		// 		shapeChild = constraint.object_a.shape.child_shapes[j];
-		// 		if (shapeChild.shape === constraint.contact.shape_a) {
-		// 			shape = shapeChild;
-		// 			break;
-		// 		}
-		// 	}
-
-		// 	aabb.transform( shape.aabb, constraint.object_a.transform );
-		// 	//aabb = constraint.object_a.aabb;
-
-		// 	pc.Application.getApplication().renderWireCube( 
-		// 		new pc.Mat4().setTRS( 
-		// 			new pc.Vec3( aabb.min.x + aabb.max.x, aabb.min.y + aabb.max.y, aabb.min.z + aabb.max.z ).scale( 0.5 ), 
-		// 			pc.Quat.IDENTITY, 
-		// 			new pc.Vec3( aabb.min.x - aabb.max.x, aabb.min.y - aabb.max.y, aabb.min.z - aabb.max.z ).scale( -1 ) 
-		// 		), 
-
-		// 		new pc.Color(1, 0, 0, 1),
-
-		// 		pc.LINEBATCH_OVERLAY
-		// 	);
-		// }
-
-		// if ( constraint.object_b ) {
-		// 	aabb = new Goblin.AABB();
-			
-		// 	for(j = 0; j < constraint.object_b.shape.child_shapes.length; j++) {
-		// 		shapeChild = constraint.object_b.shape.child_shapes[j];
-		// 		if (shapeChild.shape === constraint.contact.shape_b) {
-		// 			shape = shapeChild;
-		// 			break;
-		// 		}
-		// 	}
-
-		// 	aabb.transform( shape.aabb, constraint.object_b.transform );
-		// 	//aabb = constraint.object_b.aabb;
-
-		// 	pc.Application.getApplication().renderWireCube( 
-		// 		new pc.Mat4().setTRS( 
-		// 			new pc.Vec3( aabb.min.x + aabb.max.x, aabb.min.y + aabb.max.y, aabb.min.z + aabb.max.z ).scale( 0.5 ), 
-		// 			pc.Quat.IDENTITY, 
-		// 			new pc.Vec3( aabb.min.x - aabb.max.x, aabb.min.y - aabb.max.y, aabb.min.z - aabb.max.z ).scale( -1 ) 
-		// 		), 
-
-		// 		new pc.Color(0, 1, 0, 1),
-
-		// 		pc.LINEBATCH_OVERLAY
-		// 	);
-		// }
 
 		row.multiplier = 0;
 	}
