@@ -19,6 +19,15 @@ Goblin.RigidBody = (function() {
 		this.id = body_count++;
 
 		/**
+		 * body version that changes upon significant updates (collider movements,
+		 * additions and deletions)
+		 *
+		 * @property version
+		 * @type {Number}
+		 */
+		this.version = 0;
+
+		/**
 		 * shape definition for this rigid body
 		 *
 		 * @property shape
@@ -345,6 +354,7 @@ Object.defineProperty(
 					this.world.updateObjectLayer( this, value );
 				}
 
+				this.version++;
 				this._layer = value;
 			}
 		}
@@ -422,6 +432,9 @@ Goblin.RigidBody.prototype.getTransform = function ( position, rotation ) {
  * @method updateShapeDerivedValues
  */
 Goblin.RigidBody.prototype.updateShapeDerivedValues = function () {
+	// update body version
+	this.version++;
+
 	if ( !this.shape.center_of_mass ) {
 		this._computeInertiaTensor();
 		return;

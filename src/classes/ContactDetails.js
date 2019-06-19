@@ -24,6 +24,22 @@ Goblin.ContactDetails = function() {
 	this.object_b = null;
 
 	/**
+	 * first body's version'
+	 *
+	 * @property object_a
+	 * @type {Goblin.RigidBody}
+	 */
+	this.object_a_version = -1;
+
+	/**
+	 * second body's version
+	 *
+	 * @property object_b
+	 * @type {Goblin.RigidBody}
+	 */
+	this.object_b_version = -1;
+
+	/**
 	 * first shape in the  contact
 	 *
 	 * @property shape_a
