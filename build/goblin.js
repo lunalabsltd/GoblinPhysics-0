@@ -4035,8 +4035,8 @@ Goblin.ConstraintMotor.prototype.createConstraintRow = function() {
 	this.constraint_row = Goblin.ConstraintRow.createConstraintRow();
 };
 Goblin.ConstraintRow = function() {
-	this.jacobian = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
-	this.B = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]; // `B` is the jacobian multiplied by the objects' inverted mass & inertia tensors
+	this.jacobian = new Float64Array( 12 );
+	this.B = new Float64Array( 12 ); // `B` is the jacobian multiplied by the objects' inverted mass & inertia tensors
 	this.D = 0; // Length of the jacobian
 
 	this.lower_limit = -Infinity;
@@ -4047,7 +4047,7 @@ Goblin.ConstraintRow = function() {
 	this.multiplier_cached = 0;
 	this.cfm = 0;
 	this.eta = 0;
-	this.eta_row = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+	this.eta_row = new Float64Array( 12 );
 };
 
 Goblin.ConstraintRow.createConstraintRow = function() {
@@ -7464,6 +7464,14 @@ Goblin.ContactDetails.prototype.destroy = function() {
  */
 Goblin.ContactManifold = function() {
 	/**
+	 * unique id of the manifold
+	 *
+	 * @property uid
+	 * @type {String}
+	 */
+	this.uid = "";
+
+	/**
 	 * first body in the contact
 	 *
 	 * @property object_a
@@ -7688,6 +7696,15 @@ Goblin.ContactManifoldList = function() {
 	 * @type {ContactManifold}
 	 */
 	this.first = null;
+
+	/**
+	 * Private manifold cache for faster search
+	 *
+	 * @private
+	 * @property cache
+	 * @type {object}
+	 */
+	this.cache = {};
 };
 
 /**
@@ -7697,9 +7714,33 @@ Goblin.ContactManifoldList = function() {
  * @param {ContactManifold} contact_manifold contact manifold to insert into the list
  */
 Goblin.ContactManifoldList.prototype.insert = function( contact_manifold ) {
+	var idA = contact_manifold.object_a.id > contact_manifold.object_b.id ? contact_manifold.object_b.id : contact_manifold.object_a.id;
+	var idB = ( contact_manifold.object_a.id + contact_manifold.object_b.id ) - idA;
+	contact_manifold.uid = idA + ":" + idB;
+
+	// cache the manifold
+	this.cache[ contact_manifold.uid ] = contact_manifold;
+
 	// The list is completely unordered, throw the manifold at the beginning
 	contact_manifold.next_manifold = this.first;
 	this.first = contact_manifold;
+};
+
+/**
+ * Deletes the manifold from the lsit.
+ *
+ * @method delete
+ * @param {ContactManifold} previous contact manifold before the one to be removed
+ * @param {ContactManifold} current contact manifold to remove from the list
+ */
+Goblin.ContactManifoldList.prototype.delete = function( previous, current ) {
+	if ( previous == null ) {
+		this.first = current.next_manifold;
+	} else {
+		previous.next_manifold = current.next_manifold;
+	}
+
+	this.cache[ current.uid ] = null;
 };
 
 /**
@@ -7710,22 +7751,13 @@ Goblin.ContactManifoldList.prototype.insert = function( contact_manifold ) {
  * @returns {ContactManifold}
  */
 Goblin.ContactManifoldList.prototype.getManifoldForObjects = function( object_a, object_b ) {
-	var manifold = null;
-	if ( this.first !== null ) {
-		var current = this.first;
-		while ( current !== null ) {
-			if (
-				current.object_a === object_a && current.object_b === object_b ||
-				current.object_a === object_b && current.object_b === object_a
-			) {
-				manifold = current;
-				break;
-			}
-			current = current.next_manifold;
-		}
-	}
+	var idA = object_a.id > object_b.id ? object_b.id : object_a.id;
+	var idB = ( object_a.id + object_b.id ) - idA;
 
-	if ( manifold === null ) {
+	var uid = idA + ":" + idB;
+	var manifold = this.cache[ uid ];
+
+	if ( !manifold ) {
 		// A manifold for these two objects does not exist, create one
 		manifold = Goblin.ObjectPool.getObject( 'ContactManifold' );
 		manifold.object_a = object_a;
@@ -8334,11 +8366,7 @@ Goblin.NarrowPhase.prototype.updateContactManifolds = function() {
 
 		if ( current.points.length === 0 ) {
 			Goblin.ObjectPool.freeObject( 'ContactManifold', current );
-			if ( prev == null ) {
-				this.contact_manifolds.first = current.next_manifold;
-			} else {
-				prev.next_manifold = current.next_manifold;
-			}
+			this.contact_manifolds.delete( prev, current );
 			current = current.next_manifold;
 		} else {
 			prev = current;

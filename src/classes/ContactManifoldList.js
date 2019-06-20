@@ -12,6 +12,15 @@ Goblin.ContactManifoldList = function() {
 	 * @type {ContactManifold}
 	 */
 	this.first = null;
+
+	/**
+	 * Private manifold cache for faster search
+	 *
+	 * @private
+	 * @property cache
+	 * @type {object}
+	 */
+	this.cache = {};
 };
 
 /**
@@ -21,9 +30,33 @@ Goblin.ContactManifoldList = function() {
  * @param {ContactManifold} contact_manifold contact manifold to insert into the list
  */
 Goblin.ContactManifoldList.prototype.insert = function( contact_manifold ) {
+	var idA = contact_manifold.object_a.id > contact_manifold.object_b.id ? contact_manifold.object_b.id : contact_manifold.object_a.id;
+	var idB = ( contact_manifold.object_a.id + contact_manifold.object_b.id ) - idA;
+	contact_manifold.uid = idA + ":" + idB;
+
+	// cache the manifold
+	this.cache[ contact_manifold.uid ] = contact_manifold;
+
 	// The list is completely unordered, throw the manifold at the beginning
 	contact_manifold.next_manifold = this.first;
 	this.first = contact_manifold;
+};
+
+/**
+ * Deletes the manifold from the lsit.
+ *
+ * @method delete
+ * @param {ContactManifold} previous contact manifold before the one to be removed
+ * @param {ContactManifold} current contact manifold to remove from the list
+ */
+Goblin.ContactManifoldList.prototype.delete = function( previous, current ) {
+	if ( previous == null ) {
+		this.first = current.next_manifold;
+	} else {
+		previous.next_manifold = current.next_manifold;
+	}
+
+	this.cache[ current.uid ] = null;
 };
 
 /**
@@ -34,22 +67,13 @@ Goblin.ContactManifoldList.prototype.insert = function( contact_manifold ) {
  * @returns {ContactManifold}
  */
 Goblin.ContactManifoldList.prototype.getManifoldForObjects = function( object_a, object_b ) {
-	var manifold = null;
-	if ( this.first !== null ) {
-		var current = this.first;
-		while ( current !== null ) {
-			if (
-				current.object_a === object_a && current.object_b === object_b ||
-				current.object_a === object_b && current.object_b === object_a
-			) {
-				manifold = current;
-				break;
-			}
-			current = current.next_manifold;
-		}
-	}
+	var idA = object_a.id > object_b.id ? object_b.id : object_a.id;
+	var idB = ( object_a.id + object_b.id ) - idA;
 
-	if ( manifold === null ) {
+	var uid = idA + ":" + idB;
+	var manifold = this.cache[ uid ];
+
+	if ( !manifold ) {
 		// A manifold for these two objects does not exist, create one
 		manifold = Goblin.ObjectPool.getObject( 'ContactManifold' );
 		manifold.object_a = object_a;

@@ -28,11 +28,7 @@ Goblin.NarrowPhase.prototype.updateContactManifolds = function() {
 
 		if ( current.points.length === 0 ) {
 			Goblin.ObjectPool.freeObject( 'ContactManifold', current );
-			if ( prev == null ) {
-				this.contact_manifolds.first = current.next_manifold;
-			} else {
-				prev.next_manifold = current.next_manifold;
-			}
+			this.contact_manifolds.delete( prev, current );
 			current = current.next_manifold;
 		} else {
 			prev = current;

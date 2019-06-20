@@ -6,6 +6,14 @@
  */
 Goblin.ContactManifold = function() {
 	/**
+	 * unique id of the manifold
+	 *
+	 * @property uid
+	 * @type {String}
+	 */
+	this.uid = "";
+
+	/**
 	 * first body in the contact
 	 *
 	 * @property object_a
