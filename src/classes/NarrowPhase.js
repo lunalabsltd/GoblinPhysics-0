@@ -83,16 +83,6 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 					permuted = !permuted;
 				}
 
-				while ( parent_a.parent != null ) {
-					parent_a.shape_data.transform.transformVector3( contact.contact_point_in_a );
-					parent_a = parent_a.parent;
-				}
-
-				while ( parent_b.parent != null ) {
-					parent_b.shape_data.transform.transformVector3( contact.contact_point_in_b );
-					parent_b = parent_b.parent;
-				}
-
 				contact.object_a = parent_a;
 				contact.object_b = parent_b;
 
@@ -128,6 +118,9 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 
 		var contact;
 
+		var shape_a = object_a.shape;
+		var shape_b = object_b.shape;
+
 		// traverse both objects' AABBs while they overlap, if two overlapping leaves are found then perform Triangle/Triangle intersection test
 		var nodes = [ object_a.shape.hierarchy, object_b.shape.hierarchy ];
 		//debugger;
@@ -154,15 +147,8 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
                     object_a.transform.transformVector3( contact.contact_point_in_b );
                     object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
 
-					while ( object_a.parent != null ) {
-						object_a.shape_data.transform.transformVector3( contact.contact_point_in_a );
-						object_a = object_a.parent;
-					}
-					
-					while ( object_b.parent != null ) {
-						object_b.shape_data.transform.transformVector3( contact.contact_point_in_b );
-						object_b = object_b.parent;
-					}
+					contact.shape_a = shape_a;
+					contact.shape_b = shape_b;
 
                     contact.object_a = object_a;
                     contact.object_b = object_b;
@@ -254,16 +240,6 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 						// Check node for collision
 						contact = triangleConvex( node.object, mesh, convex );
 						if ( contact != null ) {
-							while ( contact.object_a.parent != null ) {
-								contact.object_a.shape_data.transform.transformVector3( contact.contact_point_in_a );
-								contact.object_a = contact.object_a.parent;
-							}
-							
-							while ( contact.object_b.parent != null ) {
-								contact.object_b.shape_data.transform.transformVector3( contact.contact_point_in_b );
-								contact.object_b = contact.object_b.parent;
-							}
-
 							contact.shape_a = mesh.shape;
 							contact.shape_b = convex.shape;
 
@@ -362,7 +338,17 @@ Goblin.NarrowPhase.prototype.addContact = function( object_a, object_b, contact 
 
 	contact.tag = true;
 
-	this.contact_manifolds.getManifoldForObjects( object_a, object_b ).addContact( contact );
+	while ( contact.object_a.parent != null ) {
+		contact.object_a.shape_data.transform.transformVector3( contact.contact_point_in_a );
+		contact.object_a = contact.object_a.parent;
+	}
+	
+	while ( contact.object_b.parent != null ) {
+		contact.object_b.shape_data.transform.transformVector3( contact.contact_point_in_b );
+		contact.object_b = contact.object_b.parent;
+	}
+
+	this.contact_manifolds.getManifoldForObjects( contact.object_a, contact.object_b ).addContact( contact );
 };
 
 /**
