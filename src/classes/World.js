@@ -186,8 +186,6 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 		}
 
 		this.emit( 'stepEnd', this.ticks, delta );
-
-		Goblin.ObjectPool.freeContacts();
     }
 };
 

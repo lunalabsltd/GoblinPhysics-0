@@ -22,14 +22,6 @@ Goblin.ObjectPool = {
 	pools: {},
 
 	/**
-	 * Holds freed contact objects which are allowed to be re-used only explicitly,
-	 *
-	 * @property pools
-	 * @private
-	 */
-	contactsPool: [],
-
-	/**
 	 * registers a type of object to be available in pools
 	 *
 	 * @param key {String} key associated with the object to register
@@ -38,15 +30,6 @@ Goblin.ObjectPool = {
 	registerType: function( key, constructing_function ) {
 		this.types[ key ] = constructing_function;
 		this.pools[ key ] = [];
-		this.contactPool = [];
-	},
-
-	/**
-	 * Lets the contact details' objects to get into reuse pool.
-	 */
-	freeContacts: function () {
-		this.pools[ 'ContactDetails' ] = this.contactsPool;
-		this.contactsPool = [];
 	},
 
 	/**
@@ -80,11 +63,7 @@ Goblin.ObjectPool = {
 			object.removeAllListeners();
 		}
 
-		if ( key === 'ContactDetails' ) {
-			this.contactsPool.push( object );
-		} else {
-			this.pools[ key ].push( object );
-		}
+		this.pools[ key ].push( object );
 	}
 };
 
