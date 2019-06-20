@@ -225,32 +225,47 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 		max_impulse = 0,
 		invmass;
 
+	var jacobian, linear_factor, angular_factor, push_velocity, turn_velocity, b, multiplier, am, m, relaxation = this.relaxation;
+
 	// Solve penetrations
 	for ( iteration = 0; iteration < this.penetrations_max_iterations; iteration++ ) {
 		max_impulse = 0;
 		for ( i = 0; i < this.contact_constraints.length; i++ ) {
 			constraint = this.contact_constraints[i];
+			
 			row = constraint.rows[0];
+			jacobian = row.jacobian;
+			b = row.B;
 
 			jdot = 0;
 			if ( constraint.object_a_is_dynamic() ) {
+				linear_factor = constraint.object_a.linear_factor;
+				angular_factor = constraint.object_a.angular_factor;
+				push_velocity = constraint.object_a.push_velocity;
+				turn_velocity = constraint.object_a.turn_velocity;
+
 				jdot += (
-					row.jacobian[0] * constraint.object_a.linear_factor.x * constraint.object_a.push_velocity.x +
-					row.jacobian[1] * constraint.object_a.linear_factor.y * constraint.object_a.push_velocity.y +
-					row.jacobian[2] * constraint.object_a.linear_factor.z * constraint.object_a.push_velocity.z +
-					row.jacobian[3] * constraint.object_a.angular_factor.x * constraint.object_a.turn_velocity.x +
-					row.jacobian[4] * constraint.object_a.angular_factor.y * constraint.object_a.turn_velocity.y +
-					row.jacobian[5] * constraint.object_a.angular_factor.z * constraint.object_a.turn_velocity.z
+					jacobian[0] * linear_factor.x  * push_velocity.x +
+					jacobian[1] * linear_factor.y  * push_velocity.y +
+					jacobian[2] * linear_factor.z  * push_velocity.z +
+					jacobian[3] * angular_factor.x * turn_velocity.x +
+					jacobian[4] * angular_factor.y * turn_velocity.y +
+					jacobian[5] * angular_factor.z * turn_velocity.z
 				);
 			}
 			if ( constraint.object_b_is_dynamic() ) {
+				linear_factor = constraint.object_b.linear_factor;
+				angular_factor = constraint.object_b.angular_factor;
+				push_velocity = constraint.object_b.push_velocity;
+				turn_velocity = constraint.object_b.turn_velocity;
+
 				jdot += (
-					row.jacobian[6] * constraint.object_b.linear_factor.x * constraint.object_b.push_velocity.x +
-					row.jacobian[7] * constraint.object_b.linear_factor.y * constraint.object_b.push_velocity.y +
-					row.jacobian[8] * constraint.object_b.linear_factor.z * constraint.object_b.push_velocity.z +
-					row.jacobian[9] * constraint.object_b.angular_factor.x * constraint.object_b.turn_velocity.x +
-					row.jacobian[10] * constraint.object_b.angular_factor.y * constraint.object_b.turn_velocity.y +
-					row.jacobian[11] * constraint.object_b.angular_factor.z * constraint.object_b.turn_velocity.z
+					jacobian[6]  * linear_factor.x  * push_velocity.x +
+					jacobian[7]  * linear_factor.y  * push_velocity.y +
+					jacobian[8]  * linear_factor.z  * push_velocity.z +
+					jacobian[9]  * angular_factor.x * turn_velocity.x +
+					jacobian[10] * angular_factor.y * turn_velocity.y +
+					jacobian[11] * angular_factor.z * turn_velocity.z
 				);
 			}
 
@@ -267,22 +282,28 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 			max_impulse = Math.max( max_impulse, delta_lambda );
 
 			if ( constraint.object_a_is_dynamic() ) {
-				constraint.object_a.push_velocity.x += delta_lambda * row.B[0];
-				constraint.object_a.push_velocity.y += delta_lambda * row.B[1];
-				constraint.object_a.push_velocity.z += delta_lambda * row.B[2];
+				push_velocity = constraint.object_a.push_velocity;
+				turn_velocity = constraint.object_a.turn_velocity;
 
-				constraint.object_a.turn_velocity.x += delta_lambda * row.B[3];
-				constraint.object_a.turn_velocity.y += delta_lambda * row.B[4];
-				constraint.object_a.turn_velocity.z += delta_lambda * row.B[5];
+				push_velocity.x += delta_lambda * b[0];
+				push_velocity.y += delta_lambda * b[1];
+				push_velocity.z += delta_lambda * b[2];
+
+				turn_velocity.x += delta_lambda * b[3];
+				turn_velocity.y += delta_lambda * b[4];
+				turn_velocity.z += delta_lambda * b[5];
 			}
 			if ( constraint.object_b_is_dynamic() ) {
-				constraint.object_b.push_velocity.x += delta_lambda * row.B[6];
-				constraint.object_b.push_velocity.y += delta_lambda * row.B[7];
-				constraint.object_b.push_velocity.z += delta_lambda * row.B[8];
+				push_velocity = constraint.object_b.push_velocity;
+				turn_velocity = constraint.object_b.turn_velocity;
 
-				constraint.object_b.turn_velocity.x += delta_lambda * row.B[9];
-				constraint.object_b.turn_velocity.y += delta_lambda * row.B[10];
-				constraint.object_b.turn_velocity.z += delta_lambda * row.B[11];
+				push_velocity.x += delta_lambda * b[6];
+				push_velocity.y += delta_lambda * b[7];
+				push_velocity.z += delta_lambda * b[8];
+
+				turn_velocity.x += delta_lambda * b[9];
+				turn_velocity.y += delta_lambda * b[10];
+				turn_velocity.z += delta_lambda * b[11];
 			}
 		}
 
@@ -296,31 +317,44 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 		constraint = this.contact_constraints[i];
 		row = constraint.rows[0];
 
+		jacobian = row.jacobian;
+		multiplier = row.multiplier;
+
 		if ( constraint.object_a_is_dynamic() ) {
-			invmass = constraint.object_a._mass_inverted;
-			constraint.object_a.position.x += invmass * row.jacobian[0] * constraint.object_a.linear_factor.x * row.multiplier * this.relaxation;
-			constraint.object_a.position.y += invmass * row.jacobian[1] * constraint.object_a.linear_factor.y * row.multiplier * this.relaxation;
-			constraint.object_a.position.z += invmass * row.jacobian[2] * constraint.object_a.linear_factor.z * row.multiplier * this.relaxation;
+			linear_factor = constraint.object_b.linear_factor;
+			angular_factor = constraint.object_b.angular_factor;
 
-			_tmp_vec3_1.x = row.jacobian[3] * constraint.object_a.angular_factor.x * row.multiplier * this.relaxation;
-			_tmp_vec3_1.y = row.jacobian[4] * constraint.object_a.angular_factor.y * row.multiplier * this.relaxation;
-			_tmp_vec3_1.z = row.jacobian[5] * constraint.object_a.angular_factor.z * row.multiplier * this.relaxation;
+			am = multiplier * relaxation;
+			m = constraint.object_a._mass_inverted * multiplier * relaxation;
+
+			constraint.object_a.position.x += m * jacobian[0] * linear_factor.x;
+			constraint.object_a.position.y += m * jacobian[1] * linear_factor.y;
+			constraint.object_a.position.z += m * jacobian[2] * linear_factor.z;
+
+			_tmp_vec3_1.x = am * jacobian[3] * angular_factor.x;
+			_tmp_vec3_1.y = am * jacobian[4] * angular_factor.y;
+			_tmp_vec3_1.z = am * jacobian[5] * angular_factor.z;
+
 			constraint.object_a.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
-
 			constraint.object_a.integrateRotation( 1.0, _tmp_vec3_1 );
 		}
 
 		if ( constraint.object_b_is_dynamic() ) {
-			invmass = constraint.object_b._mass_inverted;
-			constraint.object_b.position.x += invmass * row.jacobian[6] * constraint.object_b.linear_factor.x * row.multiplier * this.relaxation;
-			constraint.object_b.position.y += invmass * row.jacobian[7] * constraint.object_b.linear_factor.y * row.multiplier * this.relaxation;
-			constraint.object_b.position.z += invmass * row.jacobian[8] * constraint.object_b.linear_factor.z * row.multiplier * this.relaxation;
+			linear_factor = constraint.object_b.linear_factor;
+			angular_factor = constraint.object_b.angular_factor;
 
-			_tmp_vec3_1.x = row.jacobian[9] * constraint.object_b.angular_factor.x * row.multiplier * this.relaxation;
-			_tmp_vec3_1.y = row.jacobian[10] * constraint.object_b.angular_factor.y * row.multiplier * this.relaxation;
-			_tmp_vec3_1.z = row.jacobian[11] * constraint.object_b.angular_factor.z * row.multiplier * this.relaxation;
+			am = multiplier * relaxation;
+			m = constraint.object_b._mass_inverted * multiplier * relaxation;
+
+			constraint.object_b.position.x += m * jacobian[6] * linear_factor.x;
+			constraint.object_b.position.y += m * jacobian[7] * linear_factor.y;
+			constraint.object_b.position.z += m * jacobian[8] * linear_factor.z;
+
+			_tmp_vec3_1.x = am * jacobian[9]  * angular_factor.x;
+			_tmp_vec3_1.y = am * jacobian[10] * angular_factor.y;
+			_tmp_vec3_1.z = am * jacobian[11] * angular_factor.z;
+
 			constraint.object_b.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
-
 			constraint.object_b.integrateRotation( 1.0, _tmp_vec3_1 );
 		}
 
@@ -341,6 +375,8 @@ Goblin.IterativeSolver.prototype.solveConstraints = function() {
 		max_impulse = 0, // Track the largest impulse per iteration; if the impulse is <= EPSILON then early out
 		jdot;
 
+	var solver_impulse, b, linear_factor, angular_factor, jacobian;
+
 	// Warm starting
 	for ( i = 0; i < num_constraints; i++ ) {
 		constraint = this.all_constraints[i];
@@ -353,27 +389,33 @@ Goblin.IterativeSolver.prototype.solveConstraints = function() {
 			warmth = row.multiplier_cached * this.warmstarting_factor;
 			row.multiplier = warmth;
 
+			b = row.B;
+
 			if ( Math.abs( row.D ) < this.min_row_response ) {
 				continue;
 			}
 
 			if ( constraint.object_a_is_dynamic() ) {
-				constraint.object_a.solver_impulse[0] += warmth * row.B[0];
-				constraint.object_a.solver_impulse[1] += warmth * row.B[1];
-				constraint.object_a.solver_impulse[2] += warmth * row.B[2];
+				solver_impulse = constraint.object_a.solver_impulse;
 
-				constraint.object_a.solver_impulse[3] += warmth * row.B[3];
-				constraint.object_a.solver_impulse[4] += warmth * row.B[4];
-				constraint.object_a.solver_impulse[5] += warmth * row.B[5];
+				solver_impulse[0] += warmth * b[0];
+				solver_impulse[1] += warmth * b[1];
+				solver_impulse[2] += warmth * b[2];
+
+				solver_impulse[3] += warmth * b[3];
+				solver_impulse[4] += warmth * b[4];
+				solver_impulse[5] += warmth * b[5];
 			}
 			if ( constraint.object_b_is_dynamic() ) {
-				constraint.object_b.solver_impulse[0] += warmth * row.B[6];
-				constraint.object_b.solver_impulse[1] += warmth * row.B[7];
-				constraint.object_b.solver_impulse[2] += warmth * row.B[8];
+				solver_impulse = constraint.object_b.solver_impulse;
 
-				constraint.object_b.solver_impulse[3] += warmth * row.B[9];
-				constraint.object_b.solver_impulse[4] += warmth * row.B[10];
-				constraint.object_b.solver_impulse[5] += warmth * row.B[11];
+				solver_impulse[0] += warmth * b[6];
+				solver_impulse[1] += warmth * b[7];
+				solver_impulse[2] += warmth * b[8];
+
+				solver_impulse[3] += warmth * b[9];
+				solver_impulse[4] += warmth * b[10];
+				solver_impulse[5] += warmth * b[11];
 			}
 		}
 	}
@@ -395,31 +437,42 @@ Goblin.IterativeSolver.prototype.solveConstraints = function() {
 				}
 
 				jdot = 0;
+				
+				jacobian = row.jacobian;
+				b = row.B;
+
 				if ( constraint.object_a_is_dynamic() ) {
+					linear_factor = constraint.object_a.linear_factor;
+					angular_factor = constraint.object_a.angular_factor;
+					solver_impulse = constraint.object_a.solver_impulse;
+
 					jdot += (
-						row.jacobian[0] * constraint.object_a.linear_factor.x  * constraint.object_a.solver_impulse[0] +
-						row.jacobian[1] * constraint.object_a.linear_factor.y  * constraint.object_a.solver_impulse[1] +
-						row.jacobian[2] * constraint.object_a.linear_factor.z  * constraint.object_a.solver_impulse[2] +
-						row.jacobian[3] * constraint.object_a.angular_factor.x * constraint.object_a.solver_impulse[3] +
-						row.jacobian[4] * constraint.object_a.angular_factor.y * constraint.object_a.solver_impulse[4] +
-						row.jacobian[5] * constraint.object_a.angular_factor.z * constraint.object_a.solver_impulse[5]
-						);
+						jacobian[0] * linear_factor.x  * solver_impulse[0] +
+						jacobian[1] * linear_factor.y  * solver_impulse[1] +
+						jacobian[2] * linear_factor.z  * solver_impulse[2] +
+						jacobian[3] * angular_factor.x * solver_impulse[3] +
+						jacobian[4] * angular_factor.y * solver_impulse[4] +
+						jacobian[5] * angular_factor.z * solver_impulse[5]
+					);
 				}
 				if ( constraint.object_b_is_dynamic() ) {
+					linear_factor = constraint.object_b.linear_factor;
+					angular_factor = constraint.object_b.angular_factor;
+					solver_impulse = constraint.object_b.solver_impulse;
+
 					jdot += (
-						row.jacobian[6] * constraint.object_b.linear_factor.x   * constraint.object_b.solver_impulse[0] +
-						row.jacobian[7] * constraint.object_b.linear_factor.y   * constraint.object_b.solver_impulse[1] +
-						row.jacobian[8] * constraint.object_b.linear_factor.z   * constraint.object_b.solver_impulse[2] +
-						row.jacobian[9] * constraint.object_b.angular_factor.x  * constraint.object_b.solver_impulse[3] +
-						row.jacobian[10] * constraint.object_b.angular_factor.y * constraint.object_b.solver_impulse[4] +
-						row.jacobian[11] * constraint.object_b.angular_factor.z * constraint.object_b.solver_impulse[5]
+						jacobian[6]  * linear_factor.x  * solver_impulse[0] +
+						jacobian[7]  * linear_factor.y  * solver_impulse[1] +
+						jacobian[8]  * linear_factor.z  * solver_impulse[2] +
+						jacobian[9]  * angular_factor.x * solver_impulse[3] +
+						jacobian[10] * angular_factor.y * solver_impulse[4] +
+						jacobian[11] * angular_factor.z * solver_impulse[5]
 					);
 				}
 
 				delta_lambda = ( ( row.eta - jdot ) / row.D || 0) * constraint.factor;
 				var cache = row.multiplier,
 					multiplier_target = cache + delta_lambda;
-
 
 				// successive over-relaxation
 				multiplier_target = this.sor_weight * multiplier_target + ( 1 - this.sor_weight ) * cache;
@@ -441,22 +494,26 @@ Goblin.IterativeSolver.prototype.solveConstraints = function() {
 				max_impulse = Math.max( max_impulse, Math.abs( delta_lambda ) / total_mass );
 
 				if ( constraint.object_a_is_dynamic() ) {
-					constraint.object_a.solver_impulse[0] += delta_lambda * row.B[0];
-					constraint.object_a.solver_impulse[1] += delta_lambda * row.B[1];
-					constraint.object_a.solver_impulse[2] += delta_lambda * row.B[2];
+					solver_impulse = constraint.object_a.solver_impulse;
 
-					constraint.object_a.solver_impulse[3] += delta_lambda * row.B[3];
-					constraint.object_a.solver_impulse[4] += delta_lambda * row.B[4];
-					constraint.object_a.solver_impulse[5] += delta_lambda * row.B[5];
+					solver_impulse[0] += delta_lambda * b[0];
+					solver_impulse[1] += delta_lambda * b[1];
+					solver_impulse[2] += delta_lambda * b[2];
+
+					solver_impulse[3] += delta_lambda * b[3];
+					solver_impulse[4] += delta_lambda * b[4];
+					solver_impulse[5] += delta_lambda * b[5];
 				}
 				if ( constraint.object_b_is_dynamic() ) {
-					constraint.object_b.solver_impulse[0] += delta_lambda * row.B[6];
-					constraint.object_b.solver_impulse[1] += delta_lambda * row.B[7];
-					constraint.object_b.solver_impulse[2] += delta_lambda * row.B[8];
+					solver_impulse = constraint.object_b.solver_impulse;
 
-					constraint.object_b.solver_impulse[3] += delta_lambda * row.B[9];
-					constraint.object_b.solver_impulse[4] += delta_lambda * row.B[10];
-					constraint.object_b.solver_impulse[5] += delta_lambda * row.B[11];
+					solver_impulse[0] += delta_lambda * b[6];
+					solver_impulse[1] += delta_lambda * b[7];
+					solver_impulse[2] += delta_lambda * b[8];
+
+					solver_impulse[3] += delta_lambda * b[9];
+					solver_impulse[4] += delta_lambda * b[10];
+					solver_impulse[5] += delta_lambda * b[11];
 				}
 			}
 		}
@@ -472,8 +529,9 @@ Goblin.IterativeSolver.prototype.applyConstraints = function( time_delta ) {
 		constraint,
 		num_rows,
 		row,
-		i, j,
-		invmass;
+		i, j;
+
+	var jacobian, m, am, linear_factor, angular_factor;
 
 	for ( i = 0; i < num_constraints; i++ ) {
 		constraint = this.all_constraints[i];
@@ -486,39 +544,49 @@ Goblin.IterativeSolver.prototype.applyConstraints = function( time_delta ) {
 
 		for ( j = 0; j < num_rows; j++ ) {
 			row = constraint.rows[j];
+
 			row.multiplier_cached = row.multiplier;
+			jacobian = row.jacobian;
 
 			if ( Math.abs( row.D ) < this.min_row_response ) {
 				continue;
 			}
 
 			if ( constraint.object_a_is_dynamic() ) {
-				invmass = constraint.object_a._mass_inverted;
-				_tmp_vec3_2.x = invmass * time_delta * row.jacobian[0] * constraint.object_a.linear_factor.x * row.multiplier;
-				_tmp_vec3_2.y = invmass * time_delta * row.jacobian[1] * constraint.object_a.linear_factor.y * row.multiplier;
-				_tmp_vec3_2.z = invmass * time_delta * row.jacobian[2] * constraint.object_a.linear_factor.z * row.multiplier;
+				m = constraint.object_a._mass_inverted * time_delta * row.multiplier;
+				am = time_delta * row.multiplier;
+				linear_factor = constraint.object_a.linear_factor;
+				angular_factor = constraint.object_a.angular_factor;
+
+				_tmp_vec3_2.x = m * jacobian[0] * linear_factor.x;
+				_tmp_vec3_2.y = m * jacobian[1] * linear_factor.y;
+				_tmp_vec3_2.z = m * jacobian[2] * linear_factor.z;
 				constraint.object_a.linear_velocity.add( _tmp_vec3_2 );
 				constraint.last_impulse.add( _tmp_vec3_2 );
 
-				_tmp_vec3_1.x = time_delta * row.jacobian[3] * constraint.object_a.angular_factor.x * row.multiplier;
-				_tmp_vec3_1.y = time_delta * row.jacobian[4] * constraint.object_a.angular_factor.y * row.multiplier;
-				_tmp_vec3_1.z = time_delta * row.jacobian[5] * constraint.object_a.angular_factor.z * row.multiplier;
+				_tmp_vec3_1.x = am * jacobian[3] * angular_factor.x;
+				_tmp_vec3_1.y = am * jacobian[4] * angular_factor.y;
+				_tmp_vec3_1.z = am * jacobian[5] * angular_factor.z;
 				constraint.object_a.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
 				constraint.object_a.angular_velocity.add( _tmp_vec3_1 );
 				constraint.last_impulse.add( _tmp_vec3_1 );
 			}
 
 			if ( constraint.object_b_is_dynamic() ) {
-				invmass = constraint.object_b._mass_inverted;
-				_tmp_vec3_2.x = invmass * time_delta * row.jacobian[6] * constraint.object_b.linear_factor.x * row.multiplier;
-				_tmp_vec3_2.y = invmass * time_delta * row.jacobian[7] * constraint.object_b.linear_factor.y * row.multiplier;
-				_tmp_vec3_2.z = invmass * time_delta * row.jacobian[8] * constraint.object_b.linear_factor.z * row.multiplier;
+				m = constraint.object_b._mass_inverted * time_delta * row.multiplier;
+				am = time_delta * row.multiplier;
+				linear_factor = constraint.object_b.linear_factor;
+				angular_factor = constraint.object_b.angular_factor;
+
+				_tmp_vec3_2.x = m * jacobian[6] * linear_factor.x;
+				_tmp_vec3_2.y = m * jacobian[7] * linear_factor.y;
+				_tmp_vec3_2.z = m * jacobian[8] * linear_factor.z;
 				constraint.object_b.linear_velocity.add(_tmp_vec3_2 );
 				constraint.last_impulse.add( _tmp_vec3_2 );
 
-				_tmp_vec3_1.x = time_delta * row.jacobian[9]  * constraint.object_b.angular_factor.x * row.multiplier;
-				_tmp_vec3_1.y = time_delta * row.jacobian[10] * constraint.object_b.angular_factor.y * row.multiplier;
-				_tmp_vec3_1.z = time_delta * row.jacobian[11] * constraint.object_b.angular_factor.z * row.multiplier;
+				_tmp_vec3_1.x = am * jacobian[9]  * angular_factor.x;
+				_tmp_vec3_1.y = am * jacobian[10] * angular_factor.y;
+				_tmp_vec3_1.z = am * jacobian[11] * angular_factor.z;
 				constraint.object_b.inverseInertiaTensorWorldFrame.transformVector3( _tmp_vec3_1 );
 				constraint.object_b.angular_velocity.add( _tmp_vec3_1 );
 				constraint.last_impulse.add( _tmp_vec3_1 );
