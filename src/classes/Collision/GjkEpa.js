@@ -247,6 +247,7 @@ Goblin.GjkEpa.Polyhedron.prototype = {
     addVertex: function( vertex )
     {
         var edges = [], faces = [], i, j, a, b, last_b;
+        var e0, e1, e2, e3, e4;
         this.faces[this.closest_face].silhouette( vertex, edges );
 
         // Re-order the edges if needed
@@ -260,17 +261,24 @@ Goblin.GjkEpa.Polyhedron.prototype = {
                 for ( j = i + 5; j < edges.length; j += 5 ) {
                     if ( edges[j+3] === last_b ) {
                         // Found it
-                        var tmp = edges.slice( i, i + 5 );
+                        //var tmp = edges.slice( i, i + 5 );
+
+                        e0 = edges[ i + 0 ];
+                        e1 = edges[ i + 1 ];
+                        e2 = edges[ i + 2 ];
+                        e3 = edges[ i + 3 ];
+                        e4 = edges[ i + 4 ];
+
                         edges[i] = edges[j];
-                        edges[i+1] = edges[j+1];
-                        edges[i+2] = edges[j+2];
-                        edges[i+3] = edges[j+3];
-                        edges[i+4] = edges[j+4];
-                        edges[j] = tmp[0];
-                        edges[j+1] = tmp[1];
-                        edges[j+2] = tmp[2];
-                        edges[j+3] = tmp[3];
-                        edges[j+4] = tmp[4];
+                        edges[i+1] = edges[ j + 1 ];
+                        edges[i+2] = edges[ j + 2 ];
+                        edges[i+3] = edges[ j + 3 ];
+                        edges[i+4] = edges[ j + 4 ];
+                        edges[j]   = e0;
+                        edges[j+1] = e1;
+                        edges[j+2] = e2;
+                        edges[j+3] = e3;
+                        edges[j+4] = e4;
 
                         a = edges[i+3];
                         b = edges[i+4];
