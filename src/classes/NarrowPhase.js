@@ -280,6 +280,10 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
  * @param {RigidBody} object_b
  */
 Goblin.NarrowPhase.prototype.getContact = function( object_a, object_b ) {
+	if ( !object_a.aabb.intersects( object_b.aabb ) ) {
+		return null;
+	}
+
 	if ( object_a.shape instanceof Goblin.CompoundShape || object_b.shape instanceof Goblin.CompoundShape ) {
 		return this.midPhase( object_a, object_b );
 	}
