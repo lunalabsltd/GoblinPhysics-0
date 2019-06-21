@@ -252,6 +252,10 @@ Goblin.World.prototype.drawDebug = function() {
  * @param rigid_body {Goblin.RigidBody} rigid body to add to the world
  */
 Goblin.World.prototype.addRigidBody = function( rigid_body ) {
+	if ( rigid_body.world ) {
+		throw new Error( "The body already belongs to a physics world!" );
+	}
+
 	rigid_body.world = this;
 	rigid_body.updateDerived();
 	this.rigid_bodies.push( rigid_body );
@@ -274,6 +278,8 @@ Goblin.World.prototype.removeRigidBody = function( rigid_body ) {
 			break;
 		}
 	}
+
+	rigid_body.world = null;
 
 	// remove any contact & friction constraints associated with this body
 	// this calls contact.destroy() for all relevant contacts

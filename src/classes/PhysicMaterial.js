@@ -6,6 +6,8 @@
  */
 Goblin.PhysicMaterial = function( attributes ) {
 
+    this.name = attributes.name;
+
     this.bounciness = attributes.bounciness;
 
     this.dynamicFriction = attributes.dynamicFriction;
