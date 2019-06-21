@@ -23,13 +23,14 @@ Goblin.Constraint = (function() {
 		this.breaking_threshold = 0;
 
 		this.listeners = {};
+
+		this.solver = null;
 	};
 })();
 Goblin.EventEmitter.apply( Goblin.Constraint );
 
 Goblin.Constraint.prototype.deactivate = function() {
 	this.active = false;
-	this.emit( 'deactivate' );
 };
 
 Goblin.Constraint.prototype.update = function(){};

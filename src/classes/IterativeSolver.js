@@ -87,35 +87,29 @@ Goblin.IterativeSolver = function() {
 	 * @type {number}
 	 */
 	this.min_row_response = 1e-5;
+};
 
+/**
+ * used to remove contact constraints from the system when their contacts are destroyed
+ *
+ * @method onContactDeactivate
+ * @private
+ */
+Goblin.IterativeSolver.prototype.onContactDeactivate = function( constraint ) {
+	var idx = this.contact_constraints.indexOf( constraint );
+	this.contact_constraints.splice( idx, 1 );
 
-	var solver = this;
-	/**
-	 * used to remove contact constraints from the system when their contacts are destroyed
-	 *
-	 * @method onContactDeactivate
-	 * @private
-	 */
-	this.onContactDeactivate = function() {
-		this.removeListener( 'deactivate', solver.onContactDeactivate );
-
-		var idx = solver.contact_constraints.indexOf( this );
-		solver.contact_constraints.splice( idx, 1 );
-
-		delete solver.existing_contact_ids[ this.contact.uid ];
-	};
-	/**
-	 * used to remove friction constraints from the system when their contacts are destroyed
-	 *
-	 * @method onFrictionDeactivate
-	 * @private
-	 */
-	this.onFrictionDeactivate = function() {
-		this.removeListener( 'deactivate', solver.onFrictionDeactivate );
-
-		var idx = solver.friction_constraints.indexOf( this );
-		solver.friction_constraints.splice( idx, 1 );
-	};
+	delete this.existing_contact_ids[ constraint.contact.uid ];
+};
+/**
+ * used to remove friction constraints from the system when their contacts are destroyed
+ *
+ * @method onFrictionDeactivate
+ * @private
+ */
+Goblin.IterativeSolver.prototype.onFrictionDeactivate = function( constraint ) {
+	var idx = this.friction_constraints.indexOf( constraint );
+	this.friction_constraints.splice( idx, 1 );
 };
 
 /**
@@ -173,13 +167,17 @@ Goblin.IterativeSolver.prototype.processContactManifolds = function( contact_man
 				constraint = Goblin.ObjectPool.getObject( 'ContactConstraint' );
 				constraint.buildFromContact( contact );
 				this.contact_constraints.push( constraint );
-				constraint.addListener( 'deactivate', this.onContactDeactivate );
+				
+				constraint.solver = this;
 
-				// Build friction constraint
-				constraint = Goblin.ObjectPool.getObject( 'FrictionConstraint' );
-				constraint.buildFromContact( contact );
-				this.friction_constraints.push( constraint );
-				constraint.addListener( 'deactivate', this.onFrictionDeactivate );
+				if ( contact.friction > 0 ) {
+					// Build friction constraint
+					constraint = Goblin.ObjectPool.getObject( 'FrictionConstraint' );
+					constraint.buildFromContact( contact );
+					this.friction_constraints.push( constraint );
+
+					constraint.solver = this;
+				}
 			}
 		}
 
@@ -230,6 +228,7 @@ Goblin.IterativeSolver.prototype.resolveContacts = function() {
 	// Solve penetrations
 	for ( iteration = 0; iteration < this.penetrations_max_iterations; iteration++ ) {
 		max_impulse = 0;
+		
 		for ( i = 0; i < this.contact_constraints.length; i++ ) {
 			constraint = this.contact_constraints[i];
 			
@@ -368,7 +367,7 @@ Goblin.IterativeSolver.prototype.solveConstraints = function() {
 		num_rows,
 		row,
 		warmth,
-		i, j;
+		i, j, k;
 
 	var iteration,
 		delta_lambda,
@@ -422,6 +421,7 @@ Goblin.IterativeSolver.prototype.solveConstraints = function() {
 
 	for ( iteration = 0; iteration < this.max_iterations; iteration++ ) {
 		max_impulse = 0;
+
 		for ( i = 0; i < num_constraints; i++ ) {
 			constraint = this.all_constraints[i];
 			if ( constraint.active === false ) {

@@ -111,11 +111,47 @@ Goblin.ContactDetails = function() {
 	 */
 	this.friction = 0;
 
+	/**
+	 * general-purpose field to store axulary information.
+	 *
+	 * @private
+	 * @property tag
+	 * @type {*}
+	 */
+	this.tag = null;
+
+	/**
+	 * contact constraint associated with this contact.
+	 *
+	 * @private
+	 * @property contactConstraint
+	 * @type {*}
+	 */
+	this.contactConstraint = null;
+
+	/**
+	 * friction constraint associated with this contact.
+	 *
+	 * @private
+	 * @property frictionConstraint
+	 * @type {*}
+	 */
+	this.frictionConstraint = null;
+
 	this.listeners = {};
 };
 Goblin.EventEmitter.apply( Goblin.ContactDetails );
 
 Goblin.ContactDetails.prototype.destroy = function() {
-	this.emit( 'destroy' );
+	if ( this.contactConstraint !== null ) {
+		this.contactConstraint.deactivate();
+		this.contactConstraint = null;
+	}
+
+	if ( this.frictionConstraint !== null ) {
+		this.frictionConstraint.deactivate();
+		this.frictionConstraint = null;
+	}
+
 	Goblin.ObjectPool.freeObject( 'ContactDetails', this );
 };

@@ -11,16 +11,19 @@ Goblin.FrictionConstraint.prototype.buildFromContact = function( contact ) {
 
 	this.object_a = contact.object_a;
 	this.object_b = contact.object_b;
+	
 	this.contact = contact;
-
-	var self = this;
-	var onDestroy = function() {
-		this.removeListener( 'destroy', onDestroy );
-		self.deactivate();
-	};
-	this.contact.addListener( 'destroy', onDestroy );
+	this.contact.frictionConstraint = this;
 
 	this.update();
+};
+
+Goblin.FrictionConstraint.prototype.deactivate = function() {
+	Goblin.Constraint.prototype.deactivate.call( this );
+
+	if ( this.solver !== null ) {
+		this.solver.onFrictionDeactivate( this );
+	}
 };
 
 Goblin.FrictionConstraint.prototype.update = (function(){

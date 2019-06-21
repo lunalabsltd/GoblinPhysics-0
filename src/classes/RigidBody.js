@@ -289,6 +289,9 @@ Goblin.RigidBody = (function() {
 		this.turn_velocity = new Goblin.Vector3();
 		this.solver_impulse = new Float64Array( 6 );
 
+		// Speculative contact listener
+		this.onSpeculativeContact = null;
+
 		this.listeners = {};
 	};
 })();
