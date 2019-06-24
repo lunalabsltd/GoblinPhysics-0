@@ -2282,7 +2282,7 @@ Goblin.BasicPooledBroadphase.prototype.update = function() {
 		this.type = marker_type;
 		this.body = body;
 		this.position = position;
-
+		
 		this.prev = null;
 		this.next = null;
 	};
@@ -2590,7 +2590,7 @@ Goblin.BasicPooledBroadphase.prototype.update = function() {
 		 */
 		update: function() {
 			this.collision_pairs.length = 0;
-
+			
 			this.insertPending();
 
 			var marker = this.markers_x.first;
@@ -8524,7 +8524,7 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 
 	var proxy = Goblin.ObjectPool.getObject( 'RigidBodyProxy' ),
 		child_shape, contact, result_contact;
-
+	
 	for ( var i = 0; i < compound.shape.child_shapes.length; i++ ) {
 		child_shape = compound.shape.child_shapes[i];
 		proxy.setFrom( compound, child_shape );
@@ -9500,7 +9500,7 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 
 	/**
 	 * Checks if a line-swept shape intersects with objects in the world. Please note
-	 * that passing a limit different from 0 will not guarantee any order of the hit -
+	 * that passing a limit different from 0 will not guarantee any order of the hit - 
 	 * i.e. asking for a single hit might return a more remote hit.
 	 *
 	 * @param {Goblin.Shape} 			shape 		Shape to sweep
@@ -9545,7 +9545,7 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 		}
 
 		intersections.sort( tSort );
-
+		
 		return intersections;
 	};
 })();
