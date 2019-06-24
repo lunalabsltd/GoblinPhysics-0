@@ -8,14 +8,9 @@ Goblin.ContactConstraint.prototype = Object.create( Goblin.Constraint.prototype 
 Goblin.ContactConstraint.prototype.buildFromContact = function( contact ) {
 	this.object_a = contact.object_a;
 	this.object_b = contact.object_b;
+	
 	this.contact = contact;
-
-	var self = this;
-	var onDestroy = function() {
-		this.removeListener( 'destroy', onDestroy );
-		self.deactivate();
-	};
-	this.contact.addListener( 'destroy', onDestroy );
+	this.contact.contactConstraint = this;
 
 	var row = this.rows[0] || Goblin.ObjectPool.getObject( 'ConstraintRow' );
 	row.lower_limit = 0;
@@ -23,6 +18,14 @@ Goblin.ContactConstraint.prototype.buildFromContact = function( contact ) {
 	this.rows[0] = row;
 
 	this.update();
+};
+
+Goblin.ContactConstraint.prototype.deactivate = function() {
+	Goblin.Constraint.prototype.deactivate.call( this );
+
+	if ( this.solver !== null ) {
+		this.solver.onContactDeactivate( this );
+	}
 };
 
 Goblin.ContactConstraint.prototype.update = function() {

@@ -47,8 +47,7 @@ Goblin.GeometryMethods = {
 			var vc = d1*d4 - d3*d2;
 			if ( vc <= 0 && d1 >= 0 && d3 <= 0 ) {
 				v = d1 / ( d1 - d3 );
-				out.scaleVector( ab, v );
-				out.add( a );
+				out.set( a.x + ab.x * v, a.y + ab.y * v, a.z + ab.z * v );
 				return;
 			}
 
@@ -66,8 +65,7 @@ Goblin.GeometryMethods = {
 				w;
 			if ( vb <= 0 && d2 >= 0 && d6 <= 0 ) {
 				w = d2 / ( d2 - d6 );
-				out.scaleVector( ac, w );
-				out.add( a );
+				out.set( a.x + ac.x * w, a.y + ac.y * w, a.z + ac.z * w );
 				return;
 			}
 
@@ -75,26 +73,17 @@ Goblin.GeometryMethods = {
 			var va = d3*d6 - d5*d4;
 			if ( va <= 0 && d4-d3 >= 0 && d5-d6 >= 0 ) {
 				w = (d4 - d3) / ( (d4-d3) + (d5-d6) );
-				out.subtractVectors( c, b );
-				out.scale( w );
-				out.add( b );
+				out.set( b.x + ( c.x - b.x ) * w, b.y + ( c.y - b.y ) * w, b.z + ( c.z - b.z ) * w );
 				return;
 			}
 
 			// P inside face region
-			var denom = 1 / ( va + vb + vc );
-			v = vb * denom;
-			w = vc * denom;
-
+			var recipDenom = ( va + vb + vc );
+			v = vb / recipDenom;
+			w = vc / recipDenom;
 
 			// At this point `ab` and `ac` can be recycled and lose meaning to their nomenclature
-
-			ab.scale( v );
-			ab.add( a );
-
-			ac.scale( w );
-
-			out.addVectors( ab, ac );
+			out.set( ab.x * v + a.x + ac.x * w, ab.y * v + a.y + ac.y * w, ab.z * v + a.z + ac.z * w );
 		};
 	})(),
 

@@ -93,13 +93,12 @@ Goblin.CompoundShape.prototype.updateCenterOfMass = function () {
  * @param aabb {AABB}
  */
 Goblin.CompoundShape.prototype.calculateLocalAABB = function( aabb ) {
-	if ( this.child_shapes.length === 0 ) {
-		aabb.min.x = aabb.min.y = aabb.min.z = aabb.max.x = aabb.max.y = aabb.max.z = 0;
-		return;
-	}
-
 	aabb.min.x = aabb.min.y = aabb.min.z = Infinity;
 	aabb.max.x = aabb.max.y = aabb.max.z = -Infinity;
+
+	if ( this.child_shapes.length === 0 ) {
+		return;
+	}
 
 	var i, shape;
 

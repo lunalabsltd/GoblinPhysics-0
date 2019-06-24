@@ -114,6 +114,7 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 
 		this.emit( 'stepStart', this.ticks, delta );
 
+		//var bodies = this.broadphase.getDynamicBodies();
 		var bodies = this.broadphase.getDynamicBodies();
 
 		// Apply gravity
@@ -148,6 +149,8 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 		for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {
 			bodies[ i ].updateDerived();
 		}
+
+		this.drawDebug();
 
         // Check for contacts, broadphase
         this.broadphase.update();
@@ -187,12 +190,72 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 };
 
 /**
+ * Draws AABBs of objects and colliders when enabled for the world.
+ *
+ * @method drawDebug
+ */
+Goblin.World.prototype.drawDebug = function() {
+	if ( !this.debug ) {
+		return;
+	}
+
+	var i, j, body, aabb, shapes, shape;
+
+	for ( i = 0; i < this.rigid_bodies.length; i++ ) {
+		body = this.rigid_bodies[ i ];
+
+		if ( body.debug ) {
+			aabb = body.aabb;
+
+			pc.Application.getApplication().renderWireCube( 
+				new pc.Mat4().setTRS( 
+					new pc.Vec3( aabb.min.x + aabb.max.x, aabb.min.y + aabb.max.y, aabb.min.z + aabb.max.z ).scale( 0.5 ), 
+					pc.Quat.IDENTITY, 
+					new pc.Vec3( aabb.min.x - aabb.max.x, aabb.min.y - aabb.max.y, aabb.min.z - aabb.max.z ).scale( -1 ) 
+				), 
+
+				new pc.Color( 1, 0, 0, 1 ),
+
+				pc.LINEBATCH_OVERLAY
+			);
+		}
+
+		shapes = body.shape.child_shapes || [];
+
+		for ( j = 0; j < shapes.length; j++ ) {
+			shape = shapes[ j ].shape;
+
+			if ( shape.debug ) {
+				aabb = new Goblin.AABB();
+				aabb.transform( shapes[ j ].aabb, body.transform );
+
+				pc.Application.getApplication().renderWireCube( 
+					new pc.Mat4().setTRS( 
+						new pc.Vec3( aabb.min.x + aabb.max.x, aabb.min.y + aabb.max.y, aabb.min.z + aabb.max.z ).scale( 0.5 ), 
+						pc.Quat.IDENTITY, 
+						new pc.Vec3( aabb.min.x - aabb.max.x, aabb.min.y - aabb.max.y, aabb.min.z - aabb.max.z ).scale( -1 ) 
+					), 
+
+					new pc.Color( 0, 1, 0, 1 ),
+
+					pc.LINEBATCH_OVERLAY
+				);
+			}
+		}
+	}
+};
+
+/**
  * Adds a rigid body to the world
  *
  * @method addRigidBody
  * @param rigid_body {Goblin.RigidBody} rigid body to add to the world
  */
 Goblin.World.prototype.addRigidBody = function( rigid_body ) {
+	if ( rigid_body.world ) {
+		throw new Error( "The body already belongs to a physics world!" );
+	}
+
 	rigid_body.world = this;
 	rigid_body.updateDerived();
 	this.rigid_bodies.push( rigid_body );
@@ -216,6 +279,8 @@ Goblin.World.prototype.removeRigidBody = function( rigid_body ) {
 		}
 	}
 
+	rigid_body.world = null;
+
 	// remove any contact & friction constraints associated with this body
 	// this calls contact.destroy() for all relevant contacts
 	// which in turn cleans up the iterative solver
@@ -236,12 +301,23 @@ Goblin.World.prototype.updateObjectLayer = function ( rigid_body, new_layer ) {
 /**
  * Updates body's static flag
  *
- * @method updateObjectLayer
+ * @method updateObjectStaticFlag
  * @param rigid_body {Goblin.RigidBody} Rigid body to update
  * @param is_static  {Boolean} Whether the object is marked as static
  */
 Goblin.World.prototype.updateObjectStaticFlag = function ( rigid_body, is_static ) {
 	this.broadphase.updateObjectStaticFlag( rigid_body, is_static );
+};
+
+/**
+ * Updates body's static flag
+ *
+ * @method updateObjectKinematicFlag
+ * @param rigid_body {Goblin.RigidBody} Rigid body to update
+ * @param is_kinematic  {Boolean} Whether the object is marked as static
+ */
+Goblin.World.prototype.updateObjectKinematicFlag = function ( rigid_body, is_kinematic ) {
+	this.broadphase.updateObjectKinematicFlag( rigid_body, is_kinematic );
 };
 
 /**
@@ -341,10 +417,11 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 	/**
 	 * Checks if a ray segment intersects with objects in the world
 	 *
-	 * @method rayIntersect
-	 * @property start {vec3} start point of the segment
-	 * @property end {vec3{ end point of the segment
-	 * @return {Array<RayIntersection>} an array of intersections, sorted by distance from `start`
+	 * @param {Goblin.Vector3} 			start 		Start of the ray
+	 * @param {Goblin.Vector3} 			end 		End of the ray
+	 * @param {Number} 					limit 		Maximum amount of objects to return
+	 * @param {Number} 					layer_mask 	Layer mask to use
+	 * @return {Array<RayIntersection>} 			Array of intersections, sorted by distance from `start`
 	 */
 	Goblin.World.prototype.rayIntersect = function( start, end, limit, layer_mask ) {
 		// we cannot afford to bail out early from broadphase as we need to get closest intersections
@@ -353,20 +430,58 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 		return intersections.slice( 0, limit );
 	};
 
-	Goblin.World.prototype.shapeIntersect = function( shape, start, end ){
+	Goblin.World.prototype.shapeIntersect = function( center, shape ) {
+		var body = new Goblin.RigidBody( shape, 0 );
+
+		body.position.copy( center );
+		body.updateDerived();
+
+		var possibilities = this.broadphase.intersectsWith( body ),
+			intersections = [];
+
+		for ( var i = 0; i < possibilities.length; i++ ) {
+			var contact = this.narrowphase.getContact( body, possibilities[i] );
+
+			if ( contact != null ) {
+				var intersection = Goblin.ObjectPool.getObject( 'RayIntersection' );
+
+				// check which (A or B) object & shape are actually an intersection
+				intersection.object = contact.object_b;
+				intersection.shape = contact.shape_b;
+
+				intersections.push( intersection );
+			}
+		}
+
+		return intersections;
+	};
+
+	/**
+	 * Checks if a line-swept shape intersects with objects in the world. Please note
+	 * that passing a limit different from 0 will not guarantee any order of the hit - 
+	 * i.e. asking for a single hit might return a more remote hit.
+	 *
+	 * @param {Goblin.Shape} 			shape 		Shape to sweep
+	 * @param {Goblin.Vector3} 			start 		Start of the ray
+	 * @param {Goblin.Vector3} 			end 		End of the ray
+	 * @param {Number} 					limit 		Maximum amount of objects to return
+	 * @param {Number} 					layer_mask 	Layer mask to use
+	 * @return {Array<RayIntersection>} 			Array of intersections, sorted by distance from `start`
+	 */
+	Goblin.World.prototype.shapeIntersect = function( shape, start, end, limit, layer_mask ){
 		var swept_shape = new Goblin.LineSweptShape( start, end, shape ),
 			swept_body = new Goblin.RigidBody( swept_shape, 0 );
+
 		swept_body.updateDerived();
 
-		var possibilities = this.broadphase.intersectsWith( swept_body ),
-			intersections = [];
+		var possibilities = this.broadphase.intersectsWith( swept_body, layer_mask );
+		var intersections = [];
 
 		for ( var i = 0; i < possibilities.length; i++ ) {
 			var contact = this.narrowphase.getContact( swept_body, possibilities[i] );
 
 			if ( contact != null ) {
 				var intersection = Goblin.ObjectPool.getObject( 'RayIntersection' );
-				intersection.object = contact.object_b;
 				intersection.normal.copy( contact.contact_normal );
 
 				// compute point
@@ -376,11 +491,19 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 				// compute time
 				intersection.t = intersection.point.distanceTo( start );
 
+				intersection.object = contact.object_b;
+				intersection.shape = contact.shape_b;
+
 				intersections.push( intersection );
+			}
+
+			if ( limit <= intersections.length ) {
+				break;
 			}
 		}
 
 		intersections.sort( tSort );
+		
 		return intersections;
 	};
 })();

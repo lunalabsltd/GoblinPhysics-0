@@ -6,6 +6,14 @@
  */
 Goblin.ContactManifold = function() {
 	/**
+	 * unique id of the manifold
+	 *
+	 * @property uid
+	 * @type {String}
+	 */
+	this.uid = "";
+
+	/**
 	 * first body in the contact
 	 *
 	 * @property object_a
@@ -36,7 +44,7 @@ Goblin.ContactManifold = function() {
 	 * @type {ContactManifold}
 	 */
 	this.next_manifold = null;
-};
+};	
 
 /**
  * Determines which cached contact should be replaced with the new contact
@@ -122,17 +130,18 @@ Goblin.ContactManifold.prototype.addContact = function( contact ) {
 
 	var use_contact = false;
 	if ( contact != null ) {
-		use_contact = contact.object_a.emit( 'speculativeContact', contact.object_b, contact );
+		use_contact = ( contact.object_a.onSpeculativeContact === null ) || contact.object_a.onSpeculativeContact( contact.object_b, contact );
+
 		if ( use_contact !== false ) {
-			use_contact = contact.object_b.emit( 'speculativeContact', contact.object_a, contact );
+			use_contact = ( contact.object_a.onSpeculativeContact === null ) || contact.object_a.onSpeculativeContact( contact.object_a, contact );
 		}
 
 		if ( use_contact === false ) {
 			contact.destroy();
 			return;
 		} else {
-			contact.object_a.emit( 'contact', contact.object_b, contact );
-			contact.object_b.emit( 'contact', contact.object_a, contact );
+			contact.object_a_version = contact.object_a.version;
+			contact.object_b_version = contact.object_b.version;
 		}
 	}
 
@@ -156,6 +165,7 @@ Goblin.ContactManifold.prototype.update = function() {
 	var i,
 		j,
 		point,
+		penetrationThreshold = 0.2,
 		object_a_world_coords = new Goblin.Vector3(),
 		object_b_world_coords = new Goblin.Vector3(),
 		vector_difference = new Goblin.Vector3(),
@@ -176,39 +186,29 @@ Goblin.ContactManifold.prototype.update = function() {
 		vector_difference.subtractVectors( object_a_world_coords, object_b_world_coords );
 		point.penetration_depth = vector_difference.dot( point.contact_normal );
 
+		if ( ( point.object_a_version !== point.object_a.version ) || ( point.object_b_version !== point.object_b.version ) ) {
+			point.penetration_depth = -Infinity;
+		}
+
 		// If distance from contact is too great remove this contact point
-		if ( point.penetration_depth < -0.02 ) {
+		if ( point.penetration_depth < -penetrationThreshold ) {
 			// Points are too far away along the contact normal
 			point.destroy();
-			for ( j = i; j < this.points.length; j++ ) {
-				this.points[j] = this.points[j + 1];
-			}
+			this.points[ i ] = this.points[ this.points.length - 1 ];
 			this.points.length = this.points.length - 1;
-			this.object_a.emit( 'endContact', this.object_b );
-			this.object_b.emit( 'endContact', this.object_a );
 		} else {
 			// Check if points are too far away orthogonally
 			_tmp_vec3_1.scaleVector( point.contact_normal, point.penetration_depth );
 			_tmp_vec3_1.subtractVectors( object_a_world_coords, _tmp_vec3_1 );
 
 			_tmp_vec3_1.subtractVectors( object_b_world_coords, _tmp_vec3_1 );
-			var distance = _tmp_vec3_1.lengthSquared();
-			if ( distance > 0.2 * 0.2 ) {
+			var distance = _tmp_vec3_1.length();
+			if ( distance > penetrationThreshold ) {
 				// Points are indeed too far away
 				point.destroy();
-				for ( j = i; j < this.points.length; j++ ) {
-					this.points[j] = this.points[j + 1];
-				}
+				this.points[ i ] = this.points[ this.points.length - 1 ];
 				this.points.length = this.points.length - 1;
-				this.object_a.emit( 'endContact', this.object_b );
-				this.object_b.emit( 'endContact', this.object_a );
 			}
 		}
-	}
-
-	if (starting_points_length > 0 && this.points.length === 0) {
-		// this update removed all contact points
-		this.object_a.emit( 'endAllContact', this.object_b );
-		this.object_b.emit( 'endAllContact', this.object_a );
 	}
 };

@@ -19,6 +19,15 @@ Goblin.RigidBody = (function() {
 		this.id = body_count++;
 
 		/**
+		 * body version that changes upon significant updates (collider movements,
+		 * additions and deletions)
+		 *
+		 * @property version
+		 * @type {Number}
+		 */
+		this.version = 0;
+
+		/**
 		 * shape definition for this rigid body
 		 *
 		 * @property shape
@@ -280,6 +289,9 @@ Goblin.RigidBody = (function() {
 		this.turn_velocity = new Goblin.Vector3();
 		this.solver_impulse = new Float64Array( 6 );
 
+		// Speculative contact listener
+		this.onSpeculativeContact = null;
+
 		this.listeners = {};
 	};
 })();
@@ -314,7 +326,14 @@ Object.defineProperty(
 			return this._is_kinematic;
 		},
 		set: function( value ) {
-			this._is_kinematic = value;
+			if ( value !== this._is_kinematic ) {
+				if ( this.world ) {
+					this.world.updateObjectKinematicFlag( this, value );
+				}
+
+				this._is_kinematic = value;
+			}
+
 			this.updateShapeDerivedValues();
 		}
 	}
@@ -338,6 +357,7 @@ Object.defineProperty(
 					this.world.updateObjectLayer( this, value );
 				}
 
+				this.version++;
 				this._layer = value;
 			}
 		}
@@ -368,6 +388,10 @@ Object.defineProperty(
 		}
 	}
 );
+
+Goblin.RigidBody.prototype.markDynamic = function () {
+	this.world.broadphase.markDynamic( this );
+};
 
 /**
  * Updates body's position and rotation from arguments supplied.
@@ -411,6 +435,9 @@ Goblin.RigidBody.prototype.getTransform = function ( position, rotation ) {
  * @method updateShapeDerivedValues
  */
 Goblin.RigidBody.prototype.updateShapeDerivedValues = function () {
+	// update body version
+	this.version++;
+
 	if ( !this.shape.center_of_mass ) {
 		this._computeInertiaTensor();
 		return;
