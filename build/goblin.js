@@ -2736,6 +2736,83 @@ Goblin.BasicPooledBroadphase.prototype.update = function() {
 		}
 	};
 })();
+/**
+* adds a drag force to associated objects
+*
+* @class DragForce
+* @extends ForceGenerator
+* @constructor
+*/
+Goblin.DragForce = function( drag_coefficient, squared_drag_coefficient ) {
+	/**
+	* drag coefficient
+	*
+	* @property drag_coefficient
+	* @type {Number}
+	* @default 0
+	*/
+	this.drag_coefficient = drag_coefficient || 0;
+
+	/**
+	* drag coefficient
+	*
+	* @property drag_coefficient
+	* @type {Number}
+	* @default 0
+	*/
+	this.squared_drag_coefficient = squared_drag_coefficient || 0;
+
+	/**
+	* whether or not the force generator is enabled
+	*
+	* @property enabled
+	* @type {Boolean}
+	* @default true
+	*/
+	this.enabled = true;
+
+	/**
+	* array of objects affected by the generator
+	*
+	* @property affected
+	* @type {Array}
+	* @default []
+	* @private
+	*/
+	this.affected = [];
+};
+Goblin.DragForce.prototype.enable = Goblin.ForceGenerator.prototype.enable;
+Goblin.DragForce.prototype.disable = Goblin.ForceGenerator.prototype.disable;
+Goblin.DragForce.prototype.affect = Goblin.ForceGenerator.prototype.affect;
+Goblin.DragForce.prototype.unaffect = Goblin.ForceGenerator.prototype.unaffect;
+/**
+* applies force to the associated objects
+*
+* @method applyForce
+*/
+Goblin.DragForce.prototype.applyForce = function() {
+	if ( !this.enabled ) {
+		return;
+	}
+
+	var i, affected_count, object, drag,
+		force = _tmp_vec3_1;
+
+	for ( i = 0, affected_count = this.affected.length; i < affected_count; i++ ) {
+		object = this.affected[i];
+
+		force.copy( object.linear_velocity );
+
+		// Calculate the total drag coefficient.
+		drag = force.length();
+		drag = ( this.drag_coefficient * drag ) + ( this.squared_drag_coefficient * drag * drag );
+
+		// Calculate the final force and apply it.
+		force.normalize();
+		force.scale( -drag );
+		object.applyForce( force  );
+	}
+};
 Goblin.BoxSphere = function( object_a, object_b ) {
 	var sphere = object_a.shape instanceof Goblin.SphereShape ? object_a : object_b,
 		box = object_a.shape instanceof Goblin.SphereShape ? object_b : object_a,
@@ -3351,11 +3428,6 @@ Goblin.GjkEpa.Face.prototype = {
 						// Set objects' local points
 						contact.object_a.transform_inverse.transformVector3( contact.contact_point_in_a );
 						contact.object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
-
-						contact.restitution = ( this.object_a.restitution + this.object_b.restitution ) / 2;
-						contact.friction = ( this.object_a.friction + this.object_b.friction ) / 2;
-
-						//Goblin.GjkEpa.freePolyhedron( polyhedron );
 
 						Goblin.GjkEpa.result = contact;
 						return null;
@@ -4434,83 +4506,6 @@ Goblin.FrictionConstraint.prototype.update = (function(){
 		this.rows[1] = row_2;
 	};
 })();
-/**
-* adds a drag force to associated objects
-*
-* @class DragForce
-* @extends ForceGenerator
-* @constructor
-*/
-Goblin.DragForce = function( drag_coefficient, squared_drag_coefficient ) {
-	/**
-	* drag coefficient
-	*
-	* @property drag_coefficient
-	* @type {Number}
-	* @default 0
-	*/
-	this.drag_coefficient = drag_coefficient || 0;
-
-	/**
-	* drag coefficient
-	*
-	* @property drag_coefficient
-	* @type {Number}
-	* @default 0
-	*/
-	this.squared_drag_coefficient = squared_drag_coefficient || 0;
-
-	/**
-	* whether or not the force generator is enabled
-	*
-	* @property enabled
-	* @type {Boolean}
-	* @default true
-	*/
-	this.enabled = true;
-
-	/**
-	* array of objects affected by the generator
-	*
-	* @property affected
-	* @type {Array}
-	* @default []
-	* @private
-	*/
-	this.affected = [];
-};
-Goblin.DragForce.prototype.enable = Goblin.ForceGenerator.prototype.enable;
-Goblin.DragForce.prototype.disable = Goblin.ForceGenerator.prototype.disable;
-Goblin.DragForce.prototype.affect = Goblin.ForceGenerator.prototype.affect;
-Goblin.DragForce.prototype.unaffect = Goblin.ForceGenerator.prototype.unaffect;
-/**
-* applies force to the associated objects
-*
-* @method applyForce
-*/
-Goblin.DragForce.prototype.applyForce = function() {
-	if ( !this.enabled ) {
-		return;
-	}
-
-	var i, affected_count, object, drag,
-		force = _tmp_vec3_1;
-
-	for ( i = 0, affected_count = this.affected.length; i < affected_count; i++ ) {
-		object = this.affected[i];
-
-		force.copy( object.linear_velocity );
-
-		// Calculate the total drag coefficient.
-		drag = force.length();
-		drag = ( this.drag_coefficient * drag ) + ( this.squared_drag_coefficient * drag * drag );
-
-		// Calculate the final force and apply it.
-		force.normalize();
-		force.scale( -drag );
-		object.applyForce( force  );
-	}
-};
 Goblin.RayIntersection = function() {
 	this.object = null;
     this.shape = null;
@@ -8554,9 +8549,6 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 				contact.shape_a = permuted ? other.shape : proxy.shape;
 				contact.shape_b = permuted ? proxy.shape : other.shape;
 
-				contact.restitution = Goblin.CollisionUtils.combineRestitutions( contact.object_a, contact.object_b, contact.shape_a, contact.shape_b );
-				contact.friction = Goblin.CollisionUtils.combineFrictions( contact.object_a, contact.object_b, contact.shape_a, contact.shape_b );
-
 				this.addContact( parent_a, parent_b, contact );
 			}
 		}
@@ -8617,9 +8609,6 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 
                     contact.object_a = object_a;
                     contact.object_b = object_b;
-
-					contact.restitution = Goblin.CollisionUtils.combineRestitutions( object_a, object_b, contact.shape_a, contact.shape_b );
-					contact.friction = Goblin.CollisionUtils.combineFrictions( object_a, object_b, contact.shape_a, contact.shape_b );
 
                     addContact( object_a, object_b, contact );
                 }
@@ -8707,9 +8696,6 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 						if ( contact != null ) {
 							contact.shape_a = mesh.shape;
 							contact.shape_b = convex.shape;
-
-							contact.restitution = Goblin.CollisionUtils.combineRestitutions( contact.object_a, contact.object_b, mesh.shape, convex.shape );
-							contact.friction = Goblin.CollisionUtils.combineFrictions( contact.object_a, contact.object_b, mesh.shape, convex.shape );
 
 							addContact( contact.object_a, contact.object_b, contact );
 						}
@@ -8816,6 +8802,9 @@ Goblin.NarrowPhase.prototype.addContact = function( object_a, object_b, contact 
 		contact.object_b.shape_data.transform.transformVector3( contact.contact_point_in_b );
 		contact.object_b = contact.object_b.parent;
 	}
+
+	contact.restitution = Goblin.CollisionUtils.combineRestitutions( contact.object_a, contact.object_b, contact.shape_a, contact.shape_b );
+	contact.friction = Goblin.CollisionUtils.combineFrictions( contact.object_a, contact.object_b, contact.shape_a, contact.shape_b );
 
 	this.contact_manifolds.getManifoldForObjects( contact.object_a, contact.object_b ).addContact( contact );
 };

@@ -467,11 +467,6 @@ Goblin.GjkEpa.Face.prototype = {
 						contact.object_a.transform_inverse.transformVector3( contact.contact_point_in_a );
 						contact.object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
 
-						contact.restitution = ( this.object_a.restitution + this.object_b.restitution ) / 2;
-						contact.friction = ( this.object_a.friction + this.object_b.friction ) / 2;
-
-						//Goblin.GjkEpa.freePolyhedron( polyhedron );
-
 						Goblin.GjkEpa.result = contact;
 						return null;
 					}

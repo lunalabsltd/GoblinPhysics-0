@@ -85,9 +85,6 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 				contact.shape_a = permuted ? other.shape : proxy.shape;
 				contact.shape_b = permuted ? proxy.shape : other.shape;
 
-				contact.restitution = Goblin.CollisionUtils.combineRestitutions( contact.object_a, contact.object_b, contact.shape_a, contact.shape_b );
-				contact.friction = Goblin.CollisionUtils.combineFrictions( contact.object_a, contact.object_b, contact.shape_a, contact.shape_b );
-
 				this.addContact( parent_a, parent_b, contact );
 			}
 		}
@@ -148,9 +145,6 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 
                     contact.object_a = object_a;
                     contact.object_b = object_b;
-
-					contact.restitution = Goblin.CollisionUtils.combineRestitutions( object_a, object_b, contact.shape_a, contact.shape_b );
-					contact.friction = Goblin.CollisionUtils.combineFrictions( object_a, object_b, contact.shape_a, contact.shape_b );
 
                     addContact( object_a, object_b, contact );
                 }
@@ -238,9 +232,6 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 						if ( contact != null ) {
 							contact.shape_a = mesh.shape;
 							contact.shape_b = convex.shape;
-
-							contact.restitution = Goblin.CollisionUtils.combineRestitutions( contact.object_a, contact.object_b, mesh.shape, convex.shape );
-							contact.friction = Goblin.CollisionUtils.combineFrictions( contact.object_a, contact.object_b, mesh.shape, convex.shape );
 
 							addContact( contact.object_a, contact.object_b, contact );
 						}
@@ -347,6 +338,9 @@ Goblin.NarrowPhase.prototype.addContact = function( object_a, object_b, contact 
 		contact.object_b.shape_data.transform.transformVector3( contact.contact_point_in_b );
 		contact.object_b = contact.object_b.parent;
 	}
+
+	contact.restitution = Goblin.CollisionUtils.combineRestitutions( contact.object_a, contact.object_b, contact.shape_a, contact.shape_b );
+	contact.friction = Goblin.CollisionUtils.combineFrictions( contact.object_a, contact.object_b, contact.shape_a, contact.shape_b );
 
 	this.contact_manifolds.getManifoldForObjects( contact.object_a, contact.object_b ).addContact( contact );
 };
