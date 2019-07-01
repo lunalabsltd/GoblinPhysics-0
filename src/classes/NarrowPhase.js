@@ -42,7 +42,7 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 		other,
 		permuted;
 
-	if ( object_a.shape instanceof Goblin.CompoundShape ) {
+	if ( object_a.shape.shape === Goblin.CompoundShape ) {
 		compound = object_a;
 		other = object_b;
 		permuted = !false;
@@ -59,7 +59,7 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 		child_shape = compound.shape.child_shapes[i];
 		proxy.setFrom( compound, child_shape );
 
-		if ( proxy.shape instanceof Goblin.CompoundShape || other.shape instanceof Goblin.CompoundShape ) {
+		if ( proxy.shape.shape === Goblin.CompoundShape || other.shape.shape === Goblin.CompoundShape ) {
 			contact = this.midPhase( proxy, other );
 		} else {
 			contact = this.getContact( proxy, other );
@@ -248,8 +248,8 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 	})();
 
 	return function meshCollision( object_a, object_b ) {
-		var a_is_mesh = object_a.shape instanceof Goblin.MeshShape,
-			b_is_mesh = object_b.shape instanceof Goblin.MeshShape;
+		var a_is_mesh = object_a.shape.shape === Goblin.MeshShape,
+			b_is_mesh = object_b.shape.shape === Goblin.MeshShape;
 
 		if ( a_is_mesh && b_is_mesh ) {
 			return meshMesh( object_a, object_b, this.addContact.bind( this ) );
@@ -275,22 +275,22 @@ Goblin.NarrowPhase.prototype.getContact = function( object_a, object_b ) {
 		return null;
 	}
 
-	if ( object_a.shape instanceof Goblin.CompoundShape || object_b.shape instanceof Goblin.CompoundShape ) {
+	if ( object_a.shape.shape === Goblin.CompoundShape || object_b.shape.shape === Goblin.CompoundShape ) {
 		return this.midPhase( object_a, object_b );
 	}
 
-	if ( object_a.shape instanceof Goblin.MeshShape || object_b.shape instanceof Goblin.MeshShape ) {
+	if ( object_a.shape.shape === Goblin.MeshShape || object_b.shape.shape === Goblin.MeshShape ) {
 		return this.meshCollision( object_a, object_b );
 	}
 
 	var contact;
 
-	if ( object_a.shape instanceof Goblin.SphereShape && object_b.shape instanceof Goblin.SphereShape ) {
+	if ( object_a.shape.shape === Goblin.SphereShape && object_b.shape.shape === Goblin.SphereShape ) {
 		// Sphere - Sphere contact check
 		contact = Goblin.SphereSphere( object_a, object_b );
 	} else if (
-		object_a.shape instanceof Goblin.SphereShape && object_b.shape instanceof Goblin.BoxShape ||
-		object_a.shape instanceof Goblin.BoxShape && object_b.shape instanceof Goblin.SphereShape
+		object_a.shape.shape === Goblin.SphereShape && object_b.shape.shape === Goblin.BoxShape ||
+		object_a.shape.shape === Goblin.BoxShape && object_b.shape.shape === Goblin.SphereShape
 	) {
 		// Sphere - Box contact check
 		contact = Goblin.BoxSphere( object_a, object_b );

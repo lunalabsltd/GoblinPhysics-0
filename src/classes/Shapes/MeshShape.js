@@ -53,6 +53,8 @@ Goblin.MeshShape = function( vertices, faces, material ) {
 	this.calculateLocalAABB( this.aabb );
 
 	this.material = material || null;
+
+	this.shape = Goblin.MeshShape;
 };
 
 /**

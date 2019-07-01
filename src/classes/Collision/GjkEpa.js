@@ -95,7 +95,7 @@ Goblin.GjkEpa = {
 		// Free the support points used by the polyhedron (includes the points from the simplex used to create the polyhedron
 		var pool = Goblin.ObjectPool.pools['GJK2SupportPoint'];
 
-		for ( var i = 0, faces_length = polyhedron.faces.length; i < faces_length; i++ ) {
+		for ( var i = 0, faces_length = polyhedron.faces.length; pool.length > 0 && i < faces_length; i++ ) {
 			// The indexOf checking is required because vertices are shared between faces
 			if ( pool.indexOf( polyhedron.faces[i].a ) === -1 ) {
 				Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', polyhedron.faces[i].a );
@@ -318,14 +318,16 @@ Goblin.GjkEpa.Polyhedron.prototype = {
 		return function() {
 			this.closest_face_distance = Infinity;
 
-			var distance, i;
+			var distance, i, face;
 
 			for ( i = 0; i < this.faces.length; i++ ) {
-				if ( this.faces[i].active === false ) {
+                face = this.faces[ i ];
+
+				if ( face.active === false ) {
 					continue;
 				}
 
-				Goblin.GeometryMethods.findClosestPointInTriangle( origin, this.faces[i].a.point, this.faces[i].b.point, this.faces[i].c.point, point );
+				Goblin.GeometryMethods.findClosestPointInTriangle( origin, face.a.point, face.b.point, face.c.point, point );
 				distance = point.lengthSquared();
 				if ( distance < this.closest_face_distance ) {
 					this.closest_face_distance = distance;

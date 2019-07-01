@@ -12,6 +12,8 @@ Goblin.CompoundShape = function() {
 	this.center_of_mass_override = null;
 
 	this.updateAABB();
+
+	this.shape = Goblin.CompoundShape;
 };
 
 /**

@@ -10,6 +10,8 @@ Goblin.SphereShape = function( radius, material ) {
 	this.calculateLocalAABB( this.aabb );
 
 	this.material = material || null;
+
+	this.shape = Goblin.SphereShape;
 };
 
 /**

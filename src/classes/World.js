@@ -114,8 +114,8 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 
 		this.emit( 'stepStart', this.ticks, delta );
 
+		var bodies = this.rigid_bodies;
 		//var bodies = this.broadphase.getDynamicBodies();
-		var bodies = this.broadphase.getDynamicBodies();
 
 		// Apply gravity
         for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {

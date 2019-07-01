@@ -97,7 +97,11 @@ Goblin.IterativeSolver = function() {
  */
 Goblin.IterativeSolver.prototype.onContactDeactivate = function( constraint ) {
 	var idx = this.contact_constraints.indexOf( constraint );
-	this.contact_constraints.splice( idx, 1 );
+
+	if ( idx >= 0 ) {
+		this.contact_constraints[ idx ] = this.contact_constraints[ this.contact_constraints.length - 1 ];
+		this.contact_constraints.length -= 1;
+	}
 
 	delete this.existing_contact_ids[ constraint.contact.uid ];
 };
@@ -109,7 +113,11 @@ Goblin.IterativeSolver.prototype.onContactDeactivate = function( constraint ) {
  */
 Goblin.IterativeSolver.prototype.onFrictionDeactivate = function( constraint ) {
 	var idx = this.friction_constraints.indexOf( constraint );
-	this.friction_constraints.splice( idx, 1 );
+
+	if ( idx >= 0 ) {
+		this.friction_constraints[ idx ] = this.friction_constraints[ this.friction_constraints.length - 1 ];
+		this.friction_constraints.length -= 1;
+	}
 };
 
 /**
@@ -132,8 +140,10 @@ Goblin.IterativeSolver.prototype.addConstraint = function( constraint ) {
  */
 Goblin.IterativeSolver.prototype.removeConstraint = function( constraint ) {
 	var idx = this.constraints.indexOf( constraint );
-	if ( idx !== -1 ) {
-		this.constraints.splice( idx, 1 );
+
+	if ( idx >= 0 ) {
+		this.constraints[ idx ] = this.constraints[ this.constraints.length - 1 ];
+		this.constraints.length -= 1;
 	}
 };
 

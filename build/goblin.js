@@ -2589,8 +2589,6 @@ Goblin.BasicPooledBroadphase.prototype.update = function() {
 		 * @method update
 		 */
 		update: function() {
-			this.collision_pairs.length = 0;
-			
 			this.insertPending();
 
 			var marker = this.markers_x.first;
@@ -2659,7 +2657,7 @@ Goblin.BasicPooledBroadphase.prototype.update = function() {
 		 * @property end {vec3{ end point of the segment
          * @return {Array<RayIntersection>} an unsorted array of intersections
 		 */
-		rayIntersect: function( start, end ) {
+		rayIntersect: function( start, end, limit, layer_mask ) {
 			// It's assumed that raytracing will be performed through a proxy like Goblin.World,
 			// thus that the only time this broadphase cares about updating itself is if an object was added
 			if ( this.pending_bodies.length > 0 ) {
@@ -2727,7 +2725,7 @@ Goblin.BasicPooledBroadphase.prototype.update = function() {
 				var body_id = keys[i];
 				if ( id_intersection_count[body_id] === 1 ) {
 					if ( id_body_map[body_id].aabb.testRayIntersect( start, end ) ) {
-						id_body_map[body_id].rayIntersect( start, end, intersections );
+						id_body_map[body_id].rayIntersect( start, end, limit, intersections );
 					}
 				}
 			}
@@ -2736,6 +2734,83 @@ Goblin.BasicPooledBroadphase.prototype.update = function() {
 		}
 	};
 })();
+/**
+* adds a drag force to associated objects
+*
+* @class DragForce
+* @extends ForceGenerator
+* @constructor
+*/
+Goblin.DragForce = function( drag_coefficient, squared_drag_coefficient ) {
+	/**
+	* drag coefficient
+	*
+	* @property drag_coefficient
+	* @type {Number}
+	* @default 0
+	*/
+	this.drag_coefficient = drag_coefficient || 0;
+
+	/**
+	* drag coefficient
+	*
+	* @property drag_coefficient
+	* @type {Number}
+	* @default 0
+	*/
+	this.squared_drag_coefficient = squared_drag_coefficient || 0;
+
+	/**
+	* whether or not the force generator is enabled
+	*
+	* @property enabled
+	* @type {Boolean}
+	* @default true
+	*/
+	this.enabled = true;
+
+	/**
+	* array of objects affected by the generator
+	*
+	* @property affected
+	* @type {Array}
+	* @default []
+	* @private
+	*/
+	this.affected = [];
+};
+Goblin.DragForce.prototype.enable = Goblin.ForceGenerator.prototype.enable;
+Goblin.DragForce.prototype.disable = Goblin.ForceGenerator.prototype.disable;
+Goblin.DragForce.prototype.affect = Goblin.ForceGenerator.prototype.affect;
+Goblin.DragForce.prototype.unaffect = Goblin.ForceGenerator.prototype.unaffect;
+/**
+* applies force to the associated objects
+*
+* @method applyForce
+*/
+Goblin.DragForce.prototype.applyForce = function() {
+	if ( !this.enabled ) {
+		return;
+	}
+
+	var i, affected_count, object, drag,
+		force = _tmp_vec3_1;
+
+	for ( i = 0, affected_count = this.affected.length; i < affected_count; i++ ) {
+		object = this.affected[i];
+
+		force.copy( object.linear_velocity );
+
+		// Calculate the total drag coefficient.
+		drag = force.length();
+		drag = ( this.drag_coefficient * drag ) + ( this.squared_drag_coefficient * drag * drag );
+
+		// Calculate the final force and apply it.
+		force.normalize();
+		force.scale( -drag );
+		object.applyForce( force  );
+	}
+};
 Goblin.BoxSphere = function( object_a, object_b ) {
 	var sphere = object_a.shape instanceof Goblin.SphereShape ? object_a : object_b,
 		box = object_a.shape instanceof Goblin.SphereShape ? object_b : object_a,
@@ -2980,7 +3055,7 @@ Goblin.GjkEpa = {
 		// Free the support points used by the polyhedron (includes the points from the simplex used to create the polyhedron
 		var pool = Goblin.ObjectPool.pools['GJK2SupportPoint'];
 
-		for ( var i = 0, faces_length = polyhedron.faces.length; i < faces_length; i++ ) {
+		for ( var i = 0, faces_length = polyhedron.faces.length; pool.length > 0 && i < faces_length; i++ ) {
 			// The indexOf checking is required because vertices are shared between faces
 			if ( pool.indexOf( polyhedron.faces[i].a ) === -1 ) {
 				Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', polyhedron.faces[i].a );
@@ -3203,14 +3278,16 @@ Goblin.GjkEpa.Polyhedron.prototype = {
 		return function() {
 			this.closest_face_distance = Infinity;
 
-			var distance, i;
+			var distance, i, face;
 
 			for ( i = 0; i < this.faces.length; i++ ) {
-				if ( this.faces[i].active === false ) {
+                face = this.faces[ i ];
+
+				if ( face.active === false ) {
 					continue;
 				}
 
-				Goblin.GeometryMethods.findClosestPointInTriangle( origin, this.faces[i].a.point, this.faces[i].b.point, this.faces[i].c.point, point );
+				Goblin.GeometryMethods.findClosestPointInTriangle( origin, face.a.point, face.b.point, face.c.point, point );
 				distance = point.lengthSquared();
 				if ( distance < this.closest_face_distance ) {
 					this.closest_face_distance = distance;
@@ -4429,83 +4506,6 @@ Goblin.FrictionConstraint.prototype.update = (function(){
 		this.rows[1] = row_2;
 	};
 })();
-/**
-* adds a drag force to associated objects
-*
-* @class DragForce
-* @extends ForceGenerator
-* @constructor
-*/
-Goblin.DragForce = function( drag_coefficient, squared_drag_coefficient ) {
-	/**
-	* drag coefficient
-	*
-	* @property drag_coefficient
-	* @type {Number}
-	* @default 0
-	*/
-	this.drag_coefficient = drag_coefficient || 0;
-
-	/**
-	* drag coefficient
-	*
-	* @property drag_coefficient
-	* @type {Number}
-	* @default 0
-	*/
-	this.squared_drag_coefficient = squared_drag_coefficient || 0;
-
-	/**
-	* whether or not the force generator is enabled
-	*
-	* @property enabled
-	* @type {Boolean}
-	* @default true
-	*/
-	this.enabled = true;
-
-	/**
-	* array of objects affected by the generator
-	*
-	* @property affected
-	* @type {Array}
-	* @default []
-	* @private
-	*/
-	this.affected = [];
-};
-Goblin.DragForce.prototype.enable = Goblin.ForceGenerator.prototype.enable;
-Goblin.DragForce.prototype.disable = Goblin.ForceGenerator.prototype.disable;
-Goblin.DragForce.prototype.affect = Goblin.ForceGenerator.prototype.affect;
-Goblin.DragForce.prototype.unaffect = Goblin.ForceGenerator.prototype.unaffect;
-/**
-* applies force to the associated objects
-*
-* @method applyForce
-*/
-Goblin.DragForce.prototype.applyForce = function() {
-	if ( !this.enabled ) {
-		return;
-	}
-
-	var i, affected_count, object, drag,
-		force = _tmp_vec3_1;
-
-	for ( i = 0, affected_count = this.affected.length; i < affected_count; i++ ) {
-		object = this.affected[i];
-
-		force.copy( object.linear_velocity );
-
-		// Calculate the total drag coefficient.
-		drag = force.length();
-		drag = ( this.drag_coefficient * drag ) + ( this.squared_drag_coefficient * drag * drag );
-
-		// Calculate the final force and apply it.
-		force.normalize();
-		force.scale( -drag );
-		object.applyForce( force  );
-	}
-};
 Goblin.RayIntersection = function() {
 	this.object = null;
     this.shape = null;
@@ -4549,6 +4549,8 @@ Goblin.BoxShape = function( half_width, half_height, half_depth, material ) {
     this.calculateLocalAABB( this.aabb );
 
 	this.material = material || null;
+
+    this.shape = Goblin.BoxShape;
 };
 
 /**
@@ -4699,6 +4701,8 @@ Goblin.CapsuleShape = function( radius, half_height, material ) {
 	this.calculateLocalAABB( this.aabb );
 
 	this.material = material || null;
+
+	this.shape = Goblin.CapsuleShape;
 };
 
 /**
@@ -5109,6 +5113,8 @@ Goblin.CompoundShape = function() {
 	this.center_of_mass_override = null;
 
 	this.updateAABB();
+
+	this.shape = Goblin.CompoundShape;
 };
 
 /**
@@ -5822,6 +5828,8 @@ Goblin.MeshShape = function( vertices, faces, material ) {
 	this.calculateLocalAABB( this.aabb );
 
 	this.material = material || null;
+
+	this.shape = Goblin.MeshShape;
 };
 
 /**
@@ -6169,6 +6177,8 @@ Goblin.SphereShape = function( radius, material ) {
 	this.calculateLocalAABB( this.aabb );
 
 	this.material = material || null;
+
+	this.shape = Goblin.SphereShape;
 };
 
 /**
@@ -6317,6 +6327,8 @@ Goblin.TriangleShape = function( vertex_a, vertex_b, vertex_c ) {
 
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
+
+	this.shape = Goblin.TriangleShape;
 };
 
 /**
@@ -7964,7 +7976,11 @@ Goblin.IterativeSolver = function() {
  */
 Goblin.IterativeSolver.prototype.onContactDeactivate = function( constraint ) {
 	var idx = this.contact_constraints.indexOf( constraint );
-	this.contact_constraints.splice( idx, 1 );
+
+	if ( idx >= 0 ) {
+		this.contact_constraints[ idx ] = this.contact_constraints[ this.contact_constraints.length - 1 ];
+		this.contact_constraints.length -= 1;
+	}
 
 	delete this.existing_contact_ids[ constraint.contact.uid ];
 };
@@ -7976,7 +7992,11 @@ Goblin.IterativeSolver.prototype.onContactDeactivate = function( constraint ) {
  */
 Goblin.IterativeSolver.prototype.onFrictionDeactivate = function( constraint ) {
 	var idx = this.friction_constraints.indexOf( constraint );
-	this.friction_constraints.splice( idx, 1 );
+
+	if ( idx >= 0 ) {
+		this.friction_constraints[ idx ] = this.friction_constraints[ this.friction_constraints.length - 1 ];
+		this.friction_constraints.length -= 1;
+	}
 };
 
 /**
@@ -7999,8 +8019,10 @@ Goblin.IterativeSolver.prototype.addConstraint = function( constraint ) {
  */
 Goblin.IterativeSolver.prototype.removeConstraint = function( constraint ) {
 	var idx = this.constraints.indexOf( constraint );
-	if ( idx !== -1 ) {
-		this.constraints.splice( idx, 1 );
+
+	if ( idx >= 0 ) {
+		this.constraints[ idx ] = this.constraints[ this.constraints.length - 1 ];
+		this.constraints.length -= 1;
 	}
 };
 
@@ -8512,7 +8534,7 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 		other,
 		permuted;
 
-	if ( object_a.shape instanceof Goblin.CompoundShape ) {
+	if ( object_a.shape.shape === Goblin.CompoundShape ) {
 		compound = object_a;
 		other = object_b;
 		permuted = !false;
@@ -8529,7 +8551,7 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 		child_shape = compound.shape.child_shapes[i];
 		proxy.setFrom( compound, child_shape );
 
-		if ( proxy.shape instanceof Goblin.CompoundShape || other.shape instanceof Goblin.CompoundShape ) {
+		if ( proxy.shape.shape === Goblin.CompoundShape || other.shape.shape === Goblin.CompoundShape ) {
 			contact = this.midPhase( proxy, other );
 		} else {
 			contact = this.getContact( proxy, other );
@@ -8718,8 +8740,8 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 	})();
 
 	return function meshCollision( object_a, object_b ) {
-		var a_is_mesh = object_a.shape instanceof Goblin.MeshShape,
-			b_is_mesh = object_b.shape instanceof Goblin.MeshShape;
+		var a_is_mesh = object_a.shape.shape === Goblin.MeshShape,
+			b_is_mesh = object_b.shape.shape === Goblin.MeshShape;
 
 		if ( a_is_mesh && b_is_mesh ) {
 			return meshMesh( object_a, object_b, this.addContact.bind( this ) );
@@ -8745,22 +8767,22 @@ Goblin.NarrowPhase.prototype.getContact = function( object_a, object_b ) {
 		return null;
 	}
 
-	if ( object_a.shape instanceof Goblin.CompoundShape || object_b.shape instanceof Goblin.CompoundShape ) {
+	if ( object_a.shape.shape === Goblin.CompoundShape || object_b.shape.shape === Goblin.CompoundShape ) {
 		return this.midPhase( object_a, object_b );
 	}
 
-	if ( object_a.shape instanceof Goblin.MeshShape || object_b.shape instanceof Goblin.MeshShape ) {
+	if ( object_a.shape.shape === Goblin.MeshShape || object_b.shape.shape === Goblin.MeshShape ) {
 		return this.meshCollision( object_a, object_b );
 	}
 
 	var contact;
 
-	if ( object_a.shape instanceof Goblin.SphereShape && object_b.shape instanceof Goblin.SphereShape ) {
+	if ( object_a.shape.shape === Goblin.SphereShape && object_b.shape.shape === Goblin.SphereShape ) {
 		// Sphere - Sphere contact check
 		contact = Goblin.SphereSphere( object_a, object_b );
 	} else if (
-		object_a.shape instanceof Goblin.SphereShape && object_b.shape instanceof Goblin.BoxShape ||
-		object_a.shape instanceof Goblin.BoxShape && object_b.shape instanceof Goblin.SphereShape
+		object_a.shape.shape === Goblin.SphereShape && object_b.shape.shape === Goblin.BoxShape ||
+		object_a.shape.shape === Goblin.BoxShape && object_b.shape.shape === Goblin.SphereShape
 	) {
 		// Sphere - Box contact check
 		contact = Goblin.BoxSphere( object_a, object_b );
@@ -9156,8 +9178,8 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 
 		this.emit( 'stepStart', this.ticks, delta );
 
+		var bodies = this.rigid_bodies;
 		//var bodies = this.broadphase.getDynamicBodies();
-		var bodies = this.broadphase.getDynamicBodies();
 
 		// Apply gravity
         for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {

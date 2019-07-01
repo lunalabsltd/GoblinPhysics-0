@@ -26,6 +26,8 @@ Goblin.CapsuleShape = function( radius, half_height, material ) {
 	this.calculateLocalAABB( this.aabb );
 
 	this.material = material || null;
+
+	this.shape = Goblin.CapsuleShape;
 };
 
 /**

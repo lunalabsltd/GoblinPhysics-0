@@ -34,6 +34,8 @@ Goblin.BoxShape = function( half_width, half_height, half_depth, material ) {
     this.calculateLocalAABB( this.aabb );
 
 	this.material = material || null;
+
+    this.shape = Goblin.BoxShape;
 };
 
 /**

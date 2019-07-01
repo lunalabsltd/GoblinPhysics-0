@@ -53,6 +53,8 @@ Goblin.TriangleShape = function( vertex_a, vertex_b, vertex_c ) {
 
 	this.aabb = new Goblin.AABB();
 	this.calculateLocalAABB( this.aabb );
+
+	this.shape = Goblin.TriangleShape;
 };
 
 /**

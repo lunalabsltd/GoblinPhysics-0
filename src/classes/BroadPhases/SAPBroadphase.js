@@ -318,8 +318,6 @@
 		 * @method update
 		 */
 		update: function() {
-			this.collision_pairs.length = 0;
-			
 			this.insertPending();
 
 			var marker = this.markers_x.first;
@@ -388,7 +386,7 @@
 		 * @property end {vec3{ end point of the segment
          * @return {Array<RayIntersection>} an unsorted array of intersections
 		 */
-		rayIntersect: function( start, end ) {
+		rayIntersect: function( start, end, limit, layer_mask ) {
 			// It's assumed that raytracing will be performed through a proxy like Goblin.World,
 			// thus that the only time this broadphase cares about updating itself is if an object was added
 			if ( this.pending_bodies.length > 0 ) {
@@ -456,7 +454,7 @@
 				var body_id = keys[i];
 				if ( id_intersection_count[body_id] === 1 ) {
 					if ( id_body_map[body_id].aabb.testRayIntersect( start, end ) ) {
-						id_body_map[body_id].rayIntersect( start, end, intersections );
+						id_body_map[body_id].rayIntersect( start, end, limit, intersections );
 					}
 				}
 			}
