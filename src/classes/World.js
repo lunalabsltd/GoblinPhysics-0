@@ -430,32 +430,6 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 		return intersections.slice( 0, limit );
 	};
 
-	Goblin.World.prototype.shapeIntersect = function( center, shape ) {
-		var body = new Goblin.RigidBody( shape, 0 );
-
-		body.position.copy( center );
-		body.updateDerived();
-
-		var possibilities = this.broadphase.intersectsWith( body ),
-			intersections = [];
-
-		for ( var i = 0; i < possibilities.length; i++ ) {
-			var contact = this.narrowphase.getContact( body, possibilities[i] );
-
-			if ( contact != null ) {
-				var intersection = Goblin.ObjectPool.getObject( 'RayIntersection' );
-
-				// check which (A or B) object & shape are actually an intersection
-				intersection.object = contact.object_b;
-				intersection.shape = contact.shape_b;
-
-				intersections.push( intersection );
-			}
-		}
-
-		return intersections;
-	};
-
 	/**
 	 * Checks if a line-swept shape intersects with objects in the world. Please note
 	 * that passing a limit different from 0 will not guarantee any order of the hit - 
@@ -491,8 +465,8 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 				// compute time
 				intersection.t = intersection.point.distanceTo( start );
 
-				intersection.object = contact.object_b;
-				intersection.shape = contact.shape_b;
+                intersection.object = contact.shape_b === swept_shape ? contact.object_a : contact.object_b;
+                intersection.shape = contact.shape_b === swept_shape ? contact.shape_a : contact.shape_b;
 
 				intersections.push( intersection );
 			}
