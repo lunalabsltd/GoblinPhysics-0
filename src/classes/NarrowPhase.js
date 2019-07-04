@@ -211,6 +211,7 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 
 	var meshConvex = (function(){
 		var convex_to_mesh = new Goblin.Matrix4(),
+			pending_nodes = new Array( 256 ),
 			convex_aabb_in_mesh = new Goblin.AABB();
 
 		return function meshConvex( mesh, convex, addContact ) {
@@ -221,14 +222,22 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 			convex_aabb_in_mesh.transform( convex.aabb, mesh.transform_inverse );
 
 			// Traverse the BHV in mesh
-			var pending_nodes = [ mesh.shape.hierarchy ],
-				contact, result_contact,
+			var contact, result_contact,
 				node;
-			while ( ( node = pending_nodes.shift() ) ) {
+
+			var i = -1;
+			var j = -1;
+
+			pending_nodes[ ++j ] = mesh.shape.hierarchy;
+
+			while ( i < j ) {
+				node = pending_nodes[ ++i ];
+
 				if ( node.aabb.intersects( convex_aabb_in_mesh ) ) {
 					if ( node.isLeaf() ) {
 						// Check node for collision
 						contact = triangleConvex( node.object, mesh, convex );
+
 						if ( contact != null ) {
 							contact.shape_a = mesh.shape;
 							contact.shape_b = convex.shape;
@@ -237,8 +246,14 @@ Goblin.NarrowPhase.prototype.meshCollision = (function(){
 						}
 
 						result_contact = result_contact || contact;
+
+						if ( result_contact ) {
+							break;
+						}
 					} else {
-						pending_nodes.push( node.left, node.right );
+						//pending_nodes.push( node.left, node.right );
+						pending_nodes[ ++j ] = node.left;
+						pending_nodes[ ++j ] = node.right;
 					}
 				}
 			}
