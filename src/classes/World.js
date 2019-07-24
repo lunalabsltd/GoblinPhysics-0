@@ -321,35 +321,6 @@ Goblin.World.prototype.updateObjectKinematicFlag = function ( rigid_body, is_kin
 };
 
 /**
- * Adds a ghost body to the world
- *
- * @method addGhostBody
- * @param ghost_body {Goblin.GhostBody} ghost body to add to the world
- */
-Goblin.World.prototype.addGhostBody = function( ghost_body ) {
-	ghost_body.world = this;
-	ghost_body.updateDerived();
-	this.ghost_bodies.push( ghost_body );
-	this.broadphase.addBody( ghost_body );
-};
-
-/**
- * Removes a ghost body from the world
- *
- * @method removeGhostBody
- * @param ghost_body {Goblin.GhostBody} ghost body to remove from the world
- */
-Goblin.World.prototype.removeGhostBody = function( ghost_body ) {
-	for ( var i = 0; i < this.ghost_bodies.length; i++ ) {
-		if ( this.ghost_bodies[i] === ghost_body ) {
-			this.ghost_bodies.splice( i, 1 );
-			this.broadphase.removeBody( ghost_body );
-			break;
-		}
-	}
-};
-
-/**
  * Adds a force generator to the world
  *
  * @method addForceGenerator

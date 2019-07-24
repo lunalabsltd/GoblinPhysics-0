@@ -56,6 +56,14 @@ Goblin.ContactDetails = function() {
 	this.shape_b = null;
 
 	/**
+	 * if true then collision details (such as contact points / normals / etc) aren't calculated and set to theirs default values
+	 *
+	 * @property is_lightweight
+	 * @type {boolean}
+	 */
+	this.is_lightweight = false;
+
+	/**
 	 * point of contact in world coordinates
 	 *
 	 * @property contact_point

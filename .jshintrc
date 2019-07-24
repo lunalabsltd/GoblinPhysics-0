@@ -10,6 +10,7 @@
   "boss": true,
   "eqnull": true,
   "smarttabs": true,
+  "expr": true,
   "globals": {
     "vec3": false,
     "quat4": true,
