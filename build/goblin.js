@@ -3969,83 +3969,6 @@ Goblin.TriangleTriangle = function( tri_a, tri_b, do_lightweight_collision ) {
     return null;
 };
 
-/**
-* adds a drag force to associated objects
-*
-* @class DragForce
-* @extends ForceGenerator
-* @constructor
-*/
-Goblin.DragForce = function( drag_coefficient, squared_drag_coefficient ) {
-	/**
-	* drag coefficient
-	*
-	* @property drag_coefficient
-	* @type {Number}
-	* @default 0
-	*/
-	this.drag_coefficient = drag_coefficient || 0;
-
-	/**
-	* drag coefficient
-	*
-	* @property drag_coefficient
-	* @type {Number}
-	* @default 0
-	*/
-	this.squared_drag_coefficient = squared_drag_coefficient || 0;
-
-	/**
-	* whether or not the force generator is enabled
-	*
-	* @property enabled
-	* @type {Boolean}
-	* @default true
-	*/
-	this.enabled = true;
-
-	/**
-	* array of objects affected by the generator
-	*
-	* @property affected
-	* @type {Array}
-	* @default []
-	* @private
-	*/
-	this.affected = [];
-};
-Goblin.DragForce.prototype.enable = Goblin.ForceGenerator.prototype.enable;
-Goblin.DragForce.prototype.disable = Goblin.ForceGenerator.prototype.disable;
-Goblin.DragForce.prototype.affect = Goblin.ForceGenerator.prototype.affect;
-Goblin.DragForce.prototype.unaffect = Goblin.ForceGenerator.prototype.unaffect;
-/**
-* applies force to the associated objects
-*
-* @method applyForce
-*/
-Goblin.DragForce.prototype.applyForce = function() {
-	if ( !this.enabled ) {
-		return;
-	}
-
-	var i, affected_count, object, drag,
-		force = _tmp_vec3_1;
-
-	for ( i = 0, affected_count = this.affected.length; i < affected_count; i++ ) {
-		object = this.affected[i];
-
-		force.copy( object.linear_velocity );
-
-		// Calculate the total drag coefficient.
-		drag = force.length();
-		drag = ( this.drag_coefficient * drag ) + ( this.squared_drag_coefficient * drag * drag );
-
-		// Calculate the final force and apply it.
-		force.normalize();
-		force.scale( -drag );
-		object.applyForce( force  );
-	}
-};
 Goblin.Constraint = (function() {
 	var constraint_count = 0;
 
@@ -4509,6 +4432,83 @@ Goblin.FrictionConstraint.prototype.update = (function(){
 		this.rows[1] = row_2;
 	};
 })();
+/**
+* adds a drag force to associated objects
+*
+* @class DragForce
+* @extends ForceGenerator
+* @constructor
+*/
+Goblin.DragForce = function( drag_coefficient, squared_drag_coefficient ) {
+	/**
+	* drag coefficient
+	*
+	* @property drag_coefficient
+	* @type {Number}
+	* @default 0
+	*/
+	this.drag_coefficient = drag_coefficient || 0;
+
+	/**
+	* drag coefficient
+	*
+	* @property drag_coefficient
+	* @type {Number}
+	* @default 0
+	*/
+	this.squared_drag_coefficient = squared_drag_coefficient || 0;
+
+	/**
+	* whether or not the force generator is enabled
+	*
+	* @property enabled
+	* @type {Boolean}
+	* @default true
+	*/
+	this.enabled = true;
+
+	/**
+	* array of objects affected by the generator
+	*
+	* @property affected
+	* @type {Array}
+	* @default []
+	* @private
+	*/
+	this.affected = [];
+};
+Goblin.DragForce.prototype.enable = Goblin.ForceGenerator.prototype.enable;
+Goblin.DragForce.prototype.disable = Goblin.ForceGenerator.prototype.disable;
+Goblin.DragForce.prototype.affect = Goblin.ForceGenerator.prototype.affect;
+Goblin.DragForce.prototype.unaffect = Goblin.ForceGenerator.prototype.unaffect;
+/**
+* applies force to the associated objects
+*
+* @method applyForce
+*/
+Goblin.DragForce.prototype.applyForce = function() {
+	if ( !this.enabled ) {
+		return;
+	}
+
+	var i, affected_count, object, drag,
+		force = _tmp_vec3_1;
+
+	for ( i = 0, affected_count = this.affected.length; i < affected_count; i++ ) {
+		object = this.affected[i];
+
+		force.copy( object.linear_velocity );
+
+		// Calculate the total drag coefficient.
+		drag = force.length();
+		drag = ( this.drag_coefficient * drag ) + ( this.squared_drag_coefficient * drag * drag );
+
+		// Calculate the final force and apply it.
+		force.normalize();
+		force.scale( -drag );
+		object.applyForce( force  );
+	}
+};
 Goblin.RayIntersection = function() {
 	this.object = null;
     this.shape = null;
@@ -9456,32 +9456,6 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 		return intersections.slice( 0, limit );
 	};
 
-	Goblin.World.prototype.shapeIntersect = function( center, shape ) {
-		var body = new Goblin.RigidBody( shape, 0 );
-
-		body.position.copy( center );
-		body.updateDerived();
-
-		var possibilities = this.broadphase.intersectsWith( body ),
-			intersections = [];
-
-		for ( var i = 0; i < possibilities.length; i++ ) {
-			var contact = this.narrowphase.getContact( body, possibilities[i] );
-
-			if ( contact != null ) {
-				var intersection = Goblin.ObjectPool.getObject( 'RayIntersection' );
-
-				// check which (A or B) object & shape are actually an intersection
-				intersection.object = contact.object_b;
-				intersection.shape = contact.shape_b;
-
-				intersections.push( intersection );
-			}
-		}
-
-		return intersections;
-	};
-
 	/**
 	 * Checks if a line-swept shape intersects with objects in the world. Please note
 	 * that passing a limit different from 0 will not guarantee any order of the hit - 
@@ -9517,8 +9491,8 @@ Goblin.World.prototype.removeConstraint = function( constraint ) {
 				// compute time
 				intersection.t = intersection.point.distanceTo( start );
 
-				intersection.object = contact.object_b;
-				intersection.shape = contact.shape_b;
+                intersection.object = contact.shape_b === swept_shape ? contact.object_a : contact.object_b;
+                intersection.shape = contact.shape_b === swept_shape ? contact.shape_a : contact.shape_b;
 
 				intersections.push( intersection );
 			}
