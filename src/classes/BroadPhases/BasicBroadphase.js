@@ -64,11 +64,11 @@ Goblin.BasicBroadphase.prototype._removeBodyFrom = function ( body, bodies ) {
 
 	for ( i = 0; i < body_count; i++ ) {
 		if ( bodies[ i ] === body ) {
-			// we don't care about the order, so just copy first element into
-			// body's slot and call shift (which is fastest way to remove the element
-			// from an array as per http://jsperf.com/splicing-a-single-value/19)
-			bodies[ i ] = bodies[ 0 ];
-			bodies.shift();
+			// we don't care about the order, so just copy last element into
+			// body's slot and call pop (which is fastest way to remove the element
+			// from an array as per https://jsperf.com/pop-vs-shift-to-remove-elements-from-array)
+			bodies[ i ] = bodies[ bodies.length - 1 ];
+			bodies.pop();
 			break;
 		}
 	}

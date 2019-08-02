@@ -1,3 +1,9 @@
+/**
+ * @param {number=} x
+ * @param {number=} y
+ * @param {number=} z
+ * @constructor
+ */
 Goblin.Vector3 = function( x, y, z ) {
 	this.x = x || 0;
 	this.y = y || 0;

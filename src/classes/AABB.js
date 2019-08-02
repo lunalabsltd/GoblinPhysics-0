@@ -1,20 +1,17 @@
 /**
- * @class AABB
- * @param [min] {vec3}
- * @param [max] {vec3}
+ * @param {Goblin.Vector3=} min
+ * @param {Goblin.Vector3=} max
  * @constructor
  */
 Goblin.AABB = function( min, max ) {
-	/**
-	 * @property min
-	 * @type {vec3}
-	 */
+    /**
+     * @type {Goblin.Vector3}
+     */
 	this.min = min || new Goblin.Vector3();
 
-	/**
-	 * @property max
-	 * @type {vec3}
-	 */
+    /**
+     * @type {Goblin.Vector3}
+     */
 	this.max = max || new Goblin.Vector3();
 };
 

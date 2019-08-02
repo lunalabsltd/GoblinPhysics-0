@@ -31,23 +31,32 @@ Goblin.CompoundShape.prototype.addChildShape = function( shape, position, rotati
 };
 
 /**
- * Removes child shape from shapes collection and updates all values.
+ * Removes child shape from shapes collection and updates all values. Returns true if shape was actually removed and false otherwise.
  *
  * @method removeChildShape
  * @param shape
+ * @returns {boolean}
  */
 Goblin.CompoundShape.prototype.removeChildShape = function( shape ) {
+	var shapeWasRemoved = false;
+
 	for ( var i = 0; i < this.child_shapes.length; i++ ) {
 		if ( this.child_shapes[ i ].shape === shape ) {
-			this.child_shapes[ i ] = this.child_shapes[ 0 ];
-			this.child_shapes.shift();
+			this.child_shapes[ i ] = this.child_shapes[ this.child_shapes.length - 1 ];
+			this.child_shapes.pop();
+			shapeWasRemoved = true;
 			
 			break;
 		}
 	}
 
+	if (!shapeWasRemoved) {
+		return false;
+	}
+
 	this.updateCenterOfMass();
 	this.updateAABB();
+	return true;
 };
 
 /**

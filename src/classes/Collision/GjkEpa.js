@@ -712,47 +712,6 @@ Goblin.GjkEpa.Face.prototype = {
             }
         },
 
-        containsOrigin: function() {
-            var a = this.points[ 3 ],
-                b = this.points[ 2 ],
-                c = this.points[ 1 ],
-                d = this.points[ 0 ];
-
-            // Check DCA
-            ab.subtractVectors( d.point, a.point );
-            ad.subtractVectors( c.point, a.point );
-            _tmp_vec3_1.crossVectors( ab, ad );
-            if ( _tmp_vec3_1.dot( a.point ) > 0 ) {
-                return false;
-            }
-
-            // Check CBA
-            ab.subtractVectors( c.point, a.point );
-            ad.subtractVectors( b.point, a.point );
-            _tmp_vec3_1.crossVectors( ab, ad );
-            if ( _tmp_vec3_1.dot( a.point ) > 0 ) {
-                return false;
-            }
-
-            // Check ADB
-            ab.subtractVectors( b.point, a.point );
-            ad.subtractVectors( d.point, a.point );
-            _tmp_vec3_1.crossVectors( ab, ad );
-            if ( _tmp_vec3_1.dot( a.point ) > 0 ) {
-                return false;
-            }
-
-            // Check DCB
-            ab.subtractVectors( d.point, c.point );
-            ad.subtractVectors( b.point, c.point );
-            _tmp_vec3_1.crossVectors( ab, ad );
-            if ( _tmp_vec3_1.dot( d.point ) > 0 ) {
-                return false;
-            }
-
-            return true;
-        },
-
         updateDirection: function() {
             if ( this.points.length === 0 ) {
 

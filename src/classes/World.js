@@ -50,16 +50,6 @@ Goblin.World = function( broadphase, narrowphase, solver ) {
 	this.rigid_bodies = [];
 
 	/**
-	 * Array of ghost bodies in the world
-	 *
-	 * @property ghost_bodies
-	 * @type {Array}
-	 * @default []
-	 * @private
-	 */
-	this.ghost_bodies = [];
-
-	/**
 	* the world's gravity, applied by default to all objects in the world
 	*
 	* @property gravity
@@ -172,12 +162,6 @@ Goblin.World.prototype.step = function( time_delta, max_step ) {
 
         // Apply the constraints
         this.solver.applyConstraints( delta );
-
-		// Uppdate ghost bodies
-		for ( i = 0; i < this.ghost_bodies.length; i++ ) {
-			body = this.ghost_bodies[i];
-			body.checkForEndedContacts();
-		}
 
 		// Integrate rigid bodies
 		for ( i = 0, loop_count = bodies.length; i < loop_count; i++ ) {
