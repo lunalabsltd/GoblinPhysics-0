@@ -86,7 +86,7 @@ Goblin.RigidBody = ( function() {
          * @type {vec3}
          * @default [ 0, 0, 0 ]
          */
-        this.position = new Goblin.Vector3();
+        this._position = new Goblin.Vector3();
 
         /**
          * rotation of the rigid body
@@ -331,6 +331,22 @@ Object.defineProperty(
             this._mass = n;
             this._mass_inverted = 1 / n;
             this.updateShapeDerivedValues();
+        }
+    }
+);
+
+Object.defineProperty(
+    Goblin.RigidBody.prototype,
+    'position',
+    {
+        get: function() {
+            return this._position;
+        },
+        set: function( n ) {
+            this._position = n;
+            if ( (Number.isNaN(position.x)) ) {
+                debugger;
+            } 
         }
     }
 );
