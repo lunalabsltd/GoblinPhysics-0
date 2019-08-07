@@ -14,19 +14,19 @@ gulp.task('lint', function(){
 gulp.task('build', ['lint'], function(){
 	gulp.src([
 		'src/intro.js',
+		'src/classes/Math/index.js',
 		'src/classes/Math/**.js',
 		'src/libglobals.js',
 		'src/classes/EventEmitter.js',
 		'src/classes/RigidBody.js',
 		'src/classes/ForceGenerator.js',
+		'src/classes/Collision/index.js',
 		'src/classes/**/*.js',
 		'src/outro.js',
 
 		// exclude bits we don't need
 		'!src/classes/ForceGenerator/**/*.js',
 		//'!src/classes/BroadPhases/SAPBroadphase.js',
-		'!src/classes/Shapes/ConeShape.js',
-		'!src/classes/Shapes/CylinderShape.js',
 		'!src/classes/Constraints/HingeConstraint.js',
 		'!src/classes/Constraints/PointConstraint.js',
 		'!src/classes/Constraints/SliderConstraint.js',

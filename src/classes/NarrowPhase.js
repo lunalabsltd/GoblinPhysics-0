@@ -264,8 +264,8 @@ Goblin.NarrowPhase.prototype.meshCollision = ( function() {
  * Tests two objects for contact
  *
  * @method getContact
- * @param {RigidBody} object_a
- * @param {RigidBody} object_b
+ * @param {Goblin.RigidBody} object_a
+ * @param {Goblin.RigidBody} object_b
  */
 Goblin.NarrowPhase.prototype.getContact = function( object_a, object_b ) {
     if ( !object_a.aabb.intersects( object_b.aabb ) ) {
@@ -280,24 +280,12 @@ Goblin.NarrowPhase.prototype.getContact = function( object_a, object_b ) {
         return this.meshCollision( object_a, object_b );
     }
 
-    var contact;
-    var do_lightweight_collision = this._shouldPerformLightweightCollisionBetween( object_a, object_b );
-
-    if ( object_a.shape.shape === Goblin.SphereShape && object_b.shape.shape === Goblin.SphereShape ) {
-        // Sphere - Sphere contact check
-        contact = Goblin.SphereSphere( object_a, object_b, do_lightweight_collision );
-    } else if (
-        object_a.shape.shape === Goblin.SphereShape && object_b.shape.shape === Goblin.BoxShape ||
-        object_a.shape.shape === Goblin.BoxShape && object_b.shape.shape === Goblin.SphereShape
-    ) {
-        // Sphere - Box contact check
-        contact = Goblin.BoxSphere( object_a, object_b, do_lightweight_collision );
-    } else {
-        contact = Goblin.GjkEpa.findContact( object_a, object_b, do_lightweight_collision );
-    }
+    var doLightweightCollision = this._shouldPerformLightweightCollisionBetween( object_a, object_b );
+    var collisionMethod = Goblin.Collision.Factory.getCollisionMethod(object_a.shape, object_b.shape);
+    var contact = collisionMethod(object_a, object_b, doLightweightCollision);
 
     // store original shapes that collided on the objects
-    // so that it's possible to deduce which actuall colliders
+    // so that it's possible to deduce which actual colliders
     // were involved
     if ( contact ) {
         contact.shape_a = object_a.shape;

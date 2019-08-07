@@ -223,44 +223,6 @@ window.exampleUtils = (function(){
 			return box;
 		},
 
-		createCylinder: function( radius, half_height, mass, material ) {
-			var cylinder = new THREE.Mesh(
-				new THREE.CylinderGeometry( radius, radius, half_height * 2 ),
-				material
-			);
-			cylinder.castShadow = true;
-			cylinder.receiveShadow = true;
-			cylinder.goblin = new Goblin.RigidBody(
-				new Goblin.CylinderShape( radius, half_height ),
-				mass
-			);
-
-			objects.push( cylinder );
-			exampleUtils.scene.add( cylinder );
-			world.addRigidBody( cylinder.goblin );
-
-			return cylinder;
-		},
-
-		createCone: function( radius, half_height, mass, material ) {
-			var cone = new THREE.Mesh(
-				new THREE.CylinderGeometry( 0, radius, half_height * 2 ),
-				material
-			);
-			cone.castShadow = true;
-			cone.receiveShadow = true;
-			cone.goblin = new Goblin.RigidBody(
-				new Goblin.ConeShape( radius, half_height ),
-				mass
-			);
-
-			objects.push( cone );
-			exampleUtils.scene.add( cone );
-			world.addRigidBody( cone.goblin );
-
-			return cone;
-		},
-
 		createPlane: function( orientation, half_width, half_length, mass, material ) {
 			var plane = new THREE.Mesh(
 				new THREE.BoxGeometry(

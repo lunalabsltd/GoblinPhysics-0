@@ -1,323 +1,311 @@
 /**
  * Represents a rigid body
  *
- * @class RigidBody
  * @constructor
- * @param shape
- * @param mass {Number}
+ * @param {object} shape
+ * @param {number} mass
  */
-Goblin.RigidBody = ( function() {
-    var body_count = 0;
+Goblin.RigidBody = function( shape, mass ) {
+    /**
+     * goblin ID of the body
+     *
+     * @property id
+     * @type {Number}
+     */
+    this.id = Goblin.RigidBody._uid++;
 
-    return function( shape, mass ) {
-        /**
-         * goblin ID of the body
-         *
-         * @property id
-         * @type {Number}
-         */
-        this.id = body_count++;
+    /**
+     * body version that changes upon significant updates (collider movements,
+     * additions and deletions)
+     *
+     * @property version
+     * @type {Number}
+     */
+    this.version = 0;
 
-        /**
-         * body version that changes upon significant updates (collider movements,
-         * additions and deletions)
-         *
-         * @property version
-         * @type {Number}
-         */
-        this.version = 0;
+    /**
+     * shape definition for this rigid body
+     *
+     * @type {object}
+     */
+    this.shape = shape;
 
-        /**
-         * shape definition for this rigid body
-         *
-         * @property shape
-         */
-        this.shape = shape;
+    /**
+     * axis-aligned bounding box enclosing this body
+     *
+     * @property aabb
+     * @type {Goblin.AABB}
+     */
+    this.aabb = new Goblin.AABB();
 
-        /**
-         * axis-aligned bounding box enclosing this body
-         *
-         * @property aabb
-         * @type {AABB}
-         */
-        this.aabb = new Goblin.AABB();
+    /**
+     * the rigid body's mass
+     *
+     * @property mass
+     * @type {Number}
+     * @default Infinity
+     */
+    this._mass = mass || Infinity;
+    this._mass_inverted = 1 / mass;
 
-        /**
-         * the rigid body's mass
-         *
-         * @property mass
-         * @type {Number}
-         * @default Infinity
-         */
-        this._mass = mass || Infinity;
-        this._mass_inverted = 1 / mass;
+    /**
+     * the flag indicating the body is static
+     *
+     * @private
+     * @type {Boolean}
+     * @default false
+     */
+    this._is_static = false;
 
-        /**
-         * the flag indicating the body is static
-         *
-         * @private
-         * @type {Boolean}
-         * @default false
-         */
-        this._is_static = false;
+    /**
+     * the flag indicating the body is kinematic
+     *
+     * @property
+     * @type {Boolean}
+     * @default false
+     */
+    this._is_kinematic = false;
 
-        /**
-         * the flag indicating the body is kinematic
-         *
-         * @property
-         * @type {Boolean}
-         * @default false
-         */
-        this._is_kinematic = false;
+    /**
+     * the flag indicating the body is affected by gravity
+     *
+     * @property
+     * @type {Boolean}
+     * @default false
+     */
+    this.use_gravity = true;
 
-        /**
-         * the flag indicating the body is affected by gravity
-         *
-         * @property
-         * @type {Boolean}
-         * @default false
-         */
-        this.use_gravity = true;
+    /**
+     * the rigid body's current position
+     *
+     * @property position
+     * @type {Goblin.Vector3}
+     * @default [ 0, 0, 0 ]
+     */
+    this.position = new Goblin.Vector3();
 
-        /**
-         * the rigid body's current position
-         *
-         * @property position
-         * @type {vec3}
-         * @default [ 0, 0, 0 ]
-         */
-        this.position = new Goblin.Vector3();
+    /**
+     * rotation of the rigid body
+     *
+     * @type {Goblin.Quaternion}
+     */
+    this.rotation = new Goblin.Quaternion( 0, 0, 0, 1 );
 
-        /**
-         * rotation of the rigid body
-         *
-         * @type {quat4}
-         */
-        this.rotation = new Goblin.Quaternion( 0, 0, 0, 1 );
+    /**
+     * the rigid body's current linear velocity
+     *
+     * @property linear_velocity
+     * @type {Goblin.Vector3}
+     */
+    this.linear_velocity = new Goblin.Vector3();
 
-        /**
-         * the rigid body's current linear velocity
-         *
-         * @property linear_velocity
-         * @type {vec3}
-         * @default [ 0, 0, 0 ]
-         */
-        this.linear_velocity = new Goblin.Vector3();
+    /**
+     * the rigid body's current angular velocity
+     *
+     * @property angular_velocity
+     * @type {Goblin.Vector3}
+     */
+    this.angular_velocity = new Goblin.Vector3();
 
-        /**
-         * the rigid body's current angular velocity
-         *
-         * @property angular_velocity
-         * @type {vec3}
-         * @default [ 0, 0, 0 ]
-         */
-        this.angular_velocity = new Goblin.Vector3();
+    /**
+     * transformation matrix transforming points from object space to world space
+     *
+     * @property transform
+     * @type {Goblin.Matrix4}
+     */
+    this.transform = new Goblin.Matrix4();
+    this.transform.identity();
 
-        /**
-         * transformation matrix transforming points from object space to world space
-         *
-         * @property transform
-         * @type {mat4}
-         */
-        this.transform = new Goblin.Matrix4();
-        this.transform.identity();
+    /**
+     * transformation matrix transforming points from world space to object space
+     *
+     * @property transform_inverse
+     * @type {Goblin.Matrix4}
+     */
+    this.transform_inverse = new Goblin.Matrix4();
+    this.transform_inverse.identity();
 
-        /**
-         * transformation matrix transforming points from world space to object space
-         *
-         * @property transform_inverse
-         * @type {mat4}
-         */
-        this.transform_inverse = new Goblin.Matrix4();
-        this.transform_inverse.identity();
+    this._computeInertiaTensor();
 
-        this._computeInertiaTensor();
+    this.inverseInertiaTensor = new Goblin.Matrix3();
+    this.inertiaTensor.invertInto( this.inverseInertiaTensor );
 
-        this.inverseInertiaTensor = new Goblin.Matrix3();
-        this.inertiaTensor.invertInto( this.inverseInertiaTensor );
+    this.inertiaTensorWorldFrame = new Goblin.Matrix3();
 
-        this.inertiaTensorWorldFrame = new Goblin.Matrix3();
+    this.inverseInertiaTensorWorldFrame = new Goblin.Matrix3();
 
-        this.inverseInertiaTensorWorldFrame = new Goblin.Matrix3();
+    /**
+     * the rigid body's current acceleration
+     *
+     * @property acceleration
+     * @type {Goblin.Vector3}
+     */
+    this.acceleration = new Goblin.Vector3();
 
-        /**
-         * the rigid body's current acceleration
-         *
-         * @property acceleration
-         * @type {vec3}
-         * @default [ 0, 0, 0 ]
-         */
-        this.acceleration = new Goblin.Vector3();
+    /**
+     * amount of restitution this object has
+     *
+     * @property restitution
+     * @type {Number}
+     */
+    this.restitution = 0.0;
 
-        /**
-         * amount of restitution this object has
-         *
-         * @property restitution
-         * @type {Number}
-         * @default 0.1
-         */
-        this.restitution = 0.0;
+    /**
+     * amount of friction this object has
+     *
+     * @property friction
+     * @type {Number}
+     */
+    this.friction = 0.6;
 
-        /**
-         * amount of friction this object has
-         *
-         * @property friction
-         * @type {Number}
-         * @default 0.5
-         */
-        this.friction = 0.6;
+    /**
+     * the rigid body's custom gravity
+     *
+     * @property gravity
+     * @type {Goblin.Vector3}
+     * @private
+     */
+    this.gravity = null;
 
-        /**
-         * the rigid body's custom gravity
-         *
-         * @property gravity
-         * @type {vec3}
-         * @default null
-         * @private
-         */
-        this.gravity = null;
+    /**
+     * the rigid body's custom linear acceleration
+     *
+     * @property acceleration
+     * @type {Goblin.Vector3}
+     * @private
+     */
+    this.linear_acceleration = new Goblin.Vector3();
 
-        /**
-         * the rigid body's custom linear acceleration
-         *
-         * @property acceleration
-         * @type {vec3}
-         * @default null
-         * @private
-         */
-        this.linear_acceleration = new Goblin.Vector3();
+    /**
+     * the rigid body's custom angular acceleration
+     *
+     * @property acceleration
+     * @type {Goblin.Vector3}
+     * @private
+     */
+    this.angular_acceleration = new Goblin.Vector3();
 
-        /**
-         * the rigid body's custom angular acceleration
-         *
-         * @property acceleration
-         * @type {vec3}
-         * @default null
-         * @private
-         */
-        this.angular_acceleration = new Goblin.Vector3();
+    /**
+     * proportion of linear velocity lost per second ( 0.0 - 1.0 )
+     *
+     * @property linear_damping
+     * @type {Number}
+     */
+    this.linear_damping = 0;
 
-        /**
-         * proportion of linear velocity lost per second ( 0.0 - 1.0 )
-         *
-         * @property linear_damping
-         * @type {Number}
-         */
-        this.linear_damping = 0;
+    /**
+     * proportion of angular velocity lost per second ( 0.0 - 1.0 )
+     *
+     * @property angular_damping
+     * @type {Number}
+     */
+    this.angular_damping = 0;
 
-        /**
-         * proportion of angular velocity lost per second ( 0.0 - 1.0 )
-         *
-         * @property angular_damping
-         * @type {Number}
-         */
-        this.angular_damping = 0;
+    /**
+     * multiplier of linear force applied to this body
+     *
+     * @property linear_factor
+     * @type {Goblin.Vector3}
+     */
+    this.linear_factor = new Goblin.Vector3( 1, 1, 1 );
 
-        /**
-         * multiplier of linear force applied to this body
-         *
-         * @property linear_factor
-         * @type {Goblin.Vector3}
-         */
-        this.linear_factor = new Goblin.Vector3( 1, 1, 1 );
+    /**
+     * multiplier of angular force applied to this body
+     *
+     * @property angular_factor
+     * @type {Goblin.Vector3}
+     */
+    this.angular_factor = new Goblin.Vector3( 1, 1, 1 );
 
-        /**
-         * multiplier of angular force applied to this body
-         *
-         * @property angular_factor
-         * @type {Goblin.Vector3}
-         */
-        this.angular_factor = new Goblin.Vector3( 1, 1, 1 );
+    /**
+     * Position of center of mass for this body
+     *
+     * @property center_of_mass
+     * @type {Goblin.Vector3}
+     */
+    this.center_of_mass = new Goblin.Vector3( 0, 0, 0 );
 
-        /**
-         * Position of center of mass for this body
-         *
-         * @property center_of_mass
-         * @type {Goblin.Vector3}
-         */
-        this.center_of_mass = new Goblin.Vector3( 0, 0, 0 );
+    /**
+     * the world to which the rigid body has been added,
+     * this is set when the rigid body is added to a world
+     *
+     * @property world
+     * @type {Goblin.World}
+     * @default null
+     */
+    this.world = null;
 
-        /**
-         * the world to which the rigid body has been added,
-         * this is set when the rigid body is added to a world
-         *
-         * @property world
-         * @type {Goblin.World}
-         * @default null
-         */
-        this.world = null;
+    /**
+     * the layer the object belongs to.
+     *
+     * @property layer
+     * @type {any}
+     * @default null
+     * @private
+     */
+    this._layer = null;
 
-        /**
-         * the layer the object belongs to.
-         *
-         * @property layer
-         * @type {any}
-         * @default null
-         * @private
-         */
-        this._layer = null;
+    /**
+     * all resultant force accumulated by the rigid body
+     * this force is applied in the next occurring integration
+     *
+     * @property accumulated_force
+     * @type {Goblin.Vector3}
+     * @private
+     */
+    this.accumulated_force = new Goblin.Vector3();
 
-        /**
-         * all resultant force accumulated by the rigid body
-         * this force is applied in the next occurring integration
-         *
-         * @property accumulated_force
-         * @type {vec3}
-         * @default [ 0, 0, 0 ]
-         * @private
-         */
-        this.accumulated_force = new Goblin.Vector3();
+    /**
+     * All resultant torque accumulated by the rigid body
+     * this torque is applied in the next occurring integration
+     *
+     * @property accumulated_force
+     * @type {Goblin.Vector3}
+     * @private
+     */
+    this.accumulated_torque = new Goblin.Vector3();
 
-        /**
-         * All resultant torque accumulated by the rigid body
-         * this torque is applied in the next occurring integration
-         *
-         * @property accumulated_force
-         * @type {vec3}
-         * @default [ 0, 0, 0 ]
-         * @private
-         */
-        this.accumulated_torque = new Goblin.Vector3();
+    /**
+     * World transform of the body (which might differ from center-of-mass transform)
+     */
+    this._world_transform = new Goblin.Matrix4();
 
-        /**
-         * World transform of the body (which might differ from center-of-mass transform)
-         */
-        this._world_transform = new Goblin.Matrix4();
+    // Used by the constraint solver to determine what impulse needs to be added to the body
+    this.push_velocity = new Goblin.Vector3();
+    this.turn_velocity = new Goblin.Vector3();
+    this.solver_impulse = new Float64Array( 6 );
 
-        // Used by the constraint solver to determine what impulse needs to be added to the body
-        this.push_velocity = new Goblin.Vector3();
-        this.turn_velocity = new Goblin.Vector3();
-        this.solver_impulse = new Float64Array( 6 );
+    // Speculative contact listener
+    this.onSpeculativeContact = null;
 
-        // Speculative contact listener
-        this.onSpeculativeContact = null;
+    /**
+     * @type {boolean}
+     */
+    this.is_trigger = false;
 
-        /**
-         * @type {boolean}
-         */
-        this.is_trigger = false;
+    this.listeners = {};
 
-        this.listeners = {};
+    // Callbacks for physics adapter
+    /**
+     * @type {Function}
+     */
+    this.onTriggerContactEnter = null;
+    /**
+     * @type {Function}
+     */
+    this.onCollisionContactEnter = null;
+    /**
+     * @type {Function}
+     */
+    this.onCollisionContactStay = null;
+    /**
+     * @type {Function}
+     */
+    this.onCollisionContactExit = null;
+};
 
-        // Callbacks for physics adapter
-        /**
-         * @type {Function}
-         */
-        this.onTriggerContactEnter = null;
-        /**
-         * @type {Function}
-         */
-        this.onCollisionContactEnter = null;
-        /**
-         * @type {Function}
-         */
-        this.onCollisionContactStay = null;
-        /**
-         * @type {Function}
-         */
-        this.onCollisionContactExit = null;
-    };
-} )();
+Goblin.RigidBody._uid = 0;
+
 Goblin.EventEmitter.apply( Goblin.RigidBody );
 
 Object.defineProperty(

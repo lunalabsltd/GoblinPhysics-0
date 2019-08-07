@@ -86,6 +86,8 @@ Goblin.Vector3.prototype = {
 		} else {
 			this.scale( 1 / length );
 		}
+
+		return length;
 	},
 
 	normalizeVector: function( v ) {
