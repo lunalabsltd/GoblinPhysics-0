@@ -23,6 +23,10 @@ Goblin.CapsuleShape = function( radius, half_height, material ) {
      */
     this.material = material || null;
     /**
+     * @type {Array<Goblin.Vector3>}
+     */
+    this.faceNormals = [];
+    /**
      * @type {Goblin.AABB}
      */
     this.aabb = new Goblin.AABB();
@@ -171,7 +175,7 @@ Goblin.CapsuleShape.prototype.rayIntersect = ( function() {
 
         rd.subtractVectors( end, start );
         var tMax = rd.normalize();
-        if (Math.abs(tMax) < Goblin.EPSILON) {
+        if ( Math.abs( tMax ) < Goblin.EPSILON ) {
             return null;
         }
 

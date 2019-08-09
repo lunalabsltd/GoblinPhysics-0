@@ -1,6 +1,6 @@
 /**
- * @param {Goblin.RigidBody} objectA
- * @param {Goblin.RigidBody} objectB
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
  * @param {boolean} doLightweightCollision
  * @returns {Goblin.ContactDetails|null}
  */

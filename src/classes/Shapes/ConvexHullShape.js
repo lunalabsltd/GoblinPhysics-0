@@ -27,6 +27,10 @@ Goblin.ConvexHullShape = function( verticesCloud, material ) {
      */
     this.aabb = new Goblin.AABB();
     /**
+     * @type {Array<Goblin.Vector3>}
+     */
+    this.faceNormals = [];
+    /**
      * the convex hull's volume
      * @type {number}
      */
@@ -45,7 +49,7 @@ Goblin.ConvexHullShape = function( verticesCloud, material ) {
 
     this._buildInitialSimplex( verticesCloud );
     this._processUnclaimedPoints();
-    this._calculateVerticesFromFaces();
+    this._calculateVerticesAndNormalsFromFaces();
     this._cleanup();
     this.calculateLocalAABB( this.aabb );
     this.computeVolume();
@@ -557,7 +561,7 @@ Goblin.ConvexHullShape.prototype._getNextFaceForExtension = function() {
         var face = this.faces[ i ];
         var closestOutsideVertex = face.tmpClosestOutsideVertex;
 
-        if (closestOutsideVertex !== null && closestOutsideVertex.tmpDistanceToFace > maxDistance) {
+        if ( closestOutsideVertex !== null && closestOutsideVertex.tmpDistanceToFace > maxDistance ) {
             maxDistance = closestOutsideVertex.tmpDistanceToFace;
             nextFace = face;
         }
@@ -701,12 +705,13 @@ Goblin.ConvexHullShape.prototype._assignUnusedVertex = function( vertex, facesTo
  * Populates this.vertices from all unique vertices which can be found in this.faces.
  * @private
  */
-Goblin.ConvexHullShape.prototype._calculateVerticesFromFaces = function() {
+Goblin.ConvexHullShape.prototype._calculateVerticesAndNormalsFromFaces = function() {
     this.vertices.length = 0;
 
     for ( var i = 0; i < this.faces.length; i++ ) {
         var face = this.faces[ i ];
         var currentEdge = face.edge;
+        this.faceNormals.push( face.normal );
 
         do {
             var vertex = currentEdge.getTail();
@@ -716,6 +721,8 @@ Goblin.ConvexHullShape.prototype._calculateVerticesFromFaces = function() {
             currentEdge = currentEdge.next;
         } while ( currentEdge !== face.edge );
     }
+
+    Goblin.Collision.SAT.removeDuplicatedVectors( this.faceNormals );
 };
 
 /**

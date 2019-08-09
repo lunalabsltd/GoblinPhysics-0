@@ -90,34 +90,56 @@ Goblin.GeometryMethods = {
     /**
      * Finds the Barycentric coordinates of point `p` in the triangle `a`, `b`, `c`
      *
-     * @method findBarycentricCoordinates
      * @param p {Goblin.Vector3} point to calculate coordinates of
      * @param a {Goblin.Vector3} first point in the triangle
      * @param b {Goblin.Vector3} second point in the triangle
      * @param c {Goblin.Vector3} third point in the triangle
      * @param out {Goblin.Vector3} resulting Barycentric coordinates of point `p`
      */
-    findBarycentricCoordinates: function( p, a, b, c, out ) {
+    findBarycentricCoordinates: ( function() {
+        var v0 = new Goblin.Vector3();
+        var v1 = new Goblin.Vector3();
+        var v2 = new Goblin.Vector3();
+        var t = 0;
 
-        var v0 = new Goblin.Vector3(),
-            v1 = new Goblin.Vector3(),
-            v2 = new Goblin.Vector3();
+        return function( p, a, b, c, out ) {
+            v0.subtractVectors( b, a );
+            v1.subtractVectors( c, a );
+            v2.subtractVectors( p, a );
 
-        v0.subtractVectors( b, a );
-        v1.subtractVectors( c, a );
-        v2.subtractVectors( p, a );
+            var d00 = v0.dot( v0 );
+            var d01 = v0.dot( v1 );
+            var d11 = v1.dot( v1 );
+            var d20 = v2.dot( v0 );
+            var d21 = v2.dot( v1 );
+            var d22 = v2.dot( v2 );
+            var denom = d00 * d11 - d01 * d01;
 
-        var d00 = v0.dot( v0 ),
-            d01 = v0.dot( v1 ),
-            d11 = v1.dot( v1 ),
-            d20 = v2.dot( v0 ),
-            d21 = v2.dot( v1 ),
-            denom = d00 * d11 - d01 * d01;
+            if ( Math.abs( denom ) < Goblin.EPSILON ) {
+                // ABC is a line, but worry not
+                if ( Math.abs( d00 ) < Goblin.EPSILON ) {
+                    // A and B are the same point
+                    t = Math.sqrt( d22 / d11 );
+                    out.set( 1 - t, 0, t );
+                    return;
+                } else if ( Math.abs( d11 ) < Goblin.EPSILON ) {
+                    // A and C are the same point
+                    t = Math.sqrt( d22 / d00 );
+                    out.set( 1 - t, t, 0 );
+                    return;
+                } else {
+                    // B and C are the same point
+                    t = Math.sqrt( d22 / d11 );
+                    out.set( 0, 1 - t, t );
+                    return;
+                }
+            }
 
-        out.y = ( d11 * d20 - d01 * d21 ) / denom;
-        out.z = ( d00 * d21 - d01 * d20 ) / denom;
-        out.x = 1 - out.y - out.z;
-    },
+            out.y = ( d11 * d20 - d01 * d21 ) / denom;
+            out.z = ( d00 * d21 - d01 * d20 ) / denom;
+            out.x = 1 - out.y - out.z;
+        };
+    } )(),
 
     /**
      * Calculates the distance from point `p` to line `ab`

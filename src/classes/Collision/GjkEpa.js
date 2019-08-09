@@ -66,6 +66,56 @@ Goblin.GjkEpa = {
     },
 
     /**
+     * Returns a closest point on object (either vertex, point on edge or point on face) to a given point.
+     * NOTE: point must lie outside the object, otherwise this method will return null.
+     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object
+     * @param {Goblin.Vector3} point
+     * @returns {Goblin.Vector3|null}
+     */
+    findClosestPointOnObject: ( function() {
+        var origin = new Goblin.Vector3();
+        var closestPointOnSimplex = new Goblin.Vector3();
+        var barycentricCoordinates = new Goblin.Vector3();
+        var a = new Goblin.Vector3();
+        var b = new Goblin.Vector3();
+        var c = new Goblin.Vector3();
+
+        return function( object, point ) {
+            var simplex = new Goblin.GjkEpa.Simplex( object, new Goblin.GjkEpa.PointProxy( point ), true );
+            var gjkResult = simplex.addPoint();
+            while ( gjkResult ) {
+                gjkResult = simplex.addPoint();
+            }
+
+            // gjkResult === null => there is a contact, we can't find closest points.
+            if ( gjkResult === null ) {
+                Goblin.GjkEpa.freeSimplex( simplex );
+                return null;
+            }
+
+            Goblin.GeometryMethods.findClosestPointInTriangle(
+                origin,
+                simplex.points[ 0 ].point,
+                simplex.points[ 1 ].point,
+                simplex.points[ 2 ].point,
+                closestPointOnSimplex
+            );
+
+            Goblin.GeometryMethods.findBarycentricCoordinates( closestPointOnSimplex, simplex.points[ 0 ].point, simplex.points[ 1 ].point, simplex.points[ 2 ].point, barycentricCoordinates );
+
+            var result = new Goblin.Vector3();
+            a.scaleVector( simplex.points[ 0 ].witness_a, barycentricCoordinates.x );
+            b.scaleVector( simplex.points[ 1 ].witness_a, barycentricCoordinates.y );
+            c.scaleVector( simplex.points[ 2 ].witness_a, barycentricCoordinates.z );
+            result.addVectors( a, b );
+            result.add( c );
+
+            Goblin.GjkEpa.freeSimplex( simplex );
+            return result;
+        };
+    } )(),
+
+    /**
      * Perform GJK algorithm against two objects. Returns a ContactDetails object if there is a collision, else null
      *
      * @method GJK
@@ -171,14 +221,6 @@ Goblin.GjkEpa = {
                     contact.contact_normal.normalize();
 
                     Goblin.GeometryMethods.findBarycentricCoordinates( polyhedron.closest_point, polyhedron.faces[ polyhedron.closest_face ].a.point, polyhedron.faces[ polyhedron.closest_face ].b.point, polyhedron.faces[ polyhedron.closest_face ].c.point, barycentric );
-
-                    if ( isNaN( barycentric.x ) ) {
-                        // @TODO: Avoid this degenerate case
-                        //console.log( 'Point not in triangle' );
-                        //debugger;
-                        Goblin.GjkEpa.freePolyhedron( polyhedron );
-                        return null;
-                    }
 
                     // Contact coordinates of object a
                     confirm.a.scaleVector( polyhedron.faces[ polyhedron.closest_face ].a.witness_a, barycentric.x );
@@ -392,8 +434,7 @@ Goblin.GjkEpa.Face.prototype = {
     var origin = new Goblin.Vector3(),
         ao = new Goblin.Vector3(),
         ab = new Goblin.Vector3(),
-        ac = new Goblin.Vector3(),
-        ad = new Goblin.Vector3();
+        ac = new Goblin.Vector3();
 
     var barycentric = new Goblin.Vector3(),
         confirm = {
@@ -737,3 +778,20 @@ Goblin.GjkEpa.Face.prototype = {
         }
     };
 } )();
+
+/**
+ * Wraps a vector in a proxy object so that it can ne used in GJK / EPA
+ * @param {Goblin.Vector3} point
+ * @constructor
+ */
+Goblin.GjkEpa.PointProxy = function( point ) {
+    this.position = point;
+};
+
+/**
+ * @param {Goblin.Vector3} direction direction to use in finding the support point
+ * @param {Goblin.Vector3} support_point vec3 variable which will contain the supporting point after calling this method
+ */
+Goblin.GjkEpa.PointProxy.prototype.findSupportPoint = function( direction, support_point ) {
+    support_point.copy( this.position );
+};

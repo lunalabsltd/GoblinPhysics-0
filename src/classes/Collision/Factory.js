@@ -14,11 +14,12 @@ Goblin.Collision.Factory = {
      */
     _collisionTable: null,
 
-    _populateCollisionTable: function () {
+    _populateCollisionTable: function() {
         Goblin.Collision.Factory._collisionTable = [
-            [Goblin.SphereShape, Goblin.SphereShape, Goblin.Collision.sphereSphere],
-            [Goblin.SphereShape, Goblin.BoxShape, Goblin.BoxSphere],
-            [Goblin.SphereShape, Goblin.CapsuleShape, Goblin.Collision.sphereCapsule],
+            [ Goblin.SphereShape, Goblin.SphereShape, Goblin.Collision.sphereSphere ],
+            [ Goblin.SphereShape, Goblin.BoxShape, Goblin.BoxSphere ],
+            [ Goblin.SphereShape, Goblin.CapsuleShape, Goblin.Collision.sphereCapsule ],
+            [ Goblin.SphereShape, Goblin.ConvexHullShape, Goblin.Collision.sphereConvexHull ],
         ];
     },
 
@@ -29,20 +30,20 @@ Goblin.Collision.Factory = {
      * @param {object} shapeB.shape
      * @returns {getContact}
      */
-    getCollisionMethod: function (shapeA, shapeB) {
-        if (!this._collisionTable) {
+    getCollisionMethod: function( shapeA, shapeB ) {
+        if ( !this._collisionTable ) {
             // We can't do this during initialization because some shapes might not be added to Goblin object.
             // Can be resolved with a help of a decent build tool.
             this._populateCollisionTable();
         }
 
-        for (var i = 0; i < this._collisionTable.length; i++) {
-            var collisionTableEntry = this._collisionTable[i];
-            var shapeMatchesEntry = (collisionTableEntry[0] === shapeA.shape && collisionTableEntry[1] === shapeB.shape) ||
-                (collisionTableEntry[0] === shapeB.shape && collisionTableEntry[1] === shapeA.shape);
+        for ( var i = 0; i < this._collisionTable.length; i++ ) {
+            var collisionTableEntry = this._collisionTable[ i ];
+            var shapeMatchesEntry = ( collisionTableEntry[ 0 ] === shapeA.shape && collisionTableEntry[ 1 ] === shapeB.shape ) ||
+                ( collisionTableEntry[ 0 ] === shapeB.shape && collisionTableEntry[ 1 ] === shapeA.shape );
 
-            if (shapeMatchesEntry) {
-                return collisionTableEntry[2];
+            if ( shapeMatchesEntry ) {
+                return collisionTableEntry[ 2 ];
             }
         }
 

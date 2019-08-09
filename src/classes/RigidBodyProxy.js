@@ -59,6 +59,7 @@ Goblin.RigidBodyProxy.prototype.setFrom = function( parent, shape_data ) {
     this.restitution = parent.restitution;
     this.friction = parent.friction;
     this.is_trigger = parent.is_trigger;
+    this.faceNormals = parent.faceNormals;
 };
 
 Goblin.RigidBodyProxy.prototype.findSupportPoint = Goblin.RigidBody.prototype.findSupportPoint;

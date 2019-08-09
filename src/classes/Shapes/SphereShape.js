@@ -17,6 +17,10 @@ Goblin.SphereShape = function( radius, material ) {
      * @type {Goblin.PhysicMaterial|null}
      */
     this.material = material || null;
+    /**
+     * @type {Array<Goblin.Vector3>}
+     */
+    this.faceNormals = [];
 
     this.calculateLocalAABB( this.aabb );
 };
@@ -70,7 +74,7 @@ Goblin.SphereShape.prototype.rayIntersect = ( function() {
     return function( start, end ) {
         direction.subtractVectors( end, start );
         length = direction.length();
-        if (Math.abs(length) < Goblin.EPSILON) {
+        if ( Math.abs( length ) < Goblin.EPSILON ) {
             return null;
         }
 

@@ -92,7 +92,7 @@ Goblin.Vector3.prototype = {
 
 	normalizeVector: function( v ) {
 		this.copy( v );
-		this.normalize();
+		return this.normalize();
 	},
 
 	dot: function( v ) {
@@ -138,5 +138,23 @@ Goblin.Vector3.prototype = {
 			// set q = n x p
 			o2.set( -this.z * o1.y, this.z * o1.x, a * k );
 		}
+	},
+
+	/**
+	 * @param {Goblin.Vector3} another
+	 * @returns {boolean}
+	 */
+	equals: function (another) {
+		if (this.x !== another.x && Math.abs(this.x - another.x) > Goblin.EPSILON) {
+			return false;
+		}
+		if (this.y !== another.y && Math.abs(this.y - another.y) > Goblin.EPSILON) {
+			return false;
+		}
+		if (this.z !== another.z && Math.abs(this.z - another.z) > Goblin.EPSILON) {
+			return false;
+		}
+
+		return true;
 	}
 };

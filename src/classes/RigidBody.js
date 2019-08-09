@@ -39,6 +39,12 @@ Goblin.RigidBody = function( shape, mass ) {
     this.aabb = new Goblin.AABB();
 
     /**
+     * All unique face normals
+     * @type {Array<Goblin.Vector3>}
+     */
+    this.faceNormals = [];
+
+    /**
      * the rigid body's mass
      *
      * @property mass
@@ -425,8 +431,8 @@ Goblin.RigidBody.prototype.setTransform = function( position, rotation ) {
  * Extracts body's position and rotation into arguments supplied.
  *
  * @method getTransform
- * @param position {Goblin.Vector3} position variable to update
- * @param rotation {Goblin.Quaternion} rotation variable to update
+ * @param position {pc.Vec3} position variable to update
+ * @param rotation {pc.Quat} rotation variable to update
  */
 Goblin.RigidBody.prototype.getTransform = function( position, rotation ) {
     this.updateDerived();
@@ -475,6 +481,7 @@ Goblin.RigidBody.prototype.updateShapeDerivedValues = function() {
 
     // update CoM
     this.center_of_mass.copy( this.shape.center_of_mass );
+    this.updateFaceNormals();
 };
 
 /**
@@ -767,4 +774,14 @@ Goblin.RigidBody.prototype.updateDerived = function() {
 
     // Update AABB
     this.aabb.transform( this.shape.aabb, this.transform );
+    this.updateFaceNormals();
+};
+
+Goblin.RigidBody.prototype.updateFaceNormals = function() {
+    this.faceNormals.length = 0;
+    for ( var i = 0; i < this.shape.faceNormals.length; i++ ) {
+        var rotatedNormal = new Goblin.Vector3();
+        this.rotation.transformVector3Into( this.shape.faceNormals[ i ], rotatedNormal );
+        this.faceNormals.push( rotatedNormal );
+    }
 };

@@ -5,56 +5,61 @@
  * @constructor
  */
 Goblin.MeshShape = function( vertices, faces, material ) {
-	this.vertices = vertices;
+    this.vertices = vertices;
 
-	this.triangles = [];
-	for ( var i = 0; i < faces.length; i += 3 ) {
-		this.triangles.push( new Goblin.TriangleShape( vertices[faces[i]], vertices[faces[i+1]], vertices[faces[i+2]] ) );
-	}
+    this.triangles = [];
+    for ( var i = 0; i < faces.length; i += 3 ) {
+        this.triangles.push( new Goblin.TriangleShape( vertices[ faces[ i ] ], vertices[ faces[ i + 1 ] ], vertices[ faces[ i + 2 ] ] ) );
+    }
 
-	/**
-	 * the convex mesh's volume
-	 * @property volume
-	 * @type {number}
-	 */
-	this.volume = 0;
+    /**
+     * the convex mesh's volume
+     * @property volume
+     * @type {number}
+     */
+    this.volume = 0;
 
-	/**
-	 * coordinates of the mesh's COM
-	 * @property center_of_mass
-	 * @type {vec3}
-	 */
-	this.center_of_mass = new Goblin.Vector3();
+    /**
+     * coordinates of the mesh's COM
+     * @property center_of_mass
+     * @type {vec3}
+     */
+    this.center_of_mass = new Goblin.Vector3();
 
-	/**
-	 * used in computing the mesh's center of mass & volume
-	 * @property _intergral
-	 * @type {Float32Array}
-	 * @private
-	 */
-	this._integral = new Float32Array( 10 );
+    /**
+     * used in computing the mesh's center of mass & volume
+     * @property _intergral
+     * @type {Float32Array}
+     * @private
+     */
+    this._integral = new Float32Array( 10 );
 
-	this.hierarchy = new Goblin.BVH( this.triangles ).tree;
+    this.hierarchy = new Goblin.BVH( this.triangles ).tree;
 
-	var polygon_faces = this.triangles.map(
-		function( triangle ) {
-			return new Goblin.GjkEpa.Face(
-				null,
-				{ point: triangle.a },
-				{ point: triangle.b },
-				{ point: triangle.c }
-			);
-		}
-	);
+    var polygon_faces = this.triangles.map(
+        function( triangle ) {
+            return new Goblin.GjkEpa.Face(
+                null,
+                { point: triangle.a },
+                { point: triangle.b },
+                { point: triangle.c }
+            );
+        }
+    );
 
-	Goblin.ConvexShape.prototype.computeVolume.call( this, polygon_faces );
+    Goblin.ConvexShape.prototype.computeVolume.call( this, polygon_faces );
 
-	this.aabb = new Goblin.AABB();
-	this.calculateLocalAABB( this.aabb );
+    this.aabb = new Goblin.AABB();
+    this.calculateLocalAABB( this.aabb );
+    /**
+     * This field isn't used right now, so we don't bother to actually calculate it
+     * @type {Array<Goblin.Vector3>}
+     */
+    this.faceNormals = [];
 
-	this.material = material || null;
+    this.material = material || null;
 
-	this.shape = Goblin.MeshShape;
+    this.shape = Goblin.MeshShape;
 };
 
 /**
@@ -63,18 +68,18 @@ Goblin.MeshShape = function( vertices, faces, material ) {
  * @method clone
  */
 Goblin.MeshShape.prototype.clone = function() {
-	var clone = Object.create( Goblin.MeshShape.prototype );
+    var clone = Object.create( Goblin.MeshShape.prototype );
 
-	clone.vertices = this.vertices;
-	clone.triangles = this.triangles;
-	clone.volume = this.volume;
-	clone.center_of_mass = this.center_of_mass;
-	clone._integral = this._integral;
-	clone.hierarchy = this.hierarchy;
-	clone.aabb = this.aabb;
-	clone.material = this.material;
+    clone.vertices = this.vertices;
+    clone.triangles = this.triangles;
+    clone.volume = this.volume;
+    clone.center_of_mass = this.center_of_mass;
+    clone._integral = this._integral;
+    clone.hierarchy = this.hierarchy;
+    clone.aabb = this.aabb;
+    clone.material = this.material;
 
-	return clone;
+    return clone;
 };
 
 /**
@@ -84,22 +89,22 @@ Goblin.MeshShape.prototype.clone = function() {
  * @param aabb {AABB}
  */
 Goblin.MeshShape.prototype.calculateLocalAABB = function( aabb ) {
-	aabb.min.x = aabb.min.y = aabb.min.z = 0;
-	aabb.max.x = aabb.max.y = aabb.max.z = 0;
+    aabb.min.x = aabb.min.y = aabb.min.z = 0;
+    aabb.max.x = aabb.max.y = aabb.max.z = 0;
 
-	for ( var i = 0; i < this.vertices.length; i++ ) {
-		aabb.min.x = Math.min( aabb.min.x, this.vertices[i].x );
-		aabb.min.y = Math.min( aabb.min.y, this.vertices[i].y );
-		aabb.min.z = Math.min( aabb.min.z, this.vertices[i].z );
+    for ( var i = 0; i < this.vertices.length; i++ ) {
+        aabb.min.x = Math.min( aabb.min.x, this.vertices[ i ].x );
+        aabb.min.y = Math.min( aabb.min.y, this.vertices[ i ].y );
+        aabb.min.z = Math.min( aabb.min.z, this.vertices[ i ].z );
 
-		aabb.max.x = Math.max( aabb.max.x, this.vertices[i].x );
-		aabb.max.y = Math.max( aabb.max.y, this.vertices[i].y );
-		aabb.max.z = Math.max( aabb.max.z, this.vertices[i].z );
-	}
+        aabb.max.x = Math.max( aabb.max.x, this.vertices[ i ].x );
+        aabb.max.y = Math.max( aabb.max.y, this.vertices[ i ].y );
+        aabb.max.z = Math.max( aabb.max.z, this.vertices[ i ].z );
+    }
 };
 
 Goblin.MeshShape.prototype.getInertiaTensor = function( mass ) {
-	return Goblin.ConvexShape.prototype.getInertiaTensor.call( this, mass );
+    return Goblin.ConvexShape.prototype.getInertiaTensor.call( this, mass );
 };
 
 /**
@@ -110,7 +115,7 @@ Goblin.MeshShape.prototype.getInertiaTensor = function( mass ) {
  * @param support_point {vec3} vec3 variable which will contain the supporting point after calling this method
  */
 Goblin.MeshShape.prototype.findSupportPoint = function( direction, support_point ) {
-	return; // MeshShape isn't convex so it cannot be used directly in GJK
+     // MeshShape isn't convex so it cannot be used directly in GJK
 };
 
 /**
@@ -121,48 +126,48 @@ Goblin.MeshShape.prototype.findSupportPoint = function( direction, support_point
  * @property end {vec3} end point of the segment
  * @return {RayIntersection|null} if the segment intersects, a RayIntersection is returned, else `null`
  */
-Goblin.MeshShape.prototype.rayIntersect = (function(){
-	var intersections = [],
-		tSort = function( a, b ) {
-			if ( a.t < b.t ) {
-				return -1;
-			} else if ( a.t > b.t ) {
-				return 1;
-			} else {
-				return 0;
-			}
-		};
+Goblin.MeshShape.prototype.rayIntersect = ( function() {
+    var intersections = [],
+        tSort = function( a, b ) {
+            if ( a.t < b.t ) {
+                return -1;
+            } else if ( a.t > b.t ) {
+                return 1;
+            } else {
+                return 0;
+            }
+        };
 
-	return function( start, end ) {
-		// empty meshes cannot be intersected
-		if ( !this.hierarchy ) {
-			return null;
-		}
+    return function( start, end ) {
+        // empty meshes cannot be intersected
+        if ( !this.hierarchy ) {
+            return null;
+        }
 
-		// Traverse the BVH and return the closest point of contact, if any
-		var nodes = [ this.hierarchy ],
-			node;
-		intersections.length = 0;
+        // Traverse the BVH and return the closest point of contact, if any
+        var nodes = [ this.hierarchy ],
+            node;
+        intersections.length = 0;
 
-		var count = 0;
-		while ( nodes.length > 0 ) {
-			count++;
-			node = nodes.shift();
+        var count = 0;
+        while ( nodes.length > 0 ) {
+            count++;
+            node = nodes.shift();
 
-			if ( node.aabb.testRayIntersect( start, end ) ) {
-				// Ray intersects this node's AABB
-				if ( node.isLeaf() ) {
-					var intersection = node.object.rayIntersect( start, end );
-					if ( intersection != null ) {
-						intersections.push( intersection );
-					}
-				} else {
-					nodes.push( node.left, node.right );
-				}
-			}
-		}
+            if ( node.aabb.testRayIntersect( start, end ) ) {
+                // Ray intersects this node's AABB
+                if ( node.isLeaf() ) {
+                    var intersection = node.object.rayIntersect( start, end );
+                    if ( intersection != null ) {
+                        intersections.push( intersection );
+                    }
+                } else {
+                    nodes.push( node.left, node.right );
+                }
+            }
+        }
 
-		intersections.sort( tSort );
-		return intersections[0] || null;
-	};
-})();
+        intersections.sort( tSort );
+        return intersections[ 0 ] || null;
+    };
+} )();
