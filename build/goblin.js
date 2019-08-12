@@ -1882,6 +1882,7 @@ Goblin.ForceGenerator.prototype.unaffect = function( object ) {
 	}
 };
 Goblin.Collision = {};
+Goblin.Shapes = {};
 /**
  * Performs a n^2 check of all collision objects to see if any could be in contact
  *
@@ -2808,9 +2809,18 @@ Goblin.BasicPooledBroadphase.prototype.update = function() {
 	};
 })();
 Goblin.BoxSphere = function( object_a, object_b, do_lightweight_collision ) {
-    var sphere = object_a.shape instanceof Goblin.SphereShape ? object_a : object_b,
-        box = object_a.shape instanceof Goblin.SphereShape ? object_b : object_a,
-        contact, distance;
+    var sphere = null;
+    var box = null;
+    if ( object_a.shape.shapeType === Goblin.Shapes.Type.SphereShape ) {
+        sphere = object_a;
+        box = object_b;
+    } else {
+        sphere = object_b;
+        box = object_a;
+    }
+
+    var contact = null;
+    var distance = 0;
 
     // Transform the center of the sphere into box coordinates
     box.transform_inverse.transformVector3Into( sphere.position, _tmp_vec3_1 );
@@ -2970,24 +2980,24 @@ Goblin.Collision.Factory = {
      */
 
     /**
-     * @type {Array<[object, object, getContact]>}
+     * @type {Object<[number, getContact]>}
      */
     _collisionTable: null,
 
     _populateCollisionTable: function() {
-        Goblin.Collision.Factory._collisionTable = [
-            [ Goblin.SphereShape, Goblin.SphereShape, Goblin.Collision.sphereSphere ],
-            [ Goblin.SphereShape, Goblin.BoxShape, Goblin.BoxSphere ],
-            [ Goblin.SphereShape, Goblin.CapsuleShape, Goblin.Collision.sphereCapsule ],
-            [ Goblin.SphereShape, Goblin.ConvexHullShape, Goblin.Collision.sphereConvexHull ],
-        ];
+        var table = {};
+        table[ Goblin.Shapes.Type.SphereShape ] = Goblin.Collision.sphereSphere;
+        table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.BoxShape ] = Goblin.BoxSphere;
+        table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.CapsuleShape ] = Goblin.Collision.sphereCapsule;
+        table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.ConvexHullShape ] = Goblin.Collision.sphereConvexHull;
+        Goblin.Collision.Factory._collisionTable = table;
     },
 
     /**
      * @param {object} shapeA
-     * @param {object} shapeA.shape
+     * @param {number} shapeA.shapeType
      * @param {object} shapeB
-     * @param {object} shapeB.shape
+     * @param {number} shapeB.shapeType
      * @returns {getContact}
      */
     getCollisionMethod: function( shapeA, shapeB ) {
@@ -2997,17 +3007,7 @@ Goblin.Collision.Factory = {
             this._populateCollisionTable();
         }
 
-        for ( var i = 0; i < this._collisionTable.length; i++ ) {
-            var collisionTableEntry = this._collisionTable[ i ];
-            var shapeMatchesEntry = ( collisionTableEntry[ 0 ] === shapeA.shape && collisionTableEntry[ 1 ] === shapeB.shape ) ||
-                ( collisionTableEntry[ 0 ] === shapeB.shape && collisionTableEntry[ 1 ] === shapeA.shape );
-
-            if ( shapeMatchesEntry ) {
-                return collisionTableEntry[ 2 ];
-            }
-        }
-
-        return Goblin.GjkEpa.findContact;
+        return this._collisionTable[ shapeA.shapeType | shapeB.shapeType ] || Goblin.GjkEpa.findContact;
     }
 };
 /**
@@ -3818,6 +3818,8 @@ Goblin.Collision.SAT = {
         var negatedNormal = new Goblin.Vector3();
 
         return function( objectA, objectB ) {
+            // Step 1: we need to determine the separation axises: they are all normals from object a are all normals from object b
+            // TODO: [EN-242] decide whether to include all cross products or to pass them separately
             var allNormals = [];
             var normalsA = objectA.faceNormals;
             var normalsB = objectB.faceNormals;
@@ -3826,10 +3828,8 @@ Goblin.Collision.SAT = {
             } else if ( normalsB === 0 ) {
                 allNormals = normalsA;
             } else {
-                var crossNormals = this._getAllCrossProductPairs( normalsA, normalsB );
                 allNormals.push.apply( allNormals, normalsA );
                 allNormals.push.apply( allNormals, normalsB );
-                allNormals.push.apply( allNormals, crossNormals );
                 this.removeDuplicatedVectors( allNormals );
             }
 
@@ -3837,6 +3837,9 @@ Goblin.Collision.SAT = {
             var minimumProjection = null;
             var minimumOverlap = Infinity;
 
+            // Not we want to project all shapes onto our separation axises.
+            // - If at least one pair of projections is not overlapping then there is no collision at all
+            // - If all projections are overlapping then we want to use the smallest projection as a separation axis.
             for ( var i = 0; i < allNormals.length; i++ ) {
                 var normal = allNormals[ i ];
                 negatedNormal.scaleVector( normal, -1 );
@@ -3844,6 +3847,7 @@ Goblin.Collision.SAT = {
 
                 var projection = null;
                 if ( computedNegativeProjection ) {
+                    // It's quite likely that we already have a projection on a negative axis
                     projection = computedNegativeProjection.cloneAndNegate();
                 }
                 if ( !projection ) {
@@ -3891,28 +3895,6 @@ Goblin.Collision.SAT = {
                 i--;
             }
         }
-    },
-
-    /**
-     * Performs cross-product between all pairs of vectors.
-     * @param {Goblin.Vector3[]} normalsA
-     * @param {Goblin.Vector3[]} normalsB
-     * @returns {Goblin.Vector3[]}
-     * @private
-     */
-    _getAllCrossProductPairs: function( normalsA, normalsB ) {
-        var crossProducts = [];
-
-        for ( var i = 0; i < normalsA.length; i++ ) {
-            for ( var j = 0; j < normalsB.length; j++ ) {
-                var crossProduct = new Goblin.Vector3();
-                crossProduct.crossVectors( normalsA[ i ], normalsB[ j ] );
-                crossProducts.push( crossProduct );
-            }
-        }
-
-        this.removeDuplicatedVectors( crossProducts );
-        return crossProducts;
     },
 
     /**
@@ -4007,7 +3989,7 @@ Goblin.Collision.sphereCapsule = ( function() {
     return function( objectA, objectB, doLightweightCollision ) {
         var sphere;
         var capsule;
-        if ( objectA.shape.shape === Goblin.SphereShape ) {
+        if ( objectA.shape.shapeType === Goblin.Shapes.Type.SphereShape ) {
             sphere = objectA;
             capsule = objectB;
         } else {
@@ -4080,7 +4062,7 @@ Goblin.Collision.sphereCapsule = ( function() {
 Goblin.Collision.sphereConvexHull = function( objectA, objectB, doLightweightCollision ) {
     var sphere;
     var convexHull;
-    if ( objectA.shape.shape === Goblin.SphereShape ) {
+    if ( objectA.shape.shapeType === Goblin.Shapes.Type.SphereShape ) {
         sphere = objectA;
         convexHull = objectB;
     } else {
@@ -4476,6 +4458,83 @@ Goblin.TriangleTriangle = function( tri_a, tri_b, do_lightweight_collision ) {
     return null;
 };
 
+/**
+* adds a drag force to associated objects
+*
+* @class DragForce
+* @extends ForceGenerator
+* @constructor
+*/
+Goblin.DragForce = function( drag_coefficient, squared_drag_coefficient ) {
+	/**
+	* drag coefficient
+	*
+	* @property drag_coefficient
+	* @type {Number}
+	* @default 0
+	*/
+	this.drag_coefficient = drag_coefficient || 0;
+
+	/**
+	* drag coefficient
+	*
+	* @property drag_coefficient
+	* @type {Number}
+	* @default 0
+	*/
+	this.squared_drag_coefficient = squared_drag_coefficient || 0;
+
+	/**
+	* whether or not the force generator is enabled
+	*
+	* @property enabled
+	* @type {Boolean}
+	* @default true
+	*/
+	this.enabled = true;
+
+	/**
+	* array of objects affected by the generator
+	*
+	* @property affected
+	* @type {Array}
+	* @default []
+	* @private
+	*/
+	this.affected = [];
+};
+Goblin.DragForce.prototype.enable = Goblin.ForceGenerator.prototype.enable;
+Goblin.DragForce.prototype.disable = Goblin.ForceGenerator.prototype.disable;
+Goblin.DragForce.prototype.affect = Goblin.ForceGenerator.prototype.affect;
+Goblin.DragForce.prototype.unaffect = Goblin.ForceGenerator.prototype.unaffect;
+/**
+* applies force to the associated objects
+*
+* @method applyForce
+*/
+Goblin.DragForce.prototype.applyForce = function() {
+	if ( !this.enabled ) {
+		return;
+	}
+
+	var i, affected_count, object, drag,
+		force = _tmp_vec3_1;
+
+	for ( i = 0, affected_count = this.affected.length; i < affected_count; i++ ) {
+		object = this.affected[i];
+
+		force.copy( object.linear_velocity );
+
+		// Calculate the total drag coefficient.
+		drag = force.length();
+		drag = ( this.drag_coefficient * drag ) + ( this.squared_drag_coefficient * drag * drag );
+
+		// Calculate the final force and apply it.
+		force.normalize();
+		force.scale( -drag );
+		object.applyForce( force  );
+	}
+};
 Goblin.Constraint = (function() {
 	var constraint_count = 0;
 
@@ -4939,83 +4998,6 @@ Goblin.FrictionConstraint.prototype.update = (function(){
 		this.rows[1] = row_2;
 	};
 })();
-/**
-* adds a drag force to associated objects
-*
-* @class DragForce
-* @extends ForceGenerator
-* @constructor
-*/
-Goblin.DragForce = function( drag_coefficient, squared_drag_coefficient ) {
-	/**
-	* drag coefficient
-	*
-	* @property drag_coefficient
-	* @type {Number}
-	* @default 0
-	*/
-	this.drag_coefficient = drag_coefficient || 0;
-
-	/**
-	* drag coefficient
-	*
-	* @property drag_coefficient
-	* @type {Number}
-	* @default 0
-	*/
-	this.squared_drag_coefficient = squared_drag_coefficient || 0;
-
-	/**
-	* whether or not the force generator is enabled
-	*
-	* @property enabled
-	* @type {Boolean}
-	* @default true
-	*/
-	this.enabled = true;
-
-	/**
-	* array of objects affected by the generator
-	*
-	* @property affected
-	* @type {Array}
-	* @default []
-	* @private
-	*/
-	this.affected = [];
-};
-Goblin.DragForce.prototype.enable = Goblin.ForceGenerator.prototype.enable;
-Goblin.DragForce.prototype.disable = Goblin.ForceGenerator.prototype.disable;
-Goblin.DragForce.prototype.affect = Goblin.ForceGenerator.prototype.affect;
-Goblin.DragForce.prototype.unaffect = Goblin.ForceGenerator.prototype.unaffect;
-/**
-* applies force to the associated objects
-*
-* @method applyForce
-*/
-Goblin.DragForce.prototype.applyForce = function() {
-	if ( !this.enabled ) {
-		return;
-	}
-
-	var i, affected_count, object, drag,
-		force = _tmp_vec3_1;
-
-	for ( i = 0, affected_count = this.affected.length; i < affected_count; i++ ) {
-		object = this.affected[i];
-
-		force.copy( object.linear_velocity );
-
-		// Calculate the total drag coefficient.
-		drag = force.length();
-		drag = ( this.drag_coefficient * drag ) + ( this.squared_drag_coefficient * drag * drag );
-
-		// Calculate the final force and apply it.
-		force.normalize();
-		force.scale( -drag );
-		object.applyForce( force  );
-	}
-};
 Goblin.RayIntersection = function() {
 	this.object = null;
     this.shape = null;
@@ -5030,6 +5012,8 @@ Goblin.RayIntersection = function() {
  * @constructor
  */
 Goblin.BoxShape = function( half_width, half_height, half_depth, material ) {
+    this.shapeType = Goblin.Shapes.Type.BoxShape;
+
     /**
      * Half width of the cube ( X axis )
      *
@@ -5070,8 +5054,6 @@ Goblin.BoxShape = function( half_width, half_height, half_depth, material ) {
     ];
 
     this.material = material || null;
-
-    this.shape = Goblin.BoxShape;
 };
 
 /**
@@ -5201,7 +5183,7 @@ Goblin.BoxShape.prototype.rayIntersect = ( function() {
  * @constructor
  */
 Goblin.CapsuleShape = function( radius, half_height, material ) {
-    this.shape = Goblin.CapsuleShape;
+    this.shapeType = Goblin.Shapes.Type.CapsuleShape;
     /**
      * radius of the capsule
      *
@@ -5386,6 +5368,8 @@ Goblin.CapsuleShape.prototype.rayIntersect = ( function() {
  * @constructor
  */
 Goblin.CompoundShape = function() {
+    this.shapeType = Goblin.Shapes.Type.CompoundShape;
+
     /**
      * @type {Goblin.CompoundShapeChild[]}
      */
@@ -5402,8 +5386,6 @@ Goblin.CompoundShape = function() {
     this.center_of_mass_override = null;
 
     this.updateAABB();
-
-    this.shape = Goblin.CompoundShape;
 };
 
 /**
@@ -5718,7 +5700,7 @@ Goblin.CompoundShapeChild.prototype.updateDerived = function() {
  * @constructor
  */
 Goblin.ConvexHullShape = function( verticesCloud, material ) {
-    this.shape = Goblin.ConvexHullShape;
+    this.shapeType = Goblin.Shapes.Type.ConvexHullShape;
     /**
      * @type {Array<Goblin.ConvexHullShape.Vertex>}
      */
@@ -6639,6 +6621,7 @@ Goblin.ConvexHullShape.Face.Status = {
  * @constructor
  */
 Goblin.ConvexShape = function( vertices ) {
+    this.shapeType = Goblin.Shapes.Type.ConvexShape;
     /**
      * vertices composing the convex hull
      *
@@ -7058,6 +7041,8 @@ Goblin.ConvexShape.prototype.rayIntersect = ( function() {
  * @constructor
  */
 Goblin.MeshShape = function( vertices, faces, material ) {
+    this.shapeType = Goblin.Shapes.Type.MeshShape;
+
     this.vertices = vertices;
 
     this.triangles = [];
@@ -7111,8 +7096,6 @@ Goblin.MeshShape = function( vertices, faces, material ) {
     this.faceNormals = [];
 
     this.material = material || null;
-
-    this.shape = Goblin.MeshShape;
 };
 
 /**
@@ -7232,6 +7215,7 @@ Goblin.MeshShape.prototype.rayIntersect = ( function() {
  * @constructor
  */
 Goblin.PlaneShape = function( orientation, half_width, half_length ) {
+    this.shapeType = Goblin.Shapes.Type.PlaneShape;
     /**
      * index of axis which is the plane's normal ( 0 = X, 1 = Y, 2 = Z )
      * when 0, width is Y and length is Z
@@ -7459,7 +7443,7 @@ Goblin.PlaneShape.prototype.rayIntersect = ( function() {
  * @constructor
  */
 Goblin.SphereShape = function( radius, material ) {
-    this.shape = Goblin.SphereShape;
+    this.shapeType = Goblin.Shapes.Type.SphereShape;
     /**
      * @type {number}
      */
@@ -7580,6 +7564,7 @@ Goblin.SphereShape.prototype.rayIntersect = ( function() {
  * @constructor
  */
 Goblin.TriangleShape = function( vertex_a, vertex_b, vertex_c ) {
+    this.shapeType = Goblin.Shapes.Type.TriangleShape;
     /**
      * first vertex of the triangle
      *
@@ -7632,8 +7617,6 @@ Goblin.TriangleShape = function( vertex_a, vertex_b, vertex_c ) {
      * @type {Array<Goblin.Vector3>}
      */
     this.faceNormals = [];
-
-    this.shape = Goblin.TriangleShape;
 };
 
 /**
@@ -7751,6 +7734,17 @@ Goblin.TriangleShape.prototype.rayIntersect = ( function() {
         return intersection;
     };
 } )();
+Goblin.Shapes.Type = {
+    'BoxShape': 1 << 0,
+    'CapsuleShape': 1 << 1,
+    'CompoundShape': 1 << 2,
+    'ConvexHullShape': 1 << 3,
+    'ConvexShape': 1 << 4,
+    'MeshShape': 1 << 5,
+    'PlaneShape': 1 << 6,
+    'SphereShape': 1 << 7,
+    'TriangleShape': 1 << 8,
+};
 Goblin.CollisionUtils = {};
 
 Goblin.CollisionUtils.canBodiesCollide = function( object_a, object_b ) {
@@ -9850,7 +9844,7 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
         other,
         permuted;
 
-    if ( object_a.shape.shape === Goblin.CompoundShape ) {
+    if ( object_a.shape.shapeType === Goblin.Shapes.Type.CompoundShape ) {
         compound = object_a;
         other = object_b;
         permuted = !false;
@@ -9867,7 +9861,7 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
         child_shape = compound.shape.child_shapes[ i ];
         proxy.setFrom( compound, child_shape );
 
-        if ( proxy.shape.shape === Goblin.CompoundShape || other.shape.shape === Goblin.CompoundShape ) {
+        if ( proxy.shape.shapeType === Goblin.Shapes.Type.CompoundShape || other.shape.shapeType === Goblin.Shapes.Type.CompoundShape ) {
             contact = this.midPhase( proxy, other );
         } else {
             contact = this.getContact( proxy, other );
@@ -10053,8 +10047,8 @@ Goblin.NarrowPhase.prototype.meshCollision = ( function() {
     } )();
 
     return function meshCollision( object_a, object_b ) {
-        var a_is_mesh = object_a.shape.shape === Goblin.MeshShape,
-            b_is_mesh = object_b.shape.shape === Goblin.MeshShape;
+        var a_is_mesh = object_a.shape.shapeType === Goblin.Shapes.Type.MeshShape,
+            b_is_mesh = object_b.shape.shapeType === Goblin.Shapes.Type.MeshShape;
 
         if ( a_is_mesh && b_is_mesh ) {
             return meshMesh( object_a, object_b, this );
@@ -10080,11 +10074,11 @@ Goblin.NarrowPhase.prototype.getContact = function( object_a, object_b ) {
         return null;
     }
 
-    if ( object_a.shape.shape === Goblin.CompoundShape || object_b.shape.shape === Goblin.CompoundShape ) {
+    if ( object_a.shape.shapeType === Goblin.Shapes.Type.CompoundShape || object_b.shape.shapeType === Goblin.Shapes.Type.CompoundShape ) {
         return this.midPhase( object_a, object_b );
     }
 
-    if ( object_a.shape.shape === Goblin.MeshShape || object_b.shape.shape === Goblin.MeshShape ) {
+    if ( object_a.shape.shapeType === Goblin.Shapes.Type.MeshShape || object_b.shape.shapeType === Goblin.Shapes.Type.MeshShape ) {
         return this.meshCollision( object_a, object_b );
     }
 

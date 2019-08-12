@@ -5,6 +5,8 @@
  * @constructor
  */
 Goblin.MeshShape = function( vertices, faces, material ) {
+    this.shapeType = Goblin.Shapes.Type.MeshShape;
+
     this.vertices = vertices;
 
     this.triangles = [];
@@ -58,8 +60,6 @@ Goblin.MeshShape = function( vertices, faces, material ) {
     this.faceNormals = [];
 
     this.material = material || null;
-
-    this.shape = Goblin.MeshShape;
 };
 
 /**

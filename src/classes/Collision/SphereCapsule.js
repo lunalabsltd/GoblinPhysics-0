@@ -11,7 +11,7 @@ Goblin.Collision.sphereCapsule = ( function() {
     return function( objectA, objectB, doLightweightCollision ) {
         var sphere;
         var capsule;
-        if ( objectA.shape.shape === Goblin.SphereShape ) {
+        if ( objectA.shape.shapeType === Goblin.Shapes.Type.SphereShape ) {
             sphere = objectA;
             capsule = objectB;
         } else {

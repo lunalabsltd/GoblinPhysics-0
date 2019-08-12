@@ -21,6 +21,7 @@ gulp.task('build', ['lint'], function(){
 		'src/classes/RigidBody.js',
 		'src/classes/ForceGenerator.js',
 		'src/classes/Collision/index.js',
+		'src/classes/Shapes/index.js',
 		'src/classes/**/*.js',
 		'src/outro.js',
 

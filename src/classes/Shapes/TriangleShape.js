@@ -6,6 +6,7 @@
  * @constructor
  */
 Goblin.TriangleShape = function( vertex_a, vertex_b, vertex_c ) {
+    this.shapeType = Goblin.Shapes.Type.TriangleShape;
     /**
      * first vertex of the triangle
      *
@@ -58,8 +59,6 @@ Goblin.TriangleShape = function( vertex_a, vertex_b, vertex_c ) {
      * @type {Array<Goblin.Vector3>}
      */
     this.faceNormals = [];
-
-    this.shape = Goblin.TriangleShape;
 };
 
 /**

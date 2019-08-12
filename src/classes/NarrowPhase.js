@@ -42,7 +42,7 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
         other,
         permuted;
 
-    if ( object_a.shape.shape === Goblin.CompoundShape ) {
+    if ( object_a.shape.shapeType === Goblin.Shapes.Type.CompoundShape ) {
         compound = object_a;
         other = object_b;
         permuted = !false;
@@ -59,7 +59,7 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
         child_shape = compound.shape.child_shapes[ i ];
         proxy.setFrom( compound, child_shape );
 
-        if ( proxy.shape.shape === Goblin.CompoundShape || other.shape.shape === Goblin.CompoundShape ) {
+        if ( proxy.shape.shapeType === Goblin.Shapes.Type.CompoundShape || other.shape.shapeType === Goblin.Shapes.Type.CompoundShape ) {
             contact = this.midPhase( proxy, other );
         } else {
             contact = this.getContact( proxy, other );
@@ -245,8 +245,8 @@ Goblin.NarrowPhase.prototype.meshCollision = ( function() {
     } )();
 
     return function meshCollision( object_a, object_b ) {
-        var a_is_mesh = object_a.shape.shape === Goblin.MeshShape,
-            b_is_mesh = object_b.shape.shape === Goblin.MeshShape;
+        var a_is_mesh = object_a.shape.shapeType === Goblin.Shapes.Type.MeshShape,
+            b_is_mesh = object_b.shape.shapeType === Goblin.Shapes.Type.MeshShape;
 
         if ( a_is_mesh && b_is_mesh ) {
             return meshMesh( object_a, object_b, this );
@@ -272,11 +272,11 @@ Goblin.NarrowPhase.prototype.getContact = function( object_a, object_b ) {
         return null;
     }
 
-    if ( object_a.shape.shape === Goblin.CompoundShape || object_b.shape.shape === Goblin.CompoundShape ) {
+    if ( object_a.shape.shapeType === Goblin.Shapes.Type.CompoundShape || object_b.shape.shapeType === Goblin.Shapes.Type.CompoundShape ) {
         return this.midPhase( object_a, object_b );
     }
 
-    if ( object_a.shape.shape === Goblin.MeshShape || object_b.shape.shape === Goblin.MeshShape ) {
+    if ( object_a.shape.shapeType === Goblin.Shapes.Type.MeshShape || object_b.shape.shapeType === Goblin.Shapes.Type.MeshShape ) {
         return this.meshCollision( object_a, object_b );
     }
 

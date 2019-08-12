@@ -5,7 +5,7 @@
  * @constructor
  */
 Goblin.CapsuleShape = function( radius, half_height, material ) {
-    this.shape = Goblin.CapsuleShape;
+    this.shapeType = Goblin.Shapes.Type.CapsuleShape;
     /**
      * radius of the capsule
      *

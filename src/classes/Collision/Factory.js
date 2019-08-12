@@ -10,24 +10,24 @@ Goblin.Collision.Factory = {
      */
 
     /**
-     * @type {Array<[object, object, getContact]>}
+     * @type {Object<[number, getContact]>}
      */
     _collisionTable: null,
 
     _populateCollisionTable: function() {
-        Goblin.Collision.Factory._collisionTable = [
-            [ Goblin.SphereShape, Goblin.SphereShape, Goblin.Collision.sphereSphere ],
-            [ Goblin.SphereShape, Goblin.BoxShape, Goblin.BoxSphere ],
-            [ Goblin.SphereShape, Goblin.CapsuleShape, Goblin.Collision.sphereCapsule ],
-            [ Goblin.SphereShape, Goblin.ConvexHullShape, Goblin.Collision.sphereConvexHull ],
-        ];
+        var table = {};
+        table[ Goblin.Shapes.Type.SphereShape ] = Goblin.Collision.sphereSphere;
+        table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.BoxShape ] = Goblin.BoxSphere;
+        table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.CapsuleShape ] = Goblin.Collision.sphereCapsule;
+        table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.ConvexHullShape ] = Goblin.Collision.sphereConvexHull;
+        Goblin.Collision.Factory._collisionTable = table;
     },
 
     /**
      * @param {object} shapeA
-     * @param {object} shapeA.shape
+     * @param {number} shapeA.shapeType
      * @param {object} shapeB
-     * @param {object} shapeB.shape
+     * @param {number} shapeB.shapeType
      * @returns {getContact}
      */
     getCollisionMethod: function( shapeA, shapeB ) {
@@ -37,16 +37,6 @@ Goblin.Collision.Factory = {
             this._populateCollisionTable();
         }
 
-        for ( var i = 0; i < this._collisionTable.length; i++ ) {
-            var collisionTableEntry = this._collisionTable[ i ];
-            var shapeMatchesEntry = ( collisionTableEntry[ 0 ] === shapeA.shape && collisionTableEntry[ 1 ] === shapeB.shape ) ||
-                ( collisionTableEntry[ 0 ] === shapeB.shape && collisionTableEntry[ 1 ] === shapeA.shape );
-
-            if ( shapeMatchesEntry ) {
-                return collisionTableEntry[ 2 ];
-            }
-        }
-
-        return Goblin.GjkEpa.findContact;
+        return this._collisionTable[ shapeA.shapeType | shapeB.shapeType ] || Goblin.GjkEpa.findContact;
     }
 };

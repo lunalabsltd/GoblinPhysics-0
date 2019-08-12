@@ -1,7 +1,16 @@
 Goblin.BoxSphere = function( object_a, object_b, do_lightweight_collision ) {
-    var sphere = object_a.shape instanceof Goblin.SphereShape ? object_a : object_b,
-        box = object_a.shape instanceof Goblin.SphereShape ? object_b : object_a,
-        contact, distance;
+    var sphere = null;
+    var box = null;
+    if ( object_a.shape.shapeType === Goblin.Shapes.Type.SphereShape ) {
+        sphere = object_a;
+        box = object_b;
+    } else {
+        sphere = object_b;
+        box = object_a;
+    }
+
+    var contact = null;
+    var distance = 0;
 
     // Transform the center of the sphere into box coordinates
     box.transform_inverse.transformVector3Into( sphere.position, _tmp_vec3_1 );

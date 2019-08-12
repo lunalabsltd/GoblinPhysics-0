@@ -9,7 +9,7 @@
  * @constructor
  */
 Goblin.ConvexHullShape = function( verticesCloud, material ) {
-    this.shape = Goblin.ConvexHullShape;
+    this.shapeType = Goblin.Shapes.Type.ConvexHullShape;
     /**
      * @type {Array<Goblin.ConvexHullShape.Vertex>}
      */

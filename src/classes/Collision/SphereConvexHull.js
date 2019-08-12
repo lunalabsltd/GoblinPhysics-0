@@ -7,7 +7,7 @@
 Goblin.Collision.sphereConvexHull = function( objectA, objectB, doLightweightCollision ) {
     var sphere;
     var convexHull;
-    if ( objectA.shape.shape === Goblin.SphereShape ) {
+    if ( objectA.shape.shapeType === Goblin.Shapes.Type.SphereShape ) {
         sphere = objectA;
         convexHull = objectB;
     } else {
