@@ -19,8 +19,8 @@ Goblin.Collision.sphereConvexHull = function( objectA, objectB, doLightweightCol
     // This can mean two things - either there is no collision at all or there is a shallow collision.
     var closestPointOnHull = Goblin.GjkEpa.findClosestPointOnObject( convexHull, sphere.position );
     return closestPointOnHull !== null ?
-        Goblin.Collision._shallowSphereConvexHull( sphere, convexHull, closestPointOnHull, doLightweightCollision ) :
-        Goblin.Collision._deepSphereConvexHull( sphere, convexHull );
+        Goblin.Collision.sphereConvexHull._shallowSphereConvexHull( sphere, convexHull, closestPointOnHull, doLightweightCollision ) :
+        Goblin.Collision.sphereConvexHull._deepSphereConvexHull( sphere, convexHull );
 };
 
 /**
@@ -31,7 +31,7 @@ Goblin.Collision.sphereConvexHull = function( objectA, objectB, doLightweightCol
  * @param {boolean} doLightweightCollision
  * @returns {Goblin.ContactDetails|null}
  */
-Goblin.Collision._shallowSphereConvexHull = ( function() {
+Goblin.Collision.sphereConvexHull._shallowSphereConvexHull = ( function() {
     var directionToClosestPoint = new Goblin.Vector3();
     var collisionNormal = new Goblin.Vector3();
 
@@ -79,7 +79,7 @@ Goblin.Collision._shallowSphereConvexHull = ( function() {
  * @param {boolean} doLightweightCollision
  * @returns {Goblin.ContactDetails|null}
  */
-Goblin.Collision._deepSphereConvexHull = ( function() {
+Goblin.Collision.sphereConvexHull._deepSphereConvexHull = ( function() {
     return function( sphere, convexHull, doLightweightCollision ) {
         var minimumProjection = Goblin.Collision.SAT.performSat( sphere, convexHull );
         if ( minimumProjection === null ) {

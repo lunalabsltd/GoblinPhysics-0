@@ -281,8 +281,8 @@ Goblin.NarrowPhase.prototype.getContact = function( object_a, object_b ) {
     }
 
     var doLightweightCollision = this._shouldPerformLightweightCollisionBetween( object_a, object_b );
-    var collisionMethod = Goblin.Collision.Factory.getCollisionMethod(object_a.shape, object_b.shape);
-    var contact = collisionMethod(object_a, object_b, doLightweightCollision);
+    var collisionMethod = Goblin.Collision.Factory.getCollisionMethod( object_a.shape, object_b.shape );
+    var contact = collisionMethod( object_a, object_b, doLightweightCollision );
 
     // store original shapes that collided on the objects
     // so that it's possible to deduce which actual colliders
