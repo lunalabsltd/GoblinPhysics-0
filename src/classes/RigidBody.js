@@ -778,6 +778,11 @@ Goblin.RigidBody.prototype.updateDerived = function() {
 };
 
 Goblin.RigidBody.prototype.updateFaceNormals = function() {
+    if ( this.rotation.isZero() ) {
+        this.faceNormals = this.shape.faceNormals;
+        return;
+    }
+
     this.faceNormals.length = 0;
     for ( var i = 0; i < this.shape.faceNormals.length; i++ ) {
         var rotatedNormal = new Goblin.Vector3();

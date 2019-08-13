@@ -53,9 +53,14 @@ Goblin.CompoundShapeChild.prototype.updateDerived = function() {
     this.transform.invertInto( this.transform_inverse );
     this.aabb.transform( this.shape.aabb, this.transform );
 
-    for ( var i = 0; i < this.shape.faceNormals.length; i++ ) {
-        var rotatedNormal = new Goblin.Vector3();
-        this.rotation.transformVector3Into( this.shape.faceNormals[ i ], rotatedNormal );
-        this.faceNormals.push( rotatedNormal );
+    if ( this.rotation.isZero() ) {
+        this.faceNormals = this.shape.faceNormals;
+    } else {
+        this.faceNormals.length = 0;
+        for ( var i = 0; i < this.shape.faceNormals.length; i++ ) {
+            var rotatedNormal = new Goblin.Vector3();
+            this.rotation.transformVector3Into( this.shape.faceNormals[ i ], rotatedNormal );
+            this.faceNormals.push( rotatedNormal );
+        }
     }
 };

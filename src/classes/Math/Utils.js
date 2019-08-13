@@ -6,7 +6,7 @@ Goblin.Math.Utils = {
      * @param {number} max
      * @returns {number}
      */
-    clamp: function (num, min, max) {
+    clamp: function( num, min, max ) {
         if ( num < min ) {
             return min;
         } else if ( num > max ) {

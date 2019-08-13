@@ -6,20 +6,21 @@ Goblin.Collision.Factory = {
      * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
      * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
      * @param {boolean} doLightweightCollision - if true then only basic collision information will be returned (w/o normal, penetration depth, etc).
-     * @returns {Goblin.ContactDetails|null}
+     * @returns {Goblin.ContactDetails[]|null}
      */
 
     /**
-     * @type {Object<[number, getContact]>}
+     * @type {Object<number, getContact>}
      */
     _collisionTable: null,
 
     _populateCollisionTable: function() {
         var table = {};
         table[ Goblin.Shapes.Type.SphereShape ] = Goblin.Collision.sphereSphere;
-        table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.BoxShape ] = Goblin.BoxSphere;
+        table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.BoxShape ] = Goblin.Collision.boxSphere;
         table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.CapsuleShape ] = Goblin.Collision.sphereCapsule;
         table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.ConvexHullShape ] = Goblin.Collision.sphereConvexHull;
+        table[ Goblin.Shapes.Type.CapsuleShape ] = Goblin.Collision.capsuleCapsule;
         Goblin.Collision.Factory._collisionTable = table;
     },
 
@@ -37,6 +38,6 @@ Goblin.Collision.Factory = {
             this._populateCollisionTable();
         }
 
-        return this._collisionTable[ shapeA.shapeType | shapeB.shapeType ] || Goblin.GjkEpa.findContact;
+        return this._collisionTable[ shapeA.shapeType | shapeB.shapeType ] || Goblin.GjkEpa.findContacts;
     }
 };

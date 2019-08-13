@@ -2,7 +2,7 @@
  * @param {Goblin.RigidBody} objectA
  * @param {Goblin.RigidBody} objectB
  * @param {boolean} doLightweightCollision
- * @returns {Goblin.ContactDetails|null}
+ * @returns {Goblin.ContactDetails[]|null}
  */
 Goblin.Collision.sphereSphere = function( objectA, objectB, doLightweightCollision ) {
     // Cache positions of the spheres
@@ -33,7 +33,7 @@ Goblin.Collision.sphereSphere = function( objectA, objectB, doLightweightCollisi
     }
 
 
-    if ( Math.abs( distanceBetweenCenters ) < Goblin.EPSILON ) {
+    if ( distanceBetweenCenters < Goblin.EPSILON ) {
         // Spheres are coincident - set an arbitrary normal
         contact.contact_normal.set( 0, 1, 0 );
     } else {
@@ -56,5 +56,5 @@ Goblin.Collision.sphereSphere = function( objectA, objectB, doLightweightCollisi
     contact.contact_point.add( positionB );
     contact.contact_point.scale( 0.5 );
 
-    return contact;
+    return [ contact ];
 };

@@ -1,11 +1,12 @@
 /**
  * Performs an intersection test between two triangles
  *
- * @method TriangleTriangle
- * @param tri_a {TriangleShape}
- * @param tri_b {TriangleShape}
+ * @param {Goblin.TriangleShape} tri_a
+ * @param {Goblin.TriangleShape} tri_b
+ * @param {boolean} do_lightweight_collision
+ * @returns {Goblin.ContactDetails[]|null}
  */
-Goblin.TriangleTriangle = function( tri_a, tri_b, do_lightweight_collision ) {
+Goblin.Collision.triangleTriangle = function( tri_a, tri_b, do_lightweight_collision ) {
     var dv1_0 = tri_b.classifyVertex( tri_a.a ),
         dv1_1 = tri_b.classifyVertex( tri_a.b ),
         dv1_2 = tri_b.classifyVertex( tri_a.c );
@@ -145,7 +146,7 @@ Goblin.TriangleTriangle = function( tri_a, tri_b, do_lightweight_collision ) {
 
         if ( do_lightweight_collision ) {
             contact.is_lightweight = true;
-            return contact;
+            return [ contact ];
         }
 
         var best_a_a = new Goblin.Vector3(),
@@ -220,7 +221,7 @@ Goblin.TriangleTriangle = function( tri_a, tri_b, do_lightweight_collision ) {
         contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
         contact.contact_point.scale( 0.5 );
 
-        return contact;
+        return [ contact ];
     }
 
     return null;

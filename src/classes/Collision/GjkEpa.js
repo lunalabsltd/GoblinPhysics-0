@@ -48,7 +48,7 @@ Goblin.GjkEpa = {
         };
     } )(),
 
-    findContact: function( object_a, object_b, do_lightweight_collision ) {
+    findContacts: function( object_a, object_b, do_lightweight_collision ) {
         var simplex = Goblin.GjkEpa.GJK( object_a, object_b, do_lightweight_collision );
 
         if ( simplex && do_lightweight_collision ) {
@@ -57,11 +57,11 @@ Goblin.GjkEpa = {
             dummyContact.object_a = object_a;
             dummyContact.object_b = object_b;
             dummyContact.is_lightweight = true;
-            return dummyContact;
+            return [ dummyContact ];
         } else if ( Goblin.GjkEpa.result != null ) {
-            return Goblin.GjkEpa.result;
+            return [ Goblin.GjkEpa.result ];
         } else if ( simplex != null ) {
-            return Goblin.GjkEpa.EPA( simplex );
+            return [ Goblin.GjkEpa.EPA( simplex ) ];
         }
     },
 
