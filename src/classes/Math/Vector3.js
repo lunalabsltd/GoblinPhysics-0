@@ -217,4 +217,42 @@ Goblin.Vector3.prototype = {
         this.copy( v1 );
         this.pairwiseMax( v2 );
     },
+
+    /*
+     * Whether all components of this vector are zero or close to zero
+     * @returns {boolean}
+     */
+    isZero: function() {
+        return ( this.x === 0 || Math.abs( this.x ) < Goblin.EPSILON ) &&
+            ( this.y === 0 || Math.abs( this.y ) < Goblin.EPSILON ) &&
+            ( this.z === 0 || Math.abs( this.z ) < Goblin.EPSILON );
+    },
+
+    /**
+     * Checks if this vector is parallel to `other` (but not necessary have the same direction).
+     * There is no need to normalize those vectors.
+     *
+     * @param {Goblin.Vector3} other
+     * @return {boolean}
+     */
+    isParallelTo: ( function() {
+        var cross = new Goblin.Vector3();
+
+        return function( another ) {
+            cross.crossVectors( this, another );
+            return cross.isZero();
+        };
+    } )(),
+
+    /**
+     * Checks if this vector is parallel to `other` (but not necessary have the same direction).
+     * This method works only if both vectors are normalized.
+     *
+     * @param {Goblin.Vector3} another
+     * @returns {boolean}
+     */
+    isParallelToNormalized: function( another ) {
+        var dotProduct = Math.abs( this.dot( another ) );
+        return dotProduct > 1 - Goblin.EPSILON && dotProduct < 1 + Goblin.EPSILON;
+    }
 };

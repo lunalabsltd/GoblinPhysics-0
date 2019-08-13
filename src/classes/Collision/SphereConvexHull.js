@@ -2,7 +2,7 @@
  * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
  * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
  * @param {boolean} doLightweightCollision
- * @returns {Goblin.ContactDetails|null}
+ * @returns {Goblin.ContactDetails[]|null}
  */
 Goblin.Collision.sphereConvexHull = function( objectA, objectB, doLightweightCollision ) {
     var sphere;
@@ -29,7 +29,7 @@ Goblin.Collision.sphereConvexHull = function( objectA, objectB, doLightweightCol
  * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} convexHull
  * @param {Goblin.Vector3} closestPointOnHull
  * @param {boolean} doLightweightCollision
- * @returns {Goblin.ContactDetails|null}
+ * @returns {Goblin.ContactDetails[]|null}
  */
 Goblin.Collision.sphereConvexHull._shallowSphereConvexHull = ( function() {
     var directionToClosestPoint = new Goblin.Vector3();
@@ -50,7 +50,7 @@ Goblin.Collision.sphereConvexHull._shallowSphereConvexHull = ( function() {
         contact.object_b = convexHull;
         if ( doLightweightCollision ) {
             contact.is_lightweight = true;
-            return contact;
+            return [ contact ];
         }
 
         contact.penetration_depth = sphere.shape.radius - distance;
@@ -67,7 +67,7 @@ Goblin.Collision.sphereConvexHull._shallowSphereConvexHull = ( function() {
         sphere.transform_inverse.transformVector3( contact.contact_point_in_a );
         convexHull.transform_inverse.transformVector3( contact.contact_point_in_b );
 
-        return contact;
+        return [ contact ];
     };
 } )();
 
@@ -94,7 +94,7 @@ Goblin.Collision.sphereConvexHull._deepSphereConvexHull = ( function() {
         contact.object_b = convexHull;
         if ( doLightweightCollision ) {
             contact.is_lightweight = true;
-            return contact;
+            return [ contact ];
         }
 
         contact.penetration_depth = minimumProjection.overlap;
@@ -112,6 +112,6 @@ Goblin.Collision.sphereConvexHull._deepSphereConvexHull = ( function() {
         sphere.transform_inverse.transformVector3( contact.contact_point_in_a );
         convexHull.transform_inverse.transformVector3( contact.contact_point_in_b );
 
-        return contact;
+        return [ contact ];
     };
 } )();

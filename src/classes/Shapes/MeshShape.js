@@ -115,7 +115,7 @@ Goblin.MeshShape.prototype.getInertiaTensor = function( mass ) {
  * @param support_point {vec3} vec3 variable which will contain the supporting point after calling this method
  */
 Goblin.MeshShape.prototype.findSupportPoint = function( direction, support_point ) {
-     // MeshShape isn't convex so it cannot be used directly in GJK
+    // MeshShape isn't convex so it cannot be used directly in GJK
 };
 
 /**

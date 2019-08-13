@@ -2,11 +2,11 @@
  * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
  * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
  * @param {boolean} doLightweightCollision
- * @returns {Goblin.ContactDetails|null}
+ * @returns {Goblin.ContactDetails[]|null}
  */
 Goblin.Collision.sphereCapsule = ( function() {
-    var firstCenterPoint = new Goblin.Vector3();
-    var secondCenterPoint = new Goblin.Vector3();
+    var innerSegmentStart = new Goblin.Vector3();
+    var innerSegmentEnd = new Goblin.Vector3();
 
     return function( objectA, objectB, doLightweightCollision ) {
         var sphere;
@@ -19,12 +19,12 @@ Goblin.Collision.sphereCapsule = ( function() {
             capsule = objectA;
         }
 
-        firstCenterPoint.set( 0, capsule.shape.half_height, 0 );
-        secondCenterPoint.set( 0, -capsule.shape.half_height, 0 );
-        capsule.transform.transformVector3( firstCenterPoint );
-        capsule.transform.transformVector3( secondCenterPoint );
+        innerSegmentStart.set( 0, capsule.shape.half_height, 0 );
+        innerSegmentEnd.set( 0, -capsule.shape.half_height, 0 );
+        capsule.transform.transformVector3( innerSegmentStart );
+        capsule.transform.transformVector3( innerSegmentEnd );
 
-        var closestPointOnInnerSegment = Goblin.GeometryMethods.findClosestPointOnASegment( firstCenterPoint, secondCenterPoint, sphere.position );
+        var closestPointOnInnerSegment = Goblin.GeometryMethods.findClosestPointOnASegment( innerSegmentStart, innerSegmentEnd, sphere.position );
         var distanceToClosestPoint = closestPointOnInnerSegment.distanceTo( sphere.position );
 
         // The sphere overlaps the capsule if the distance of the sphere center to the closest
@@ -42,7 +42,7 @@ Goblin.Collision.sphereCapsule = ( function() {
         contact.object_b = capsule;
         if ( doLightweightCollision ) {
             contact.is_lightweight = true;
-            return contact;
+            return [ contact ];
         }
 
         contact.penetration_depth = penetrationDepth;
@@ -72,6 +72,6 @@ Goblin.Collision.sphereCapsule = ( function() {
         sphere.transform_inverse.transformVector3( contact.contact_point_in_a );
         capsule.transform_inverse.transformVector3( contact.contact_point_in_b );
 
-        return contact;
+        return [ contact ];
     };
 } )();

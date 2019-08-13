@@ -202,13 +202,22 @@ Goblin.GeometryMethods = {
         };
     } )(),
 
+    /**
+     * Populates p1 and p2 with a closest points on both segments. Returns squared distance between them.
+     *
+     * @param {Goblin.Vector3} aa - first segment start
+     * @param {Goblin.Vector3} ab - first segment end
+     * @param {Goblin.Vector3} ba - second segment start
+     * @param {Goblin.Vector3} bb - second segment end
+     * @param {Goblin.Vector3} p1 - closest point on first segment
+     * @param {Goblin.Vector3} p2 - closest point on second segment
+     * @returns {number} - distance between p1 and p2
+     */
     findClosestPointsOnSegments: ( function() {
-        var d1 = new Goblin.Vector3(),
-            d2 = new Goblin.Vector3(),
-            r = new Goblin.Vector3(),
-            clamp = function( x, min, max ) {
-                return Math.min( Math.max( x, min ), max );
-            };
+        var d1 = new Goblin.Vector3();
+        var d2 = new Goblin.Vector3();
+        var r = new Goblin.Vector3();
+        var diff = new Goblin.Vector3();
 
         return function( aa, ab, ba, bb, p1, p2 ) {
             d1.subtractVectors( ab, aa );
@@ -226,29 +235,29 @@ Goblin.GeometryMethods = {
                 s = t = 0;
                 p1.copy( aa );
                 p2.copy( ba );
-                _tmp_vec3_1.subtractVectors( p1, p2 );
-                return _tmp_vec3_1.dot( _tmp_vec3_1 );
+                diff.subtractVectors( p1, p2 );
+                return diff.dot( diff );
             }
 
             if ( a <= Goblin.EPSILON ) {
                 // Only first segment is degenerate
                 s = 0;
                 t = f / e;
-                t = clamp( t, 0, 1 );
+                t = Goblin.Utils.clamp( t, 0, 1 );
             } else {
                 var c = d1.dot( r );
                 if ( e <= Goblin.EPSILON ) {
                     // Second segment is degenerate
                     t = 0;
-                    s = clamp( -c / a, 0, 1 );
+                    s = Goblin.Math.Utils.clamp( -c / a, 0, 1 );
                 } else {
                     // Neither segment is degenerate
-                    var b = d1.dot( d2 ),
-                        denom = a * e - b * b;
+                    var b = d1.dot( d2 );
+                    var denom = a * e - b * b;
 
                     if ( denom !== 0 ) {
                         // Segments aren't parallel
-                        s = clamp( ( b * f - c * e ) / denom, 0, 1 );
+                        s = Goblin.Math.Utils.clamp( ( b * f - c * e ) / denom, 0, 1 );
                     } else {
                         s = 0;
                     }
@@ -259,10 +268,10 @@ Goblin.GeometryMethods = {
                     // validate t, if it needs clamping then clamp and recompute s
                     if ( t < 0 ) {
                         t = 0;
-                        s = clamp( -c / a, 0, 1 );
+                        s = Goblin.Math.Utils.clamp( -c / a, 0, 1 );
                     } else if ( t > 1 ) {
                         t = 1;
-                        s = clamp( ( b - c ) / a, 0, 1 );
+                        s = Goblin.Math.Utils.clamp( ( b - c ) / a, 0, 1 );
                     }
                 }
             }
@@ -273,8 +282,52 @@ Goblin.GeometryMethods = {
             p2.scaleVector( d2, t );
             p2.add( ba );
 
-            _tmp_vec3_1.subtractVectors( p1, p2 );
-            return _tmp_vec3_1.dot( _tmp_vec3_1 );
+            diff.subtractVectors( p1, p2 );
+            return diff.dot( diff );
         };
-    } )()
+    } )(),
+
+    /**
+     * Finds a closest point to plane on a given line segments. Writes result into `outPoint`.
+     * Returns a distance from nearest point on the line segment to the plane.
+     * If distance === 0 then `outPoint` is a point on line segment, otherwise it's either `lineStart` or `lineEnd`.
+     *
+     * @param {Goblin.Vector3} planeOrigin
+     * @param {Goblin.Vector3} planeNormal
+     * @param {Goblin.Vector3} lineStart
+     * @param {Goblin.Vector3} lineEnd
+     * @param {Goblin.Vector3} outPoint
+     * @returns {number} - distance from nearest point on the line segment to the plane. It equals 0 if plane intersects line segment.
+     */
+    findClosestPointToPlaneOnLineSegment: ( function() {
+        return function( planeOrigin, planeNormal, lineStart, lineEnd, outPoint ) {
+            var planeDistance = planeOrigin.dot( planeNormal );
+            var lineStartDistance = lineStart.dot( planeNormal ) - planeDistance;
+            var lineEndDistance = lineEnd.dot( planeNormal ) - planeDistance;
+
+            if ( lineStartDistance < -Goblin.EPSILON && lineEndDistance < -Goblin.EPSILON ) {
+                // line segment if fully behind the plane
+                if (lineStartDistance > lineEndDistance) {
+                    outPoint.copy(lineStart);
+                    return lineStartDistance;
+                } else {
+                    outPoint.copy(lineEnd);
+                    return lineEndDistance;
+                }
+            } else if ( lineStartDistance > Goblin.EPSILON && lineEndDistance > Goblin.EPSILON ) {
+                // line segment is fully in front of the plane
+                if (lineStartDistance < lineEndDistance) {
+                    outPoint.copy(lineStart);
+                    return lineStartDistance;
+                } else {
+                    outPoint.copy(lineEnd);
+                    return lineEndDistance;
+                }
+            }
+
+            outPoint.scaleVector( planeNormal, -lineEndDistance );
+            outPoint.add( lineEnd );
+            return 0;
+        };
+    } )(),
 };

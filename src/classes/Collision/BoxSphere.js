@@ -1,4 +1,12 @@
-Goblin.BoxSphere = function( object_a, object_b, do_lightweight_collision ) {
+/**
+ * Performs an intersection test between two triangles
+ *
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object_a
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object_b
+ * @param {boolean} do_lightweight_collision
+ * @returns {Goblin.ContactDetails[]|null}
+ */
+Goblin.Collision.boxSphere = function( object_a, object_b, do_lightweight_collision ) {
     var sphere = null;
     var box = null;
     if ( object_a.shape.shapeType === Goblin.Shapes.Type.SphereShape ) {
@@ -19,7 +27,7 @@ Goblin.BoxSphere = function( object_a, object_b, do_lightweight_collision ) {
     if ( Math.abs( _tmp_vec3_1.x ) - sphere.shape.radius > box.shape.half_width ||
         Math.abs( _tmp_vec3_1.y ) - sphere.shape.radius > box.shape.half_height ||
         Math.abs( _tmp_vec3_1.z ) - sphere.shape.radius > box.shape.half_depth ) {
-        return;
+        return null;
     }
 
     // `_tmp_vec3_1` is the center of the sphere in relation to the box
@@ -55,7 +63,7 @@ Goblin.BoxSphere = function( object_a, object_b, do_lightweight_collision ) {
     _tmp_vec3_3.subtractVectors( _tmp_vec3_2, _tmp_vec3_1 );
     distance = _tmp_vec3_3.lengthSquared();
     if ( distance > sphere.shape.radius * sphere.shape.radius ) {
-        return;
+        return null;
     }
 
     // Get a ContactDetails object populate it
@@ -65,13 +73,13 @@ Goblin.BoxSphere = function( object_a, object_b, do_lightweight_collision ) {
 
     if ( do_lightweight_collision ) {
         contact.is_lightweight = true;
-        return contact;
+        return [ contact ];
     }
 
     if ( distance === 0 ) {
 
         // The center of the sphere is contained within the box
-        Goblin.BoxSphere.spherePenetration( box.shape, _tmp_vec3_1, _tmp_vec3_2, contact );
+        Goblin.Collision.boxSphere.spherePenetration( box.shape, _tmp_vec3_1, _tmp_vec3_2, contact );
 
     } else {
 
@@ -101,10 +109,10 @@ Goblin.BoxSphere = function( object_a, object_b, do_lightweight_collision ) {
     contact.contact_point.scaleVector( contact.contact_normal, sphere.shape.radius - contact.penetration_depth / 2 );
     contact.contact_point.add( sphere.position );
 
-    return contact;
+    return [ contact ];
 };
 
-Goblin.BoxSphere.spherePenetration = function( box, sphere_center, box_point, contact ) {
+Goblin.Collision.boxSphere.spherePenetration = function( box, sphere_center, box_point, contact ) {
     var min_distance, face_distance;
 
     if ( sphere_center.x < 0 ) {
