@@ -5,30 +5,29 @@
  * @constructor
  */
 Goblin.BoxShape = function( half_width, half_height, half_depth, material ) {
+    this.shapeType = Goblin.Shapes.Type.BoxShape;
     /**
      * Half width of the cube ( X axis )
      *
-     * @property half_width
-     * @type {Number}
+     * @type {number}
      */
     this.half_width = half_width;
-
     /**
      * Half height of the cube ( Y axis )
      *
-     * @property half_height
-     * @type {Number}
+     * @type {number}
      */
     this.half_height = half_height;
-
     /**
      * Half width of the cube ( Z axis )
      *
      * @property half_height
-     * @type {Number}
+     * @type {number}
      */
     this.half_depth = half_depth;
-
+    /**
+     * @type {Goblin.AABB}
+     */
     this.aabb = new Goblin.AABB();
     this.calculateLocalAABB( this.aabb );
 
@@ -45,15 +44,13 @@ Goblin.BoxShape = function( half_width, half_height, half_depth, material ) {
     ];
 
     this.material = material || null;
-
-    this.shape = Goblin.BoxShape;
 };
 
 /**
  * Calculates this shape's local AABB and stores it in the passed AABB object
  *
  * @method calculateLocalAABB
- * @param aabb {AABB}
+ * @param {Goblin.AABB} aabb
  */
 Goblin.BoxShape.prototype.calculateLocalAABB = function( aabb ) {
     aabb.min.x = -this.half_width;
@@ -100,70 +97,62 @@ Goblin.BoxShape.prototype.findSupportPoint = function( direction, support_point 
 };
 
 /**
- * Checks if a ray segment intersects with the shape
+ * Checks if a ray segment intersects with the shape.
+ * Inspired by https://medium.com/@bromanz/another-view-on-the-classic-ray-aabb-intersection-algorithm-for-bvh-traversal-41125138b525
  *
- * @method rayIntersect
- * @property start {vec3} start point of the segment
- * @property end {vec3} end point of the segment
- * @return {RayIntersection|null} if the segment intersects, a RayIntersection is returned, else `null`
+ * @property {Goblin.Vector3} start - start point of the segment
+ * @property {Goblin.Vector3} end - end point of the segment
+ * @return {Goblin.RayIntersection|null} if the segment intersects, a RayIntersection is returned, else `null`
  */
 Goblin.BoxShape.prototype.rayIntersect = ( function() {
-    var direction = new Goblin.Vector3(),
-        tmin, tmax,
-        axis, ood, t1, t2, extent;
+    var direction = new Goblin.Vector3();
+    var invD = new Goblin.Vector3();
+    var t0s = new Goblin.Vector3();
+    var t1s = new Goblin.Vector3();
+    var tSmaller = new Goblin.Vector3();
+    var tBigger = new Goblin.Vector3();
+    var tMin = 0;
+    var tMax = 0;
 
     return function( start, end ) {
-        tmin = 0;
-
         direction.subtractVectors( end, start );
-        tmax = direction.length();
-        direction.scale( 1 / tmax ); // normalize direction
+        tMin = 0;
+        tMax = direction.normalize();
+        invD.reciprocalOfVector( direction );
 
-        for ( var i = 0; i < 3; i++ ) {
-            axis = i === 0 ? 'x' : ( i === 1 ? 'y' : 'z' );
-            extent = ( i === 0 ? this.half_width : ( i === 1 ? this.half_height : this.half_depth ) );
+        t0s.subtractVectors( this.aabb.min, start );
+        t0s.multiply( invD );
 
-            if ( Math.abs( direction[ axis ] ) < Goblin.EPSILON ) {
-                // Ray is parallel to axis
-                if ( start[ axis ] < -extent || start[ axis ] > extent ) {
-                    return null;
-                }
-            }
+        t1s.subtractVectors( this.aabb.max, start );
+        t1s.multiply( invD );
 
-            ood = 1 / direction[ axis ];
-            t1 = ( -extent - start[ axis ] ) * ood;
-            t2 = ( extent - start[ axis ] ) * ood;
-            if ( t1 > t2 ) {
-                ood = t1; // ood is a convenient temp variable as it's not used again
-                t1 = t2;
-                t2 = ood;
-            }
+        tSmaller.pairwiseMinBetween( t0s, t1s );
+        tBigger.pairwiseMaxBetween( t0s, t1s );
 
-            // Find intersection intervals
-            tmin = Math.max( tmin, t1 );
-            tmax = Math.min( tmax, t2 );
+        tMin = Math.max( tMin, Math.max( tSmaller.x, Math.max( tSmaller.y, tSmaller.z ) ) );
+        tMax = Math.min( tMax, Math.min( tBigger.x, Math.min( tBigger.y, tBigger.z ) ) );
 
-            if ( tmin > tmax ) {
-                return null;
-            }
+        if ( tMin > tMax || tMax < 0 ) {
+            return null;
         }
 
         var intersection = Goblin.ObjectPool.getObject( 'RayIntersection' );
         intersection.object = this;
-        intersection.t = tmin;
-        intersection.point.scaleVector( direction, tmin );
+        intersection.t = tMin;
+        intersection.point.scaleVector( direction, tMin );
         intersection.point.add( start );
 
-        // Find face normal
         var max = Infinity;
-        for ( i = 0; i < 3; i++ ) {
-            axis = i === 0 ? 'x' : ( i === 1 ? 'y' : 'z' );
-            extent = ( i === 0 ? this.half_width : ( i === 1 ? this.half_height : this.half_depth ) );
-            if ( extent - Math.abs( intersection.point[ axis ] ) < max ) {
-                intersection.normal.x = intersection.normal.y = intersection.normal.z = 0;
-                intersection.normal[ axis ] = intersection.point[ axis ] < 0 ? -1 : 1;
-                max = extent - Math.abs( intersection.point[ axis ] );
-            }
+        if ( this.half_width - Math.abs( intersection.point.x ) < max ) {
+            intersection.normal.set( Math.sign( intersection.point.x ), 0, 0 );
+            max = this.half_width - Math.abs( intersection.point.x );
+        }
+        if ( this.half_height - Math.abs( intersection.point.y ) < max ) {
+            intersection.normal.set( 0, Math.sign( intersection.point.y ), 0 );
+            max = this.half_height - Math.abs( intersection.point.y );
+        }
+        if ( this.half_depth - Math.abs( intersection.point.z ) < max ) {
+            intersection.normal.set( 0, 0, Math.sign( intersection.point.z ) );
         }
 
         return intersection;

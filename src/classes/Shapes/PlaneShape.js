@@ -6,6 +6,7 @@
  * @constructor
  */
 Goblin.PlaneShape = function( orientation, half_width, half_length ) {
+    this.shapeType = Goblin.Shapes.Type.PlaneShape;
     /**
      * index of axis which is the plane's normal ( 0 = X, 1 = Y, 2 = Z )
      * when 0, width is Y and length is Z

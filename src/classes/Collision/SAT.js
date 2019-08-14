@@ -9,6 +9,8 @@ Goblin.Collision.SAT = {
         var negatedNormal = new Goblin.Vector3();
 
         return function( objectA, objectB ) {
+            // Step 1: we need to determine the separation axises: they are all normals from object a are all normals from object b
+            // TODO: [EN-242] decide whether to include all cross products or to pass them separately
             var allNormals = [];
             var normalsA = objectA.faceNormals;
             var normalsB = objectB.faceNormals;
@@ -17,10 +19,8 @@ Goblin.Collision.SAT = {
             } else if ( normalsB === 0 ) {
                 allNormals = normalsA;
             } else {
-                var crossNormals = this._getAllCrossProductPairs( normalsA, normalsB );
                 allNormals.push.apply( allNormals, normalsA );
                 allNormals.push.apply( allNormals, normalsB );
-                allNormals.push.apply( allNormals, crossNormals );
                 this.removeDuplicatedVectors( allNormals );
             }
 
@@ -28,6 +28,9 @@ Goblin.Collision.SAT = {
             var minimumProjection = null;
             var minimumOverlap = Infinity;
 
+            // Not we want to project all shapes onto our separation axises.
+            // - If at least one pair of projections is not overlapping then there is no collision at all
+            // - If all projections are overlapping then we want to use the smallest projection as a separation axis.
             for ( var i = 0; i < allNormals.length; i++ ) {
                 var normal = allNormals[ i ];
                 negatedNormal.scaleVector( normal, -1 );
@@ -35,6 +38,7 @@ Goblin.Collision.SAT = {
 
                 var projection = null;
                 if ( computedNegativeProjection ) {
+                    // It's quite likely that we already have a projection on a negative axis
                     projection = computedNegativeProjection.cloneAndNegate();
                 }
                 if ( !projection ) {
@@ -82,28 +86,6 @@ Goblin.Collision.SAT = {
                 i--;
             }
         }
-    },
-
-    /**
-     * Performs cross-product between all pairs of vectors.
-     * @param {Goblin.Vector3[]} normalsA
-     * @param {Goblin.Vector3[]} normalsB
-     * @returns {Goblin.Vector3[]}
-     * @private
-     */
-    _getAllCrossProductPairs: function( normalsA, normalsB ) {
-        var crossProducts = [];
-
-        for ( var i = 0; i < normalsA.length; i++ ) {
-            for ( var j = 0; j < normalsB.length; j++ ) {
-                var crossProduct = new Goblin.Vector3();
-                crossProduct.crossVectors( normalsA[ i ], normalsB[ j ] );
-                crossProducts.push( crossProduct );
-            }
-        }
-
-        this.removeDuplicatedVectors( crossProducts );
-        return crossProducts;
     },
 
     /**

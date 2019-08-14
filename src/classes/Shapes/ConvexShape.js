@@ -4,6 +4,7 @@
  * @constructor
  */
 Goblin.ConvexShape = function( vertices ) {
+    this.shapeType = Goblin.Shapes.Type.ConvexShape;
     /**
      * vertices composing the convex hull
      *

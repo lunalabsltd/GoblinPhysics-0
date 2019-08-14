@@ -118,19 +118,14 @@ Goblin.GeometryMethods = {
             if ( Math.abs( denom ) < Goblin.EPSILON ) {
                 // ABC is a line, but worry not
                 if ( Math.abs( d00 ) < Goblin.EPSILON ) {
-                    // A and B are the same point
+                    // A and B are the same point => we can use line A -> C
                     t = Math.sqrt( d22 / d11 );
                     out.set( 1 - t, 0, t );
                     return;
-                } else if ( Math.abs( d11 ) < Goblin.EPSILON ) {
-                    // A and C are the same point
+                } else {
+                    // A and C are the same point OR B and C are the same point => we can use line A -> B
                     t = Math.sqrt( d22 / d00 );
                     out.set( 1 - t, t, 0 );
-                    return;
-                } else {
-                    // B and C are the same point
-                    t = Math.sqrt( d22 / d11 );
-                    out.set( 0, 1 - t, t );
                     return;
                 }
             }
@@ -187,24 +182,17 @@ Goblin.GeometryMethods = {
         var t = 0;
 
         return function( segmentStart, segmentEnd, point ) {
-            var closestPoint = new Goblin.Vector3();
-
             v.subtractVectors( segmentEnd, segmentStart );
             vNormalized.copy( v );
             vNormalized.normalize();
             u.subtractVectors( point, segmentStart );
 
+            var closestPoint = new Goblin.Vector3();
             closestPoint.copy( vNormalized );
-            closestPoint.scale( u.dot( vNormalized ) );
-            closestPoint.add( segmentStart ); // It's now a closest point on line, not line segment
-            u.subtractVectors( segmentStart, closestPoint );
+            closestPoint.scale( u.dot( vNormalized ) ); // It's now a vector from segmentStart to a closest point on a line (not on the line segment)
 
-            t = -( v.dot( u ) ) / ( v.dot( v ) );
-            if ( t > 1 ) {
-                t = 1;
-            } else if ( t < 0 ) {
-                t = 0;
-            }
+            t = v.dot( closestPoint ) / v.dot( v );
+            t = Goblin.Math.Utils.clamp( t, 0, 1 );
 
             closestPoint.copy( v );
             closestPoint.scale( t );

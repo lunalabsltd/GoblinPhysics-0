@@ -5,7 +5,7 @@
  * @constructor
  */
 Goblin.CapsuleShape = function( radius, half_height, material ) {
-    this.shape = Goblin.CapsuleShape;
+    this.shapeType = Goblin.Shapes.Type.CapsuleShape;
     /**
      * radius of the capsule
      *
@@ -151,24 +151,6 @@ Goblin.CapsuleShape.prototype.rayIntersect = ( function() {
         return -1;
     };
 
-    /**
-     * Calculates intersection normal given intersection point and params of the sphere.
-     * @param {Goblin.Vector3} intersectionPoint
-     * @param {Goblin.Vector3} pa - center point of the first sphere
-     * @param {Goblin.Vector3} pb - center point of the the sphere
-     * @param {number} ra - radius of spheres
-     * @param {Goblin.Vector3} normal output variable
-     */
-    var calculateIntersectionNormal = function( intersectionPoint, pa, pb, ra, normal ) {
-        ba.subtractVectors( pb, pa );
-        pa.subtractVectors( intersectionPoint, pa );
-        var h = Goblin.Math.Utils.clamp( pa.dot( ba ) / ba.dot( ba ), 0, 1 );
-
-        normal.scaleVector( ba, -h );
-        normal.add( pa );
-        normal.scale( 1 / ra );
-    };
-
     return function( start, end ) {
         pa.set( 0, this.half_height, 0 );
         pb.set( 0, -this.half_height, 0 );
@@ -189,7 +171,17 @@ Goblin.CapsuleShape.prototype.rayIntersect = ( function() {
         intersection.point.scaleVector( rd, t );
         intersection.point.add( start );
         intersection.t = t;
-        calculateIntersectionNormal( intersection.point, pa, pb, this.radius, intersection.normal );
+
+        intersection.normal.x = intersection.point.x;
+        intersection.normal.z = intersection.point.z;
+        if ( intersection.point.y < -this.half_height ) {
+            intersection.normal.y = intersection.point.y + this.half_height;
+        } else if ( intersection.point.y > this.half_height ) {
+            intersection.normal.y = intersection.point.y - this.half_height;
+        } else {
+            intersection.normal.y = 0.0;
+        }
+        intersection.normal.scale( 1.0 / this.radius );
 
         return intersection;
     };

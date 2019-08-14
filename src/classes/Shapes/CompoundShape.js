@@ -2,6 +2,8 @@
  * @constructor
  */
 Goblin.CompoundShape = function() {
+    this.shapeType = Goblin.Shapes.Type.CompoundShape;
+
     /**
      * @type {Goblin.CompoundShapeChild[]}
      */
@@ -18,8 +20,6 @@ Goblin.CompoundShape = function() {
     this.center_of_mass_override = null;
 
     this.updateAABB();
-
-    this.shape = Goblin.CompoundShape;
 };
 
 /**

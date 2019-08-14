@@ -4,7 +4,7 @@
  * @constructor
  */
 Goblin.SphereShape = function( radius, material ) {
-    this.shape = Goblin.SphereShape;
+    this.shapeType = Goblin.Shapes.Type.SphereShape;
     /**
      * @type {number}
      */
