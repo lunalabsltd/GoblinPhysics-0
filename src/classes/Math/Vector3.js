@@ -141,16 +141,19 @@ Goblin.Vector3.prototype = {
 
     /**
      * @param {Goblin.Vector3} another
+     * @param {number=} epsilon
      * @returns {boolean}
      */
-    equals: function( another ) {
-        if ( this.x !== another.x && Math.abs( this.x - another.x ) > Goblin.EPSILON ) {
+    equals: function( another, epsilon ) {
+        epsilon = epsilon || Goblin.EPSILON;
+
+        if ( this.x !== another.x && Math.abs( this.x - another.x ) > epsilon ) {
             return false;
         }
-        if ( this.y !== another.y && Math.abs( this.y - another.y ) > Goblin.EPSILON ) {
+        if ( this.y !== another.y && Math.abs( this.y - another.y ) > epsilon ) {
             return false;
         }
-        if ( this.z !== another.z && Math.abs( this.z - another.z ) > Goblin.EPSILON ) {
+        if ( this.z !== another.z && Math.abs( this.z - another.z ) > epsilon ) {
             return false;
         }
 

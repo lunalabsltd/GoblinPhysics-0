@@ -15,6 +15,10 @@ Goblin.ConvexHullShape = function( verticesCloud, material ) {
      */
     this.vertices = [];
     /**
+     * @type {Goblin.ConvexHullShape.HalfEdge[]}
+     */
+    this.edges = [];
+    /**
      * @type {Array<Goblin.ConvexHullShape.Face>}
      */
     this.faces = [];
@@ -27,9 +31,15 @@ Goblin.ConvexHullShape = function( verticesCloud, material ) {
      */
     this.aabb = new Goblin.AABB();
     /**
+     * NOTE: this field should preserve size and order of `this.faces`, because collision algorithm relies on it.
      * @type {Array<Goblin.Vector3>}
      */
     this.faceNormals = [];
+    /**
+     * NOTE: this field should preserve size and order of `this.edges`, because collision algorithm relies on it.
+     * @type {Goblin.Vector3[]}
+     */
+    this.edgeDirections = [];
     /**
      * the convex hull's volume
      * @type {number}
@@ -49,7 +59,7 @@ Goblin.ConvexHullShape = function( verticesCloud, material ) {
 
     this._buildInitialSimplex( verticesCloud );
     this._processUnclaimedPoints();
-    this._calculateVerticesAndNormalsFromFaces();
+    this._calculateVerticesEdgesAndNormals();
     this._cleanup();
     this.calculateLocalAABB( this.aabb );
     this.computeVolume();
@@ -702,11 +712,12 @@ Goblin.ConvexHullShape.prototype._assignUnusedVertex = function( vertex, facesTo
 };
 
 /**
- * Populates this.vertices from all unique vertices which can be found in this.faces.
+ * Populates this.vertices, this.edges. this.faceNormals and this.edgeDirections
  * @private
  */
-Goblin.ConvexHullShape.prototype._calculateVerticesAndNormalsFromFaces = function() {
+Goblin.ConvexHullShape.prototype._calculateVerticesEdgesAndNormals = function() {
     this.vertices.length = 0;
+    this.edges.length = 0;
 
     for ( var i = 0; i < this.faces.length; i++ ) {
         var face = this.faces[ i ];
@@ -714,6 +725,14 @@ Goblin.ConvexHullShape.prototype._calculateVerticesAndNormalsFromFaces = functio
         this.faceNormals.push( face.normal );
 
         do {
+            if ( this.edges.indexOf( currentEdge ) === -1 ) {
+                this.edges.push( currentEdge );
+                var edgeDirection = new Goblin.Vector3();
+                edgeDirection.subtractVectors( currentEdge.getTail().position, currentEdge.getHead().position );
+                edgeDirection.normalize();
+                this.edgeDirections.push( edgeDirection );
+            }
+
             var vertex = currentEdge.getTail();
             if ( this.vertices.indexOf( vertex ) === -1 ) {
                 this.vertices.push( vertex );
@@ -721,8 +740,6 @@ Goblin.ConvexHullShape.prototype._calculateVerticesAndNormalsFromFaces = functio
             currentEdge = currentEdge.next;
         } while ( currentEdge !== face.edge );
     }
-
-    Goblin.Collision.SAT.removeDuplicatedVectors( this.faceNormals );
 };
 
 /**

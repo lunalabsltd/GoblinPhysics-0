@@ -149,70 +149,67 @@ Goblin.ContactManifold.prototype.addContact = function( contact ) {
 /**
  * Updates all of this manifold's ContactDetails with the correct contact location & penetration depth
  *
- * @method update
  */
-Goblin.ContactManifold.prototype.update = function() {
-    // Update positions / depths of contacts
-    var i,
-        j,
-        point,
-        penetrationThreshold = 0.2,
-        object_a_world_coords = new Goblin.Vector3(),
-        object_b_world_coords = new Goblin.Vector3(),
-        vector_difference = new Goblin.Vector3(),
-        initial_points_length = this.points.length;
+Goblin.ContactManifold.prototype.update = ( function() {
+    var object_a_world_coords = new Goblin.Vector3();
+    var object_b_world_coords = new Goblin.Vector3();
+    var vector_difference = new Goblin.Vector3();
+    var penetrationThreshold = Goblin.EPSILON;
 
-    for ( i = 0; i < this.points.length; i++ ) {
-        point = this.points[ i ];
+    return function() {
+        // Update positions / depths of contacts
+        for ( var i = 0; i < this.points.length; i++ ) {
+            var point = this.points[ i ];
 
-        // Convert the local contact points into world coordinates
-        point.object_a.transform.transformVector3Into( point.contact_point_in_a, object_a_world_coords );
-        point.object_b.transform.transformVector3Into( point.contact_point_in_b, object_b_world_coords );
+            // Convert the local contact points into world coordinates
+            point.object_a.transform.transformVector3Into( point.contact_point_in_a, object_a_world_coords );
+            point.object_b.transform.transformVector3Into( point.contact_point_in_b, object_b_world_coords );
 
-        // Find new world contact point
-        point.contact_point.addVectors( object_a_world_coords, object_b_world_coords );
-        point.contact_point.scale( 0.5 );
+            // Find new world contact point
+            point.contact_point.addVectors( object_a_world_coords, object_b_world_coords );
+            point.contact_point.scale( 0.5 );
 
-        // Find the new penetration depth
-        vector_difference.subtractVectors( object_a_world_coords, object_b_world_coords );
-        point.penetration_depth = vector_difference.dot( point.contact_normal );
+            // Find the new penetration depth
+            vector_difference.subtractVectors( object_a_world_coords, object_b_world_coords );
+            point.penetration_depth = vector_difference.dot( point.contact_normal );
 
-        if ( ( point.object_a_version !== point.object_a.version ) || ( point.object_b_version !== point.object_b.version ) ) {
-            point.penetration_depth = -Infinity;
-        }
-
-        var thisIsTheLastPoint = this.points.length === 1;
-        // If distance from contact is too great remove this contact point
-        if ( point.penetration_depth < -penetrationThreshold ) {
-            // Points are too far away along the contact normal
-            if ( thisIsTheLastPoint ) {
-                this.object_a.onCollisionContactExit && this.object_a.onCollisionContactExit( point );
+            if ( ( point.object_a_version !== point.object_a.version ) || ( point.object_b_version !== point.object_b.version ) ) {
+                point.penetration_depth = -Infinity;
             }
 
-            point.destroy();
-            this.points[ i ] = this.points[ this.points.length - 1 ];
-            this.points.length = this.points.length - 1;
-        } else {
-            // Check if points are too far away orthogonally
-            _tmp_vec3_1.scaleVector( point.contact_normal, point.penetration_depth );
-            _tmp_vec3_1.subtractVectors( object_a_world_coords, _tmp_vec3_1 );
-
-            _tmp_vec3_1.subtractVectors( object_b_world_coords, _tmp_vec3_1 );
-            var distance = _tmp_vec3_1.length();
-            if ( distance > penetrationThreshold ) {
-                // Points are indeed too far away
+            var thisIsTheLastPoint = this.points.length === 1;
+            // If distance from contact is too great remove this contact point
+            if ( point.penetration_depth < -penetrationThreshold ) {
+                // Points are too far away along the contact normal
                 if ( thisIsTheLastPoint ) {
                     this.object_a.onCollisionContactExit && this.object_a.onCollisionContactExit( point );
                 }
 
                 point.destroy();
                 this.points[ i ] = this.points[ this.points.length - 1 ];
-                this.points.length = this.points.length - 1;
+                this.points.pop();
+            } else {
+                // Check if points are too far away orthogonally
+                _tmp_vec3_1.scaleVector( point.contact_normal, point.penetration_depth );
+                _tmp_vec3_1.subtractVectors( object_a_world_coords, _tmp_vec3_1 );
+
+                _tmp_vec3_1.subtractVectors( object_b_world_coords, _tmp_vec3_1 );
+                var distance = _tmp_vec3_1.length();
+                if ( distance > penetrationThreshold ) {
+                    // Points are indeed too far away
+                    if ( thisIsTheLastPoint ) {
+                        this.object_a.onCollisionContactExit && this.object_a.onCollisionContactExit( point );
+                    }
+
+                    point.destroy();
+                    this.points[ i ] = this.points[ this.points.length - 1 ];
+                    this.points.pop();
+                }
             }
         }
-    }
 
-    if ( this.points.length !== 0 ) {
-        this.object_a.onCollisionContactStay && this.object_a.onCollisionContactStay( this.points[ this.points.length - 1 ] );
-    }
-};
+        if ( this.points.length !== 0 ) {
+            this.object_a.onCollisionContactStay && this.object_a.onCollisionContactStay( this.points[ this.points.length - 1 ] );
+        }
+    };
+} )();

@@ -114,7 +114,7 @@ Goblin.CompoundShape.prototype.updateFaceNormals = function() {
         this.faceNormals.push.apply( this.faceNormals, this.child_shapes[ i ].faceNormals );
     }
 
-    Goblin.Collision.SAT.removeDuplicatedVectors( this.faceNormals );
+    Goblin.Collision.SAT.sanitizeAndRemoveDuplicatedVectors( this.faceNormals );
 };
 
 /**

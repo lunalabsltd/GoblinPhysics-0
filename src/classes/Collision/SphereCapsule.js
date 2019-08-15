@@ -7,6 +7,7 @@
 Goblin.Collision.sphereCapsule = ( function() {
     var innerSegmentStart = new Goblin.Vector3();
     var innerSegmentEnd = new Goblin.Vector3();
+    var closestPointOnInnerSegment = new Goblin.Vector3();
 
     return function( objectA, objectB, doLightweightCollision ) {
         var sphere;
@@ -24,7 +25,7 @@ Goblin.Collision.sphereCapsule = ( function() {
         capsule.transform.transformVector3( innerSegmentStart );
         capsule.transform.transformVector3( innerSegmentEnd );
 
-        var closestPointOnInnerSegment = Goblin.GeometryMethods.findClosestPointOnASegment( innerSegmentStart, innerSegmentEnd, sphere.position );
+        Goblin.GeometryMethods.findClosestPointOnASegment( innerSegmentStart, innerSegmentEnd, sphere.position, closestPointOnInnerSegment );
         var distanceToClosestPoint = closestPointOnInnerSegment.distanceTo( sphere.position );
 
         // The sphere overlaps the capsule if the distance of the sphere center to the closest

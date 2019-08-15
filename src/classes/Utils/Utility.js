@@ -1,8 +1,8 @@
 Goblin.Utility = {
-	getUid: (function() {
-		var uid = 0;
-		return function() {
-			return uid++;
-		};
-	})()
+    getUid: ( function() {
+        var uid = 0;
+        return function() {
+            return uid++;
+        };
+    } )()
 };
