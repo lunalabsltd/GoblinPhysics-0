@@ -41,9 +41,6 @@ Goblin.Collision.capsuleCapsule = ( function() {
 
         // Once we have the closest points we can build virtual spheres around the closest
         // points again and think of this as sphere vs sphere.
-        /**
-         * @type {Goblin.ContactDetails}
-         */
         var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
         contact.object_a = objectA;
         contact.object_b = objectB;

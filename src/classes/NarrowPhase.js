@@ -101,9 +101,9 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
 
                 this.addContact( parent_a, parent_b, contact );
             }
-
-            result_contacts = result_contacts || contacts;
         }
+
+        result_contacts = result_contacts || contacts;
     }
 
     Goblin.ObjectPool.freeObject( 'RigidBodyProxy', proxy );

@@ -3,36 +3,29 @@ Goblin.Collision.SAT = {
      * Performs A SAT collision between to objects. Returns projection (that can be used as a minimum translation vector) or null if there is no collision.
      * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
      * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
+     * @param {Goblin.Vector3[]} normals
      * @returns {Goblin.Collision.SAT.Projection|null}
      */
     performSat: ( function() {
         var negatedNormal = new Goblin.Vector3();
 
-        return function( objectA, objectB ) {
-            // Step 1: we need to determine the separation axises: they are all normals from object a are all normals from object b
-            // TODO: [EN-242] decide whether to include all cross products or to pass them separately
-            var allNormals = [];
-            var normalsA = objectA.faceNormals;
-            var normalsB = objectB.faceNormals;
-            if ( normalsA.length === 0 ) {
-                allNormals = normalsB;
-            } else if ( normalsB === 0 ) {
-                allNormals = normalsA;
-            } else {
-                allNormals.push.apply( allNormals, normalsA );
-                allNormals.push.apply( allNormals, normalsB );
-                this.removeDuplicatedVectors( allNormals );
-            }
-
+        return function( objectA, objectB, normals ) {
             var allProjections = [];
             var minimumProjection = null;
             var minimumOverlap = Infinity;
 
-            // Not we want to project all shapes onto our separation axises.
-            // - If at least one pair of projections is not overlapping then there is no collision at all
-            // - If all projections are overlapping then we want to use the smallest projection as a separation axis.
-            for ( var i = 0; i < allNormals.length; i++ ) {
-                var normal = allNormals[ i ];
+            // We want to project all shapes onto our separation axises.
+            // - if at least one pair of projections is not overlapping then there is no collision at all;
+            // - if all projections are overlapping then we want to use the smallest projection as a separation axis.
+            for ( var i = 0; i < normals.length; i++ ) {
+                var normal = normals[ i ];
+
+                var projectionWithNormal = this._findProjectionWithNormal( allProjections, normal );
+                if (projectionWithNormal !== null) {
+                    // We already projected on this axis
+                    continue;
+                }
+
                 negatedNormal.scaleVector( normal, -1 );
                 var computedNegativeProjection = this._findProjectionWithNormal( allProjections, negatedNormal );
 
@@ -68,25 +61,28 @@ Goblin.Collision.SAT = {
      * Removes all duplicates from array of vectors.
      * @param {Array<Goblin.Vector3>} vectors
      */
-    removeDuplicatedVectors: function( vectors ) {
-        for ( var i = 0; i < vectors.length; i++ ) {
-            var vector = vectors[ i ];
-            var isDuplicate = false;
-
+    sanitizeAndRemoveDuplicatedVectors: (function () {
+        var isDuplicate = function (vectors, i) {
             for ( var j = i + 1; j < vectors.length; j++ ) {
-                isDuplicate = vector.equals( vectors[ j ] );
-                if ( isDuplicate ) {
-                    break;
+                if ( vectors[i].equals( vectors[ j ] ) ) {
+                    return true;
                 }
             }
 
-            if ( isDuplicate ) {
-                vectors[ i ] = vectors[ vectors.length - 1 ];
-                vectors.pop();
-                i--;
+            return false;
+        };
+
+        return function( vectors ) {
+            for ( var i = 0; i < vectors.length; i++ ) {
+                var shouldBeRemoved = vectors[ i ].isZero() || isDuplicate(vectors, i);
+                if ( shouldBeRemoved ) {
+                    vectors[ i ] = vectors[ vectors.length - 1 ];
+                    vectors.pop();
+                    i--;
+                }
             }
-        }
-    },
+        };
+    })(),
 
     /**
      * Finds a projection with a given normal.
@@ -135,6 +131,7 @@ Goblin.Collision.SAT = {
  */
 Goblin.Collision.SAT.Projection = function( normal, a1, a2, b1, b2 ) {
     this.normal = normal;
+
     if ( a1 < a2 ) {
         this.startA = a1;
         this.endA = a2;

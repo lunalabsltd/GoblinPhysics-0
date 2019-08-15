@@ -173,7 +173,7 @@ Goblin.GeometryMethods = {
      * @param {Goblin.Vector3} segmentStart
      * @param {Goblin.Vector3} segmentEnd
      * @param {Goblin.Vector3} point
-     * @returns {Goblin.Vector3}
+     * @param {Goblin.Vector3} outputPoint
      */
     findClosestPointOnASegment: ( function() {
         var v = new Goblin.Vector3();
@@ -181,24 +181,21 @@ Goblin.GeometryMethods = {
         var u = new Goblin.Vector3();
         var t = 0;
 
-        return function( segmentStart, segmentEnd, point ) {
+        return function( segmentStart, segmentEnd, point, outputPoint ) {
             v.subtractVectors( segmentEnd, segmentStart );
             vNormalized.copy( v );
             vNormalized.normalize();
             u.subtractVectors( point, segmentStart );
 
-            var closestPoint = new Goblin.Vector3();
-            closestPoint.copy( vNormalized );
-            closestPoint.scale( u.dot( vNormalized ) ); // It's now a vector from segmentStart to a closest point on a line (not on the line segment)
+            outputPoint.copy( vNormalized );
+            outputPoint.scale( u.dot( vNormalized ) ); // It's now a vector from segmentStart to a closest point on a line (not on the line segment)
 
-            t = v.dot( closestPoint ) / v.dot( v );
+            t = v.dot( outputPoint ) / v.dot( v );
             t = Goblin.Math.Utils.clamp( t, 0, 1 );
 
-            closestPoint.copy( v );
-            closestPoint.scale( t );
-            closestPoint.add( segmentStart );
-
-            return closestPoint;
+            outputPoint.copy( v );
+            outputPoint.scale( t );
+            outputPoint.add( segmentStart );
         };
     } )(),
 
@@ -211,7 +208,7 @@ Goblin.GeometryMethods = {
      * @param {Goblin.Vector3} bb - second segment end
      * @param {Goblin.Vector3} p1 - closest point on first segment
      * @param {Goblin.Vector3} p2 - closest point on second segment
-     * @returns {number} - distance between p1 and p2
+     * @returns {number} - squared distance between p1 and p2
      */
     findClosestPointsOnSegments: ( function() {
         var d1 = new Goblin.Vector3();
@@ -307,20 +304,20 @@ Goblin.GeometryMethods = {
 
             if ( lineStartDistance < -Goblin.EPSILON && lineEndDistance < -Goblin.EPSILON ) {
                 // line segment if fully behind the plane
-                if (lineStartDistance > lineEndDistance) {
-                    outPoint.copy(lineStart);
+                if ( lineStartDistance > lineEndDistance ) {
+                    outPoint.copy( lineStart );
                     return lineStartDistance;
                 } else {
-                    outPoint.copy(lineEnd);
+                    outPoint.copy( lineEnd );
                     return lineEndDistance;
                 }
             } else if ( lineStartDistance > Goblin.EPSILON && lineEndDistance > Goblin.EPSILON ) {
                 // line segment is fully in front of the plane
-                if (lineStartDistance < lineEndDistance) {
-                    outPoint.copy(lineStart);
+                if ( lineStartDistance < lineEndDistance ) {
+                    outPoint.copy( lineStart );
                     return lineStartDistance;
                 } else {
-                    outPoint.copy(lineEnd);
+                    outPoint.copy( lineEnd );
                     return lineEndDistance;
                 }
             }
@@ -330,4 +327,82 @@ Goblin.GeometryMethods = {
             return 0;
         };
     } )(),
+
+    /**
+     * Projects the point on the given plane. Returns distance between them
+     *
+     * @param {Goblin.Vector3} planeOrigin
+     * @param {Goblin.Vector3} planeNormal
+     * @param {Goblin.Vector3} point
+     * @param {Goblin.Vector3} outputPoint
+     * @returns {number}
+     */
+    projectPointOnPlane: ( function() {
+        var v = new Goblin.Vector3();
+        var distance = 0;
+
+        return function( planeOrigin, planeNormal, point, outputPoint ) {
+            v.subtractVectors( point, planeOrigin );
+            distance = v.dot( planeNormal );
+            outputPoint.scaleVector( planeNormal, -distance );
+            outputPoint.add( point );
+
+            return distance;
+        };
+    } )(),
+
+    /**
+     * Given two coplanar line segments finds an intersection point on them.
+     * Returns `true` if such point is found and `false` otherwise.
+     * Sponsored by https://stackoverflow.com/a/33825948/2646756
+     *
+     * @param {Goblin.Vector3} lineSegmentStartA
+     * @param {Goblin.Vector3} lineSegmentEndA
+     * @param {Goblin.Vector3} lineSegmentStartB
+     * @param {Goblin.Vector3} lineSegmentEndB
+     * @param {Goblin.Vector3} outputPoint
+     * @returns {boolean}
+     */
+    getLineSegmentsIntersection: ( function() {
+        var da = new Goblin.Vector3();
+        var db = new Goblin.Vector3();
+        var dc = new Goblin.Vector3();
+
+        var dcdb = new Goblin.Vector3();
+        var dcda = new Goblin.Vector3();
+        var dadb = new Goblin.Vector3();
+
+        var det = 0;
+        var s = 0;
+        var t = 0;
+
+        return function( lineSegmentStartA, lineSegmentEndA, lineSegmentStartB, lineSegmentEndB, outputPoint ) {
+            da.subtractVectors( lineSegmentEndA, lineSegmentStartA );
+            db.subtractVectors( lineSegmentEndB, lineSegmentStartB );
+            dc.subtractVectors( lineSegmentStartB, lineSegmentStartA );
+
+            dcdb.crossVectors( dc, db );
+            dadb.crossVectors( da, db );
+
+            det = dadb.lengthSquared();
+            if ( det < Goblin.EPSILON ) {
+                return false;
+            }
+
+            s = dcdb.dot( dadb ) / det;
+            if ( s < 0 || s > 1 ) {
+                return false;
+            }
+
+            dcda.crossVectors( dc, da );
+            t = dcda.dot( dadb ) / det;
+            if ( t < 0 || t > 1 ) {
+                return false;
+            }
+
+            outputPoint.scaleVector( da, s );
+            outputPoint.add( lineSegmentStartA );
+            return true;
+        };
+    } )()
 };

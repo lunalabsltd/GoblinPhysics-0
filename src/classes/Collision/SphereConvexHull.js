@@ -17,7 +17,7 @@ Goblin.Collision.sphereConvexHull = function( objectA, objectB, doLightweightCol
 
     // If closestPointOnHull is not null then center of the sphere is lying outside the convex hull.
     // This can mean two things - either there is no collision at all or there is a shallow collision.
-    var closestPointOnHull = Goblin.GjkEpa.findClosestPointOnObject( convexHull, sphere.position );
+    var closestPointOnHull = Goblin.GjkEpa.findClosestPointOnObjectToPoint( convexHull, sphere.position );
     return closestPointOnHull !== null ?
         Goblin.Collision.sphereConvexHull._shallowSphereConvexHull( sphere, convexHull, closestPointOnHull, doLightweightCollision ) :
         Goblin.Collision.sphereConvexHull._deepSphereConvexHull( sphere, convexHull, doLightweightCollision );
@@ -42,9 +42,6 @@ Goblin.Collision.sphereConvexHull._shallowSphereConvexHull = ( function() {
             return null;
         }
 
-        /**
-         * @type {Goblin.ContactDetails}
-         */
         var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
         contact.object_a = sphere;
         contact.object_b = convexHull;
@@ -81,20 +78,18 @@ Goblin.Collision.sphereConvexHull._shallowSphereConvexHull = ( function() {
  */
 Goblin.Collision.sphereConvexHull._deepSphereConvexHull = ( function() {
     return function( sphere, convexHull, doLightweightCollision ) {
-        var minimumProjection = Goblin.Collision.SAT.performSat( sphere, convexHull );
-        if ( minimumProjection === null ) {
-            return null;
-        }
-
-        /**
-         * @type {Goblin.ContactDetails}
-         */
         var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
         contact.object_a = sphere;
         contact.object_b = convexHull;
         if ( doLightweightCollision ) {
             contact.is_lightweight = true;
             return [ contact ];
+        }
+
+        var minimumProjection = Goblin.Collision.SAT.performSat( sphere, convexHull, convexHull.faceNormals );
+        if ( minimumProjection === null ) {
+            // Umm, what?
+            throw new Error( 'Center of the sphere is inside the complex hull, but SAT thinks that they do not overlap.' );
         }
 
         contact.penetration_depth = minimumProjection.overlap;

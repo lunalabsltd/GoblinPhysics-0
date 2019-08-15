@@ -7,632 +7,632 @@
 	var Goblin = {};
 Goblin.Math = {};
 Goblin.Matrix3 = function( e00, e01, e02, e10, e11, e12, e20, e21, e22 ) {
-	this.e00 = e00 || 0;
-	this.e01 = e01 || 0;
-	this.e02 = e02 || 0;
+    this.e00 = e00 || 0;
+    this.e01 = e01 || 0;
+    this.e02 = e02 || 0;
 
-	this.e10 = e10 || 0;
-	this.e11 = e11 || 0;
-	this.e12 = e12 || 0;
+    this.e10 = e10 || 0;
+    this.e11 = e11 || 0;
+    this.e12 = e12 || 0;
 
-	this.e20 = e20 || 0;
-	this.e21 = e21 || 0;
-	this.e22 = e22 || 0;
+    this.e20 = e20 || 0;
+    this.e21 = e21 || 0;
+    this.e22 = e22 || 0;
 };
 
 Goblin.Matrix3.prototype = {
-	identity: function() {
-		this.e00 = 1;
-		this.e01 = 0;
-		this.e02 = 0;
+    identity: function() {
+        this.e00 = 1;
+        this.e01 = 0;
+        this.e02 = 0;
 
-		this.e10 = 0;
-		this.e11 = 1;
-		this.e12 = 0;
+        this.e10 = 0;
+        this.e11 = 1;
+        this.e12 = 0;
 
-		this.e20 = 0;
-		this.e21 = 0;
-		this.e22 = 1;
-	},
+        this.e20 = 0;
+        this.e21 = 0;
+        this.e22 = 1;
+    },
 
-	fromMatrix4: function( m ) {
-		this.e00 = m.e00;
-		this.e01 = m.e01;
-		this.e02 = m.e02;
+    fromMatrix4: function( m ) {
+        this.e00 = m.e00;
+        this.e01 = m.e01;
+        this.e02 = m.e02;
 
-		this.e10 = m.e10;
-		this.e11 = m.e11;
-		this.e12 = m.e12;
+        this.e10 = m.e10;
+        this.e11 = m.e11;
+        this.e12 = m.e12;
 
-		this.e20 = m.e20;
-		this.e21 = m.e21;
-		this.e22 = m.e22;
-	},
+        this.e20 = m.e20;
+        this.e21 = m.e21;
+        this.e22 = m.e22;
+    },
 
-	fromQuaternion: function( q ) {
-		var x2 = q.x + q.x,
-			y2 = q.y + q.y,
-			z2 = q.z + q.z,
+    fromQuaternion: function( q ) {
+        var x2 = q.x + q.x,
+            y2 = q.y + q.y,
+            z2 = q.z + q.z,
 
-			xx = q.x * x2,
-			xy = q.x * y2,
-			xz = q.x * z2,
-			yy = q.y * y2,
-			yz = q.y * z2,
-			zz = q.z * z2,
-			wx = q.w * x2,
-			wy = q.w * y2,
-			wz = q.w * z2;
+            xx = q.x * x2,
+            xy = q.x * y2,
+            xz = q.x * z2,
+            yy = q.y * y2,
+            yz = q.y * z2,
+            zz = q.z * z2,
+            wx = q.w * x2,
+            wy = q.w * y2,
+            wz = q.w * z2;
 
-		this.e00 = 1 - (yy + zz);
-		this.e10 = xy + wz;
-		this.e20 = xz - wy;
+        this.e00 = 1 - ( yy + zz );
+        this.e10 = xy + wz;
+        this.e20 = xz - wy;
 
-		this.e01 = xy - wz;
-		this.e11 = 1 - (xx + zz);
-		this.e21 = yz + wx;
+        this.e01 = xy - wz;
+        this.e11 = 1 - ( xx + zz );
+        this.e21 = yz + wx;
 
-		this.e02 = xz + wy;
-		this.e12 = yz - wx;
-		this.e22 = 1 - (xx + yy);
-	},
+        this.e02 = xz + wy;
+        this.e12 = yz - wx;
+        this.e22 = 1 - ( xx + yy );
+    },
 
-	transformVector3: function( v ) {
-		var x = v.x,
-			y = v.y,
-			z = v.z;
-		v.x = this.e00 * x + this.e01 * y + this.e02 * z;
-		v.y = this.e10 * x + this.e11 * y + this.e12 * z;
-		v.z = this.e20 * x + this.e21 * y + this.e22 * z;
-	},
+    transformVector3: function( v ) {
+        var x = v.x,
+            y = v.y,
+            z = v.z;
+        v.x = this.e00 * x + this.e01 * y + this.e02 * z;
+        v.y = this.e10 * x + this.e11 * y + this.e12 * z;
+        v.z = this.e20 * x + this.e21 * y + this.e22 * z;
+    },
 
-	transformVector3Into: function( v, dest ) {
-		dest.x = this.e00 * v.x + this.e01 * v.y + this.e02 * v.z;
-		dest.y = this.e10 * v.x + this.e11 * v.y + this.e12 * v.z;
-		dest.z = this.e20 * v.x + this.e21 * v.y + this.e22 * v.z;
-	},
+    transformVector3Into: function( v, dest ) {
+        dest.x = this.e00 * v.x + this.e01 * v.y + this.e02 * v.z;
+        dest.y = this.e10 * v.x + this.e11 * v.y + this.e12 * v.z;
+        dest.z = this.e20 * v.x + this.e21 * v.y + this.e22 * v.z;
+    },
 
-	transposeInto: function( m ) {
-		m.e00 = this.e00;
-		m.e10 = this.e01;
-		m.e20 = this.e02;
-		m.e01 = this.e10;
-		m.e11 = this.e11;
-		m.e21 = this.e12;
-		m.e02 = this.e20;
-		m.e12 = this.e21;
-		m.e22 = this.e22;
-	},
+    transposeInto: function( m ) {
+        m.e00 = this.e00;
+        m.e10 = this.e01;
+        m.e20 = this.e02;
+        m.e01 = this.e10;
+        m.e11 = this.e11;
+        m.e21 = this.e12;
+        m.e02 = this.e20;
+        m.e12 = this.e21;
+        m.e22 = this.e22;
+    },
 
-	invert: function() {
-		var a00 = this.e00, a01 = this.e01, a02 = this.e02,
-			a10 = this.e10, a11 = this.e11, a12 = this.e12,
-			a20 = this.e20, a21 = this.e21, a22 = this.e22,
+    invert: function() {
+        var a00 = this.e00, a01 = this.e01, a02 = this.e02,
+            a10 = this.e10, a11 = this.e11, a12 = this.e12,
+            a20 = this.e20, a21 = this.e21, a22 = this.e22,
 
-			b01 = a22 * a11 - a12 * a21,
-			b11 = -a22 * a10 + a12 * a20,
-			b21 = a21 * a10 - a11 * a20,
+            b01 = a22 * a11 - a12 * a21,
+            b11 = -a22 * a10 + a12 * a20,
+            b21 = a21 * a10 - a11 * a20,
 
-			d = a00 * b01 + a01 * b11 + a02 * b21,
-			id;
+            d = a00 * b01 + a01 * b11 + a02 * b21,
+            id;
 
-		if ( !d ) {
-			return true;
-		}
-		id = 1 / d;
+        if ( !d ) {
+            return true;
+        }
+        id = 1 / d;
 
-		this.e00 = b01 * id;
-		this.e01 = (-a22 * a01 + a02 * a21) * id;
-		this.e02 = (a12 * a01 - a02 * a11) * id;
-		this.e10 = b11 * id;
-		this.e11 = (a22 * a00 - a02 * a20) * id;
-		this.e12 = (-a12 * a00 + a02 * a10) * id;
-		this.e20 = b21 * id;
-		this.e21 = (-a21 * a00 + a01 * a20) * id;
-		this.e22 = (a11 * a00 - a01 * a10) * id;
+        this.e00 = b01 * id;
+        this.e01 = ( -a22 * a01 + a02 * a21 ) * id;
+        this.e02 = ( a12 * a01 - a02 * a11 ) * id;
+        this.e10 = b11 * id;
+        this.e11 = ( a22 * a00 - a02 * a20 ) * id;
+        this.e12 = ( -a12 * a00 + a02 * a10 ) * id;
+        this.e20 = b21 * id;
+        this.e21 = ( -a21 * a00 + a01 * a20 ) * id;
+        this.e22 = ( a11 * a00 - a01 * a10 ) * id;
 
-		return true;
-	},
+        return true;
+    },
 
-	invertInto: function( m ) {
-		var a00 = this.e00, a01 = this.e01, a02 = this.e02,
-			a10 = this.e10, a11 = this.e11, a12 = this.e12,
-			a20 = this.e20, a21 = this.e21, a22 = this.e22,
+    invertInto: function( m ) {
+        var a00 = this.e00, a01 = this.e01, a02 = this.e02,
+            a10 = this.e10, a11 = this.e11, a12 = this.e12,
+            a20 = this.e20, a21 = this.e21, a22 = this.e22,
 
-			b01 = a22 * a11 - a12 * a21,
-			b11 = -a22 * a10 + a12 * a20,
-			b21 = a21 * a10 - a11 * a20,
+            b01 = a22 * a11 - a12 * a21,
+            b11 = -a22 * a10 + a12 * a20,
+            b21 = a21 * a10 - a11 * a20,
 
-			d = a00 * b01 + a01 * b11 + a02 * b21,
-			id;
+            d = a00 * b01 + a01 * b11 + a02 * b21,
+            id;
 
-		if ( !d ) {
-			return false;
-		}
-		id = 1 / d;
+        if ( !d ) {
+            return false;
+        }
+        id = 1 / d;
 
-		m.e00 = b01 * id;
-		m.e01 = (-a22 * a01 + a02 * a21) * id;
-		m.e02 = (a12 * a01 - a02 * a11) * id;
-		m.e10 = b11 * id;
-		m.e11 = (a22 * a00 - a02 * a20) * id;
-		m.e12 = (-a12 * a00 + a02 * a10) * id;
-		m.e20 = b21 * id;
-		m.e21 = (-a21 * a00 + a01 * a20) * id;
-		m.e22 = (a11 * a00 - a01 * a10) * id;
+        m.e00 = b01 * id;
+        m.e01 = ( -a22 * a01 + a02 * a21 ) * id;
+        m.e02 = ( a12 * a01 - a02 * a11 ) * id;
+        m.e10 = b11 * id;
+        m.e11 = ( a22 * a00 - a02 * a20 ) * id;
+        m.e12 = ( -a12 * a00 + a02 * a10 ) * id;
+        m.e20 = b21 * id;
+        m.e21 = ( -a21 * a00 + a01 * a20 ) * id;
+        m.e22 = ( a11 * a00 - a01 * a10 ) * id;
 
-		return true;
-	},
+        return true;
+    },
 
-	multiply: function( m ) {
-		var a00 = this.e00, a01 = this.e01, a02 = this.e02,
-			a10 = this.e10, a11 = this.e11, a12 = this.e12,
-			a20 = this.e20, a21 = this.e21, a22 = this.e22,
+    multiply: function( m ) {
+        var a00 = this.e00, a01 = this.e01, a02 = this.e02,
+            a10 = this.e10, a11 = this.e11, a12 = this.e12,
+            a20 = this.e20, a21 = this.e21, a22 = this.e22,
 
-			b00 = m.e00, b01 = m.e01, b02 = m.e02,
-			b10 = m.e10, b11 = m.e11, b12 = m.e12,
-			b20 = m.e20, b21 = m.e21, b22 = m.e22;
+            b00 = m.e00, b01 = m.e01, b02 = m.e02,
+            b10 = m.e10, b11 = m.e11, b12 = m.e12,
+            b20 = m.e20, b21 = m.e21, b22 = m.e22;
 
-		this.e00 = b00 * a00 + b10 * a01 + b20 * a02;
-		this.e10 = b00 * a10 + b10 * a11 + b20 * a12;
-		this.e20 = b00 * a20 + b10 * a21 + b20 * a22;
+        this.e00 = b00 * a00 + b10 * a01 + b20 * a02;
+        this.e10 = b00 * a10 + b10 * a11 + b20 * a12;
+        this.e20 = b00 * a20 + b10 * a21 + b20 * a22;
 
-		this.e01 = b01 * a00 + b11 * a01 + b21 * a02;
-		this.e11 = b01 * a10 + b11 * a11 + b21 * a12;
-		this.e21 = b01 * a20 + b11 * a21 + b21 * a22;
+        this.e01 = b01 * a00 + b11 * a01 + b21 * a02;
+        this.e11 = b01 * a10 + b11 * a11 + b21 * a12;
+        this.e21 = b01 * a20 + b11 * a21 + b21 * a22;
 
-		this.e02 = b02 * a00 + b12 * a01 + b22 * a02;
-		this.e12 = b02 * a10 + b12 * a11 + b22 * a12;
-		this.e22 = b02 * a20 + b12 * a21 + b22 * a22;
-	},
+        this.e02 = b02 * a00 + b12 * a01 + b22 * a02;
+        this.e12 = b02 * a10 + b12 * a11 + b22 * a12;
+        this.e22 = b02 * a20 + b12 * a21 + b22 * a22;
+    },
 
-	multiplyFrom: function( a, b ) {
-		var a00 = a.e00, a01 = a.e01, a02 = a.e02,
-			a10 = a.e10, a11 = a.e11, a12 = a.e12,
-			a20 = a.e20, a21 = a.e21, a22 = a.e22,
+    multiplyFrom: function( a, b ) {
+        var a00 = a.e00, a01 = a.e01, a02 = a.e02,
+            a10 = a.e10, a11 = a.e11, a12 = a.e12,
+            a20 = a.e20, a21 = a.e21, a22 = a.e22,
 
-			b00 = b.e00, b01 = b.e01, b02 = b.e02,
-			b10 = b.e10, b11 = b.e11, b12 = b.e12,
-			b20 = b.e20, b21 = b.e21, b22 = b.e22;
+            b00 = b.e00, b01 = b.e01, b02 = b.e02,
+            b10 = b.e10, b11 = b.e11, b12 = b.e12,
+            b20 = b.e20, b21 = b.e21, b22 = b.e22;
 
-		this.e00 = b00 * a00 + b10 * a01 + b20 * a02;
-		this.e10 = b00 * a10 + b10 * a11 + b20 * a12;
-		this.e20 = b00 * a20 + b10 * a21 + b20 * a22;
+        this.e00 = b00 * a00 + b10 * a01 + b20 * a02;
+        this.e10 = b00 * a10 + b10 * a11 + b20 * a12;
+        this.e20 = b00 * a20 + b10 * a21 + b20 * a22;
 
-		this.e01 = b01 * a00 + b11 * a01 + b21 * a02;
-		this.e11 = b01 * a10 + b11 * a11 + b21 * a12;
-		this.e21 = b01 * a20 + b11 * a21 + b21 * a22;
+        this.e01 = b01 * a00 + b11 * a01 + b21 * a02;
+        this.e11 = b01 * a10 + b11 * a11 + b21 * a12;
+        this.e21 = b01 * a20 + b11 * a21 + b21 * a22;
 
-		this.e02 = b02 * a00 + b12 * a01 + b22 * a02;
-		this.e12 = b02 * a10 + b12 * a11 + b22 * a12;
-		this.e22 = b02 * a20 + b12 * a21 + b22 * a22;
-	}
+        this.e02 = b02 * a00 + b12 * a01 + b22 * a02;
+        this.e12 = b02 * a10 + b12 * a11 + b22 * a12;
+        this.e22 = b02 * a20 + b12 * a21 + b22 * a22;
+    }
 };
 Goblin.Matrix4 = function() {
-	this.e00 = 0;
-	this.e01 = 0;
-	this.e02 = 0;
-	this.e03 = 0;
+    this.e00 = 0;
+    this.e01 = 0;
+    this.e02 = 0;
+    this.e03 = 0;
 
-	this.e10 = 0;
-	this.e11 = 0;
-	this.e12 = 0;
-	this.e13 = 0;
+    this.e10 = 0;
+    this.e11 = 0;
+    this.e12 = 0;
+    this.e13 = 0;
 
-	this.e20 = 0;
-	this.e21 = 0;
-	this.e22 = 0;
-	this.e23 = 0;
+    this.e20 = 0;
+    this.e21 = 0;
+    this.e22 = 0;
+    this.e23 = 0;
 
-	this.e30 = 0;
-	this.e31 = 0;
-	this.e32 = 0;
-	this.e33 = 0;
+    this.e30 = 0;
+    this.e31 = 0;
+    this.e32 = 0;
+    this.e33 = 0;
 };
 
 Goblin.Matrix4.prototype = {
-	identity: function() {
-		this.e00 = 1;
-		this.e01 = 0;
-		this.e02 = 0;
-		this.e03 = 0;
+    identity: function() {
+        this.e00 = 1;
+        this.e01 = 0;
+        this.e02 = 0;
+        this.e03 = 0;
 
-		this.e10 = 0;
-		this.e11 = 1;
-		this.e12 = 0;
-		this.e13 = 0;
+        this.e10 = 0;
+        this.e11 = 1;
+        this.e12 = 0;
+        this.e13 = 0;
 
-		this.e20 = 0;
-		this.e21 = 0;
-		this.e22 = 1;
-		this.e23 = 0;
+        this.e20 = 0;
+        this.e21 = 0;
+        this.e22 = 1;
+        this.e23 = 0;
 
-		this.e30 = 0;
-		this.e31 = 0;
-		this.e32 = 0;
-		this.e33 = 1;
-	},
+        this.e30 = 0;
+        this.e31 = 0;
+        this.e32 = 0;
+        this.e33 = 1;
+    },
 
-	copy: function( m ) {
-		this.e00 = m.e00;
-		this.e01 = m.e01;
-		this.e02 = m.e02;
-		this.e03 = m.e03;
+    copy: function( m ) {
+        this.e00 = m.e00;
+        this.e01 = m.e01;
+        this.e02 = m.e02;
+        this.e03 = m.e03;
 
-		this.e10 = m.e10;
-		this.e11 = m.e11;
-		this.e12 = m.e12;
-		this.e13 = m.e13;
+        this.e10 = m.e10;
+        this.e11 = m.e11;
+        this.e12 = m.e12;
+        this.e13 = m.e13;
 
-		this.e20 = m.e20;
-		this.e21 = m.e21;
-		this.e22 = m.e22;
-		this.e23 = m.e23;
+        this.e20 = m.e20;
+        this.e21 = m.e21;
+        this.e22 = m.e22;
+        this.e23 = m.e23;
 
-		this.e30 = m.e30;
-		this.e31 = m.e31;
-		this.e32 = m.e32;
-		this.e33 = m.e33;
-	},
+        this.e30 = m.e30;
+        this.e31 = m.e31;
+        this.e32 = m.e32;
+        this.e33 = m.e33;
+    },
 
-	getTranslation: function (result) {
-		result = result || new Goblin.Vector3();
-		result.set( this.e03, this.e13, this.e23 );
+    getTranslation: function( result ) {
+        result = result || new Goblin.Vector3();
+        result.set( this.e03, this.e13, this.e23 );
 
         return result;
     },
 
-    getRotation: function (rotation) {
+    getRotation: function( rotation ) {
         rotation = rotation || new Goblin.Quaternion();
         rotation.setFromMat4( this );
 
         return rotation;
     },
 
-	makeTransform: function( rotation, translation ) {
-		// Setup rotation
-		var x2 = rotation.x + rotation.x,
-			y2 = rotation.y + rotation.y,
-			z2 = rotation.z + rotation.z,
-			xx = rotation.x * x2,
-			xy = rotation.x * y2,
-			xz = rotation.x * z2,
-			yy = rotation.y * y2,
-			yz = rotation.y * z2,
-			zz = rotation.z * z2,
-			wx = rotation.w * x2,
-			wy = rotation.w * y2,
-			wz = rotation.w * z2;
+    makeTransform: function( rotation, translation ) {
+        // Setup rotation
+        var x2 = rotation.x + rotation.x,
+            y2 = rotation.y + rotation.y,
+            z2 = rotation.z + rotation.z,
+            xx = rotation.x * x2,
+            xy = rotation.x * y2,
+            xz = rotation.x * z2,
+            yy = rotation.y * y2,
+            yz = rotation.y * z2,
+            zz = rotation.z * z2,
+            wx = rotation.w * x2,
+            wy = rotation.w * y2,
+            wz = rotation.w * z2;
 
-		this.e00 = 1 - ( yy + zz );
-		this.e10 = xy + wz;
-		this.e20 = xz - wy;
-		this.e30 = 0;
-		this.e01 = xy - wz;
-		this.e11 = 1 - (xx + zz);
-		this.e21 = yz + wx;
-		this.e31 = 0;
-		this.e02 = xz + wy;
-		this.e12 = yz - wx;
-		this.e22 = 1 - (xx + yy);
-		this.e32 = 0;
+        this.e00 = 1 - ( yy + zz );
+        this.e10 = xy + wz;
+        this.e20 = xz - wy;
+        this.e30 = 0;
+        this.e01 = xy - wz;
+        this.e11 = 1 - ( xx + zz );
+        this.e21 = yz + wx;
+        this.e31 = 0;
+        this.e02 = xz + wy;
+        this.e12 = yz - wx;
+        this.e22 = 1 - ( xx + yy );
+        this.e32 = 0;
 
-		// Translation
-		this.e03 = translation.x;
-		this.e13 = translation.y;
-		this.e23 = translation.z;
-		this.e33 = 1;
-	},
+        // Translation
+        this.e03 = translation.x;
+        this.e13 = translation.y;
+        this.e23 = translation.z;
+        this.e33 = 1;
+    },
 
-	transformVector3: function( v ) {
-		// Technically this should compute the `w` term and divide the resulting vector
-		// components by `w` to homogenize but we don't scale so `w` is just `1`
-		var x = v.x,
-			y = v.y,
-			z = v.z;
-		v.x = this.e00 * x + this.e01 * y + this.e02 * z + this.e03;
-		v.y = this.e10 * x + this.e11 * y + this.e12 * z + this.e13;
-		v.z = this.e20 * x + this.e21 * y + this.e22 * z + this.e23;
-	},
+    transformVector3: function( v ) {
+        // Technically this should compute the `w` term and divide the resulting vector
+        // components by `w` to homogenize but we don't scale so `w` is just `1`
+        var x = v.x,
+            y = v.y,
+            z = v.z;
+        v.x = this.e00 * x + this.e01 * y + this.e02 * z + this.e03;
+        v.y = this.e10 * x + this.e11 * y + this.e12 * z + this.e13;
+        v.z = this.e20 * x + this.e21 * y + this.e22 * z + this.e23;
+    },
 
-	transformVector3Into: function( v, dest ) {
-		// Technically this should compute the `w` term and divide the resulting vector
-		// components by `w` to homogenize but we don't scale so `w` is just `1`
-		dest.x = this.e00 * v.x + this.e01 * v.y + this.e02 * v.z + this.e03;
-		dest.y = this.e10 * v.x + this.e11 * v.y + this.e12 * v.z + this.e13;
-		dest.z = this.e20 * v.x + this.e21 * v.y + this.e22 * v.z + this.e23;
-	},
+    transformVector3Into: function( v, dest ) {
+        // Technically this should compute the `w` term and divide the resulting vector
+        // components by `w` to homogenize but we don't scale so `w` is just `1`
+        dest.x = this.e00 * v.x + this.e01 * v.y + this.e02 * v.z + this.e03;
+        dest.y = this.e10 * v.x + this.e11 * v.y + this.e12 * v.z + this.e13;
+        dest.z = this.e20 * v.x + this.e21 * v.y + this.e22 * v.z + this.e23;
+    },
 
-	rotateVector3: function( v ) {
-		var x = v.x,
-			y = v.y,
-			z = v.z;
-		v.x = this.e00 * x + this.e01 * y + this.e02 * z;
-		v.y = this.e10 * x + this.e11 * y + this.e12 * z;
-		v.z = this.e20 * x + this.e21 * y + this.e22 * z;
-	},
+    rotateVector3: function( v ) {
+        var x = v.x,
+            y = v.y,
+            z = v.z;
+        v.x = this.e00 * x + this.e01 * y + this.e02 * z;
+        v.y = this.e10 * x + this.e11 * y + this.e12 * z;
+        v.z = this.e20 * x + this.e21 * y + this.e22 * z;
+    },
 
-	rotateVector3Into: function( v, dest ) {
-		dest.x = this.e00 * v.x + this.e01 * v.y + this.e02 * v.z;
-		dest.y = this.e10 * v.x + this.e11 * v.y + this.e12 * v.z;
-		dest.z = this.e20 * v.x + this.e21 * v.y + this.e22 * v.z;
-	},
+    rotateVector3Into: function( v, dest ) {
+        dest.x = this.e00 * v.x + this.e01 * v.y + this.e02 * v.z;
+        dest.y = this.e10 * v.x + this.e11 * v.y + this.e12 * v.z;
+        dest.z = this.e20 * v.x + this.e21 * v.y + this.e22 * v.z;
+    },
 
-	invert: function() {
-		var a00 = this.e00, a01 = this.e01, a02 = this.e02, a03 = this.e03,
-			a10 = this.e10, a11 = this.e11, a12 = this.e12, a13 = this.e13,
-			a20 = this.e20, a21 = this.e21, a22 = this.e22, a23 = this.e23,
-			a30 = this.e30, a31 = this.e31, a32 = this.e32, a33 = this.e33,
+    invert: function() {
+        var a00 = this.e00, a01 = this.e01, a02 = this.e02, a03 = this.e03,
+            a10 = this.e10, a11 = this.e11, a12 = this.e12, a13 = this.e13,
+            a20 = this.e20, a21 = this.e21, a22 = this.e22, a23 = this.e23,
+            a30 = this.e30, a31 = this.e31, a32 = this.e32, a33 = this.e33,
 
-			b00 = a00 * a11 - a01 * a10,
-			b01 = a00 * a12 - a02 * a10,
-			b02 = a00 * a13 - a03 * a10,
-			b03 = a01 * a12 - a02 * a11,
-			b04 = a01 * a13 - a03 * a11,
-			b05 = a02 * a13 - a03 * a12,
-			b06 = a20 * a31 - a21 * a30,
-			b07 = a20 * a32 - a22 * a30,
-			b08 = a20 * a33 - a23 * a30,
-			b09 = a21 * a32 - a22 * a31,
-			b10 = a21 * a33 - a23 * a31,
-			b11 = a22 * a33 - a23 * a32,
+            b00 = a00 * a11 - a01 * a10,
+            b01 = a00 * a12 - a02 * a10,
+            b02 = a00 * a13 - a03 * a10,
+            b03 = a01 * a12 - a02 * a11,
+            b04 = a01 * a13 - a03 * a11,
+            b05 = a02 * a13 - a03 * a12,
+            b06 = a20 * a31 - a21 * a30,
+            b07 = a20 * a32 - a22 * a30,
+            b08 = a20 * a33 - a23 * a30,
+            b09 = a21 * a32 - a22 * a31,
+            b10 = a21 * a33 - a23 * a31,
+            b11 = a22 * a33 - a23 * a32,
 
-			d = (b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06),
-			invDet;
+            d = ( b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06 ),
+            invDet;
 
-		// Calculate the determinant
-		if ( !d ) {
-			return false;
-		}
-		invDet = 1 / d;
+        // Calculate the determinant
+        if ( !d ) {
+            return false;
+        }
+        invDet = 1 / d;
 
-		this.e00 = (a11 * b11 - a12 * b10 + a13 * b09) * invDet;
-		this.e01 = (-a01 * b11 + a02 * b10 - a03 * b09) * invDet;
-		this.e02 = (a31 * b05 - a32 * b04 + a33 * b03) * invDet;
-		this.e03 = (-a21 * b05 + a22 * b04 - a23 * b03) * invDet;
-		this.e10 = (-a10 * b11 + a12 * b08 - a13 * b07) * invDet;
-		this.e11 = (a00 * b11 - a02 * b08 + a03 * b07) * invDet;
-		this.e12 = (-a30 * b05 + a32 * b02 - a33 * b01) * invDet;
-		this.e13 = (a20 * b05 - a22 * b02 + a23 * b01) * invDet;
-		this.e20 = (a10 * b10 - a11 * b08 + a13 * b06) * invDet;
-		this.e21 = (-a00 * b10 + a01 * b08 - a03 * b06) * invDet;
-		this.e22 = (a30 * b04 - a31 * b02 + a33 * b00) * invDet;
-		this.e23 = (-a20 * b04 + a21 * b02 - a23 * b00) * invDet;
-		this.e30 = (-a10 * b09 + a11 * b07 - a12 * b06) * invDet;
-		this.e31 = (a00 * b09 - a01 * b07 + a02 * b06) * invDet;
-		this.e32 = (-a30 * b03 + a31 * b01 - a32 * b00) * invDet;
-		this.e33 = (a20 * b03 - a21 * b01 + a22 * b00) * invDet;
+        this.e00 = ( a11 * b11 - a12 * b10 + a13 * b09 ) * invDet;
+        this.e01 = ( -a01 * b11 + a02 * b10 - a03 * b09 ) * invDet;
+        this.e02 = ( a31 * b05 - a32 * b04 + a33 * b03 ) * invDet;
+        this.e03 = ( -a21 * b05 + a22 * b04 - a23 * b03 ) * invDet;
+        this.e10 = ( -a10 * b11 + a12 * b08 - a13 * b07 ) * invDet;
+        this.e11 = ( a00 * b11 - a02 * b08 + a03 * b07 ) * invDet;
+        this.e12 = ( -a30 * b05 + a32 * b02 - a33 * b01 ) * invDet;
+        this.e13 = ( a20 * b05 - a22 * b02 + a23 * b01 ) * invDet;
+        this.e20 = ( a10 * b10 - a11 * b08 + a13 * b06 ) * invDet;
+        this.e21 = ( -a00 * b10 + a01 * b08 - a03 * b06 ) * invDet;
+        this.e22 = ( a30 * b04 - a31 * b02 + a33 * b00 ) * invDet;
+        this.e23 = ( -a20 * b04 + a21 * b02 - a23 * b00 ) * invDet;
+        this.e30 = ( -a10 * b09 + a11 * b07 - a12 * b06 ) * invDet;
+        this.e31 = ( a00 * b09 - a01 * b07 + a02 * b06 ) * invDet;
+        this.e32 = ( -a30 * b03 + a31 * b01 - a32 * b00 ) * invDet;
+        this.e33 = ( a20 * b03 - a21 * b01 + a22 * b00 ) * invDet;
 
-		return true;
-	},
+        return true;
+    },
 
-	invertInto: function( m ) {
-		var a00 = this.e00, a01 = this.e10, a02 = this.e20, a03 = this.e30,
-			a10 = this.e01, a11 = this.e11, a12 = this.e21, a13 = this.e31,
-			a20 = this.e02, a21 = this.e12, a22 = this.e22, a23 = this.e32,
-			a30 = this.e03, a31 = this.e13, a32 = this.e23, a33 = this.e33,
+    invertInto: function( m ) {
+        var a00 = this.e00, a01 = this.e10, a02 = this.e20, a03 = this.e30,
+            a10 = this.e01, a11 = this.e11, a12 = this.e21, a13 = this.e31,
+            a20 = this.e02, a21 = this.e12, a22 = this.e22, a23 = this.e32,
+            a30 = this.e03, a31 = this.e13, a32 = this.e23, a33 = this.e33,
 
-			b00 = a00 * a11 - a01 * a10,
-			b01 = a00 * a12 - a02 * a10,
-			b02 = a00 * a13 - a03 * a10,
-			b03 = a01 * a12 - a02 * a11,
-			b04 = a01 * a13 - a03 * a11,
-			b05 = a02 * a13 - a03 * a12,
-			b06 = a20 * a31 - a21 * a30,
-			b07 = a20 * a32 - a22 * a30,
-			b08 = a20 * a33 - a23 * a30,
-			b09 = a21 * a32 - a22 * a31,
-			b10 = a21 * a33 - a23 * a31,
-			b11 = a22 * a33 - a23 * a32,
+            b00 = a00 * a11 - a01 * a10,
+            b01 = a00 * a12 - a02 * a10,
+            b02 = a00 * a13 - a03 * a10,
+            b03 = a01 * a12 - a02 * a11,
+            b04 = a01 * a13 - a03 * a11,
+            b05 = a02 * a13 - a03 * a12,
+            b06 = a20 * a31 - a21 * a30,
+            b07 = a20 * a32 - a22 * a30,
+            b08 = a20 * a33 - a23 * a30,
+            b09 = a21 * a32 - a22 * a31,
+            b10 = a21 * a33 - a23 * a31,
+            b11 = a22 * a33 - a23 * a32,
 
-			d = (b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06),
-			invDet;
+            d = ( b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06 ),
+            invDet;
 
-		// Calculate the determinant
-		if ( !d ) {
-			return false;
-		}
-		invDet = 1 / d;
+        // Calculate the determinant
+        if ( !d ) {
+            return false;
+        }
+        invDet = 1 / d;
 
-		m.e00 = (a11 * b11 - a12 * b10 + a13 * b09) * invDet;
-		m.e10 = (-a01 * b11 + a02 * b10 - a03 * b09) * invDet;
-		m.e20 = (a31 * b05 - a32 * b04 + a33 * b03) * invDet;
-		m.e30 = (-a21 * b05 + a22 * b04 - a23 * b03) * invDet;
-		m.e01 = (-a10 * b11 + a12 * b08 - a13 * b07) * invDet;
-		m.e11 = (a00 * b11 - a02 * b08 + a03 * b07) * invDet;
-		m.e21 = (-a30 * b05 + a32 * b02 - a33 * b01) * invDet;
-		m.e31 = (a20 * b05 - a22 * b02 + a23 * b01) * invDet;
-		m.e02 = (a10 * b10 - a11 * b08 + a13 * b06) * invDet;
-		m.e12 = (-a00 * b10 + a01 * b08 - a03 * b06) * invDet;
-		m.e22 = (a30 * b04 - a31 * b02 + a33 * b00) * invDet;
-		m.e32 = (-a20 * b04 + a21 * b02 - a23 * b00) * invDet;
-		m.e03 = (-a10 * b09 + a11 * b07 - a12 * b06) * invDet;
-		m.e13 = (a00 * b09 - a01 * b07 + a02 * b06) * invDet;
-		m.e23 = (-a30 * b03 + a31 * b01 - a32 * b00) * invDet;
-		m.e33 = (a20 * b03 - a21 * b01 + a22 * b00) * invDet;
-	},
+        m.e00 = ( a11 * b11 - a12 * b10 + a13 * b09 ) * invDet;
+        m.e10 = ( -a01 * b11 + a02 * b10 - a03 * b09 ) * invDet;
+        m.e20 = ( a31 * b05 - a32 * b04 + a33 * b03 ) * invDet;
+        m.e30 = ( -a21 * b05 + a22 * b04 - a23 * b03 ) * invDet;
+        m.e01 = ( -a10 * b11 + a12 * b08 - a13 * b07 ) * invDet;
+        m.e11 = ( a00 * b11 - a02 * b08 + a03 * b07 ) * invDet;
+        m.e21 = ( -a30 * b05 + a32 * b02 - a33 * b01 ) * invDet;
+        m.e31 = ( a20 * b05 - a22 * b02 + a23 * b01 ) * invDet;
+        m.e02 = ( a10 * b10 - a11 * b08 + a13 * b06 ) * invDet;
+        m.e12 = ( -a00 * b10 + a01 * b08 - a03 * b06 ) * invDet;
+        m.e22 = ( a30 * b04 - a31 * b02 + a33 * b00 ) * invDet;
+        m.e32 = ( -a20 * b04 + a21 * b02 - a23 * b00 ) * invDet;
+        m.e03 = ( -a10 * b09 + a11 * b07 - a12 * b06 ) * invDet;
+        m.e13 = ( a00 * b09 - a01 * b07 + a02 * b06 ) * invDet;
+        m.e23 = ( -a30 * b03 + a31 * b01 - a32 * b00 ) * invDet;
+        m.e33 = ( a20 * b03 - a21 * b01 + a22 * b00 ) * invDet;
+    },
 
-	multiply: function( m ) {
-		// Cache the matrix values (makes for huge speed increases!)
-		var a00 = this.e00, a01 = this.e10, a02 = this.e20, a03 = this.e30;
-		var a10 = this.e01, a11 = this.e11, a12 = this.e21, a13 = this.e31;
-		var a20 = this.e02, a21 = this.e12, a22 = this.e22, a23 = this.e32;
-		var a30 = this.e03, a31 = this.e13, a32 = this.e23, a33 = this.e33;
+    multiply: function( m ) {
+        // Cache the matrix values (makes for huge speed increases!)
+        var a00 = this.e00, a01 = this.e10, a02 = this.e20, a03 = this.e30;
+        var a10 = this.e01, a11 = this.e11, a12 = this.e21, a13 = this.e31;
+        var a20 = this.e02, a21 = this.e12, a22 = this.e22, a23 = this.e32;
+        var a30 = this.e03, a31 = this.e13, a32 = this.e23, a33 = this.e33;
 
-		// Cache only the current line of the second matrix
-		var b0  = m.e00, b1 = m.e10, b2 = m.e20, b3 = m.e30;
-		this.e00 = b0*a00 + b1*a10 + b2*a20 + b3*a30;
-		this.e10 = b0*a01 + b1*a11 + b2*a21 + b3*a31;
-		this.e20 = b0*a02 + b1*a12 + b2*a22 + b3*a32;
-		this.e30 = b0*a03 + b1*a13 + b2*a23 + b3*a33;
+        // Cache only the current line of the second matrix
+        var b0 = m.e00, b1 = m.e10, b2 = m.e20, b3 = m.e30;
+        this.e00 = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+        this.e10 = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+        this.e20 = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+        this.e30 = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-		b0 = m.e01;
-		b1 = m.e11;
-		b2 = m.e21;
-		b3 = m.e31;
-		this.e01 = b0*a00 + b1*a10 + b2*a20 + b3*a30;
-		this.e11 = b0*a01 + b1*a11 + b2*a21 + b3*a31;
-		this.e21 = b0*a02 + b1*a12 + b2*a22 + b3*a32;
-		this.e31 = b0*a03 + b1*a13 + b2*a23 + b3*a33;
+        b0 = m.e01;
+        b1 = m.e11;
+        b2 = m.e21;
+        b3 = m.e31;
+        this.e01 = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+        this.e11 = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+        this.e21 = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+        this.e31 = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-		b0 = m.e02;
-		b1 = m.e12;
-		b2 = m.e22;
-		b3 = m.e32;
-		this.e02 = b0*a00 + b1*a10 + b2*a20 + b3*a30;
-		this.e12 = b0*a01 + b1*a11 + b2*a21 + b3*a31;
-		this.e22 = b0*a02 + b1*a12 + b2*a22 + b3*a32;
-		this.e32 = b0*a03 + b1*a13 + b2*a23 + b3*a33;
+        b0 = m.e02;
+        b1 = m.e12;
+        b2 = m.e22;
+        b3 = m.e32;
+        this.e02 = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+        this.e12 = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+        this.e22 = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+        this.e32 = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-		b0 = m.e03;
-		b1 = m.e13;
-		b2 = m.e23;
-		b3 = m.e33;
-		this.e03 = b0*a00 + b1*a10 + b2*a20 + b3*a30;
-		this.e13 = b0*a01 + b1*a11 + b2*a21 + b3*a31;
-		this.e23 = b0*a02 + b1*a12 + b2*a22 + b3*a32;
-		this.e33 = b0*a03 + b1*a13 + b2*a23 + b3*a33;
-	}
+        b0 = m.e03;
+        b1 = m.e13;
+        b2 = m.e23;
+        b3 = m.e33;
+        this.e03 = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+        this.e13 = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+        this.e23 = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+        this.e33 = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+    }
 };
 
 Object.defineProperty( Goblin.Matrix4.prototype, 'data', {
-	
-	/**
-	 * FIXME EN-77 to remove the below
-	 * Gets the matrix data as float array.
-	 */
-	get: function () {
-		return [
-			this.e00,
-			this.e10,
-			this.e20,
-			this.e30,
 
-			this.e01,
-			this.e11,
-			this.e21,
-			this.e31,
+    /**
+     * FIXME EN-77 to remove the below
+     * Gets the matrix data as float array.
+     */
+    get: function() {
+        return [
+            this.e00,
+            this.e10,
+            this.e20,
+            this.e30,
 
-			this.e02,
-			this.e12,
-			this.e22,
-			this.e32,
+            this.e01,
+            this.e11,
+            this.e21,
+            this.e31,
 
-			this.e03,
-			this.e13,
-			this.e23,
-			this.e33
-		];
-	}
+            this.e02,
+            this.e12,
+            this.e22,
+            this.e32,
+
+            this.e03,
+            this.e13,
+            this.e23,
+            this.e33
+        ];
+    }
 
 } );
 Goblin.Quaternion = function( x, y, z, w ) {
-	this.x = x != null ? x : 0;
-	this.y = y != null ? y : 0;
-	this.z = z != null ? z : 0;
-	this.w = w != null ? w : 1;
-	this.normalize();
+    this.x = x != null ? x : 0;
+    this.y = y != null ? y : 0;
+    this.z = z != null ? z : 0;
+    this.w = w != null ? w : 1;
+    this.normalize();
 };
 
 Goblin.Quaternion.prototype = {
-	set: function( x, y, z, w ) {
-		this.x = x;
-		this.y = y;
-		this.z = z;
-		this.w = w;
-	},
+    set: function( x, y, z, w ) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.w = w;
+    },
 
-	copy: function( q ) {
-		this.x = q.x;
-		this.y = q.y;
-		this.z = q.z;
-		this.w = q.w;
-	},
+    copy: function( q ) {
+        this.x = q.x;
+        this.y = q.y;
+        this.z = q.z;
+        this.w = q.w;
+    },
 
-	toString: function () {
-		return '(' + this.x + ', ' + this.y + ', ' + this.z + ', ' + this.w + ')';
-	},
+    toString: function() {
+        return '(' + this.x + ', ' + this.y + ', ' + this.z + ', ' + this.w + ')';
+    },
 
-	multiply: function( q ) {
-		var x = this.x, y = this.y, z = this.z, w = this.w,
-			qx = q.x, qy = q.y, qz = q.z, qw = q.w;
+    multiply: function( q ) {
+        var x = this.x, y = this.y, z = this.z, w = this.w,
+            qx = q.x, qy = q.y, qz = q.z, qw = q.w;
 
-		this.x = x * qw + w * qx + y * qz - z * qy;
-		this.y = y * qw + w * qy + z * qx - x * qz;
-		this.z = z * qw + w * qz + x * qy - y * qx;
-		this.w = w * qw - x * qx - y * qy - z * qz;
-	},
+        this.x = x * qw + w * qx + y * qz - z * qy;
+        this.y = y * qw + w * qy + z * qx - x * qz;
+        this.z = z * qw + w * qz + x * qy - y * qx;
+        this.w = w * qw - x * qx - y * qy - z * qz;
+    },
 
-	multiplyQuaternions: function( a, b ) {
-		this.x = a.x * b.w + a.w * b.x + a.y * b.z - a.z * b.y;
-		this.y = a.y * b.w + a.w * b.y + a.z * b.x - a.x * b.z;
-		this.z = a.z * b.w + a.w * b.z + a.x * b.y - a.y * b.x;
-		this.w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z;
-	},
+    multiplyQuaternions: function( a, b ) {
+        this.x = a.x * b.w + a.w * b.x + a.y * b.z - a.z * b.y;
+        this.y = a.y * b.w + a.w * b.y + a.z * b.x - a.x * b.z;
+        this.z = a.z * b.w + a.w * b.z + a.x * b.y - a.y * b.x;
+        this.w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z;
+    },
 
-	normalize: function() {
-		var x = this.x, y = this.y, z = this.z, w = this.w,
-			length = Math.sqrt( x * x + y * y + z * z + w * w );
+    normalize: function() {
+        var x = this.x, y = this.y, z = this.z, w = this.w,
+            length = Math.sqrt( x * x + y * y + z * z + w * w );
 
-		if ( length === 0) {
-			this.x = this.y = this.z = this.w = 0;
-		} else {
-			length = 1 / length;
-			this.x *= length;
-			this.y *= length;
-			this.z *= length;
-			this.w *= length;
-		}
-	},
+        if ( length === 0 ) {
+            this.x = this.y = this.z = this.w = 0;
+        } else {
+            length = 1 / length;
+            this.x *= length;
+            this.y *= length;
+            this.z *= length;
+            this.w *= length;
+        }
+    },
 
-	invertQuaternion: function( q ) {
-		var x = q.x, y = q.y, z = q.z, w = q.w,
-			dot = x * x + y * y + z * z + w * w;
+    invertQuaternion: function( q ) {
+        var x = q.x, y = q.y, z = q.z, w = q.w,
+            dot = x * x + y * y + z * z + w * w;
 
-		if ( dot === 0 ) {
-			this.x = this.y = this.z = this.w = 0;
-		} else {
-			var inv_dot = -1 / dot;
-			this.x = q.x * inv_dot;
-			this.y = q.y *  inv_dot;
-			this.z = q.z *  inv_dot;
-			this.w = q.w *  -inv_dot;
-		}
-	},
+        if ( dot === 0 ) {
+            this.x = this.y = this.z = this.w = 0;
+        } else {
+            var inv_dot = -1 / dot;
+            this.x = q.x * inv_dot;
+            this.y = q.y * inv_dot;
+            this.z = q.z * inv_dot;
+            this.w = q.w * -inv_dot;
+        }
+    },
 
-	transformVector3: function( v ) {
-		var x = v.x, y = v.y, z = v.z,
-			qx = this.x, qy = this.y, qz = this.z, qw = this.w,
+    transformVector3: function( v ) {
+        var x = v.x, y = v.y, z = v.z,
+            qx = this.x, qy = this.y, qz = this.z, qw = this.w,
 
-		// calculate quat * vec
-			ix = qw * x + qy * z - qz * y,
-			iy = qw * y + qz * x - qx * z,
-			iz = qw * z + qx * y - qy * x,
-			iw = -qx * x - qy * y - qz * z;
+            // calculate quat * vec
+            ix = qw * x + qy * z - qz * y,
+            iy = qw * y + qz * x - qx * z,
+            iz = qw * z + qx * y - qy * x,
+            iw = -qx * x - qy * y - qz * z;
 
-		// calculate result * inverse quat
-		v.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
-		v.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
-		v.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
-	},
+        // calculate result * inverse quat
+        v.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+        v.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+        v.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+    },
 
-	transformVector3Into: function( v, dest ) {
-		var x = v.x, y = v.y, z = v.z,
-			qx = this.x, qy = this.y, qz = this.z, qw = this.w,
+    transformVector3Into: function( v, dest ) {
+        var x = v.x, y = v.y, z = v.z,
+            qx = this.x, qy = this.y, qz = this.z, qw = this.w,
 
-		// calculate quat * vec
-			ix = qw * x + qy * z - qz * y,
-			iy = qw * y + qz * x - qx * z,
-			iz = qw * z + qx * y - qy * x,
-			iw = -qx * x - qy * y - qz * z;
+            // calculate quat * vec
+            ix = qw * x + qy * z - qz * y,
+            iy = qw * y + qz * x - qx * z,
+            iz = qw * z + qx * y - qy * x,
+            iw = -qx * x - qy * y - qz * z;
 
-		// calculate result * inverse quat
-		dest.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
-		dest.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
-		dest.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
-	},
+        // calculate result * inverse quat
+        dest.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+        dest.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+        dest.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+    },
 
-	setFromMat4: function (m) {
+    setFromMat4: function( m ) {
         var m00, m01, m02, m10, m11, m12, m20, m21, m22,
             tr, s, rs, lx, ly, lz;
 
@@ -648,9 +648,9 @@ Goblin.Quaternion.prototype = {
         m22 = m.e22;
 
         // Remove the scale from the matrix
-        lx = 1 / Math.sqrt(m00 * m00 + m01 * m01 + m02 * m02);
-        ly = 1 / Math.sqrt(m10 * m10 + m11 * m11 + m12 * m12);
-        lz = 1 / Math.sqrt(m20 * m20 + m21 * m21 + m22 * m22);
+        lx = 1 / Math.sqrt( m00 * m00 + m01 * m01 + m02 * m02 );
+        ly = 1 / Math.sqrt( m10 * m10 + m11 * m11 + m12 * m12 );
+        lz = 1 / Math.sqrt( m20 * m20 + m21 * m21 + m22 * m22 );
 
         m00 *= lx;
         m01 *= lx;
@@ -665,86 +665,91 @@ Goblin.Quaternion.prototype = {
         // http://www.cs.ucr.edu/~vbz/resources/quatut.pdf
 
         tr = m00 + m11 + m22;
-        if (tr >= 0) {
-            s = Math.sqrt(tr + 1);
+        if ( tr >= 0 ) {
+            s = Math.sqrt( tr + 1 );
             this.w = s * 0.5;
             s = 0.5 / s;
-            this.x = (m12 - m21) * s;
-            this.y = (m20 - m02) * s;
-            this.z = (m01 - m10) * s;
+            this.x = ( m12 - m21 ) * s;
+            this.y = ( m20 - m02 ) * s;
+            this.z = ( m01 - m10 ) * s;
         } else {
-            if (m00 > m11) {
-                if (m00 > m22) {
+            if ( m00 > m11 ) {
+                if ( m00 > m22 ) {
                     // XDiagDomMatrix
-                    rs = (m00 - (m11 + m22)) + 1;
-                    rs = Math.sqrt(rs);
+                    rs = ( m00 - ( m11 + m22 ) ) + 1;
+                    rs = Math.sqrt( rs );
 
                     this.x = rs * 0.5;
                     rs = 0.5 / rs;
-                    this.w = (m12 - m21) * rs;
-                    this.y = (m01 + m10) * rs;
-                    this.z = (m02 + m20) * rs;
+                    this.w = ( m12 - m21 ) * rs;
+                    this.y = ( m01 + m10 ) * rs;
+                    this.z = ( m02 + m20 ) * rs;
                 } else {
                     // ZDiagDomMatrix
-                    rs = (m22 - (m00 + m11)) + 1;
-                    rs = Math.sqrt(rs);
+                    rs = ( m22 - ( m00 + m11 ) ) + 1;
+                    rs = Math.sqrt( rs );
 
                     this.z = rs * 0.5;
                     rs = 0.5 / rs;
-                    this.w = (m01 - m10) * rs;
-                    this.x = (m20 + m02) * rs;
-                    this.y = (m21 + m12) * rs;
+                    this.w = ( m01 - m10 ) * rs;
+                    this.x = ( m20 + m02 ) * rs;
+                    this.y = ( m21 + m12 ) * rs;
                 }
-            } else if (m11 > m22) {
+            } else if ( m11 > m22 ) {
                 // YDiagDomMatrix
-                rs = (m11 - (m22 + m00)) + 1;
-                rs = Math.sqrt(rs);
+                rs = ( m11 - ( m22 + m00 ) ) + 1;
+                rs = Math.sqrt( rs );
 
                 this.y = rs * 0.5;
                 rs = 0.5 / rs;
-                this.w = (m20 - m02) * rs;
-                this.z = (m12 + m21) * rs;
-                this.x = (m10 + m01) * rs;
+                this.w = ( m20 - m02 ) * rs;
+                this.z = ( m12 + m21 ) * rs;
+                this.x = ( m10 + m01 ) * rs;
             } else {
                 // ZDiagDomMatrix
-                rs = (m22 - (m00 + m11)) + 1;
-                rs = Math.sqrt(rs);
+                rs = ( m22 - ( m00 + m11 ) ) + 1;
+                rs = Math.sqrt( rs );
 
                 this.z = rs * 0.5;
                 rs = 0.5 / rs;
-                this.w = (m01 - m10) * rs;
-                this.x = (m20 + m02) * rs;
-                this.y = (m21 + m12) * rs;
+                this.w = ( m01 - m10 ) * rs;
+                this.x = ( m20 + m02 ) * rs;
+                this.y = ( m21 + m12 ) * rs;
             }
         }
 
         return this;
     },
 
-	angleBetween: function( q ) {
-		/*_tmp_quat4_1.invertQuaternion( this );
-		_tmp_quat4_1.multiply( q );
-		_tmp_vec3_1.set( _tmp_quat4_1.x, _tmp_quat4_1.y, _tmp_quat4_1.z );
-		return 2 * Math.atan2( _tmp_vec3_1.length(), Math.abs( _tmp_quat4_1.w ) );*/
+    angleBetween: function( q ) {
+        return 2 * Math.acos( this.x * q.x + this.y * q.y + this.z * q.z + this.w * q.w );
+    },
 
-		return 2 * Math.acos( this.x * q.x + this.y * q.y + this.z * q.z + this.w * q.w );
-	},
+    signedAngleBetween: function( q, normal ) {
+        if ( Math.abs( x_axis.dot( normal ) ) < 0.5 ) {
+            _tmp_vec3_1.set( 1, 0, 0 );
+        } else {
+            _tmp_vec3_1.set( 0, 0, 1 );
+        }
+        this.transformVector3Into( _tmp_vec3_1, _tmp_vec3_2 );
+        q.transformVector3Into( _tmp_vec3_1, _tmp_vec3_3 );
 
-	signedAngleBetween: function( q, normal ) {
-		if ( Math.abs(x_axis.dot( normal )) < 0.5 ) {
-			_tmp_vec3_1.set( 1, 0, 0 );
-		} else {
-			_tmp_vec3_1.set( 0, 0, 1 );
-		}
-		this.transformVector3Into( _tmp_vec3_1, _tmp_vec3_2 );
-		q.transformVector3Into( _tmp_vec3_1, _tmp_vec3_3 );
+        _tmp_vec3_1.crossVectors( _tmp_vec3_2, _tmp_vec3_3 );
+        return Math.atan2(
+            normal.dot( _tmp_vec3_1 ),
+            _tmp_vec3_2.dot( _tmp_vec3_3 )
+        );
+    },
 
-		_tmp_vec3_1.crossVectors( _tmp_vec3_2, _tmp_vec3_3 );
-		return Math.atan2(
-			normal.dot( _tmp_vec3_1 ),
-			_tmp_vec3_2.dot( _tmp_vec3_3 )
-		);
-	}
+    /**
+     * Whether this quaternion represents zero rotation.
+     * @returns {boolean}
+     */
+    isZero: function() {
+        return ( this.x === 0 || Math.abs( this.x ) < Goblin.EPSILON ) &&
+            ( this.y === 0 || Math.abs( this.y ) < Goblin.EPSILON ) &&
+            ( this.z === 0 || Math.abs( this.z ) < Goblin.EPSILON );
+    }
 };
 
 Goblin.Quaternion.IDENTITY = new Goblin.Quaternion();
@@ -756,7 +761,7 @@ Goblin.Math.Utils = {
      * @param {number} max
      * @returns {number}
      */
-    clamp: function (num, min, max) {
+    clamp: function( num, min, max ) {
         if ( num < min ) {
             return min;
         } else if ( num > max ) {
@@ -909,16 +914,19 @@ Goblin.Vector3.prototype = {
 
     /**
      * @param {Goblin.Vector3} another
+     * @param {number=} epsilon
      * @returns {boolean}
      */
-    equals: function( another ) {
-        if ( this.x !== another.x && Math.abs( this.x - another.x ) > Goblin.EPSILON ) {
+    equals: function( another, epsilon ) {
+        epsilon = epsilon || Goblin.EPSILON;
+
+        if ( this.x !== another.x && Math.abs( this.x - another.x ) > epsilon ) {
             return false;
         }
-        if ( this.y !== another.y && Math.abs( this.y - another.y ) > Goblin.EPSILON ) {
+        if ( this.y !== another.y && Math.abs( this.y - another.y ) > epsilon ) {
             return false;
         }
-        if ( this.z !== another.z && Math.abs( this.z - another.z ) > Goblin.EPSILON ) {
+        if ( this.z !== another.z && Math.abs( this.z - another.z ) > epsilon ) {
             return false;
         }
 
@@ -985,6 +993,44 @@ Goblin.Vector3.prototype = {
         this.copy( v1 );
         this.pairwiseMax( v2 );
     },
+
+    /*
+     * Whether all components of this vector are zero or close to zero
+     * @returns {boolean}
+     */
+    isZero: function() {
+        return ( this.x === 0 || Math.abs( this.x ) < Goblin.EPSILON ) &&
+            ( this.y === 0 || Math.abs( this.y ) < Goblin.EPSILON ) &&
+            ( this.z === 0 || Math.abs( this.z ) < Goblin.EPSILON );
+    },
+
+    /**
+     * Checks if this vector is parallel to `other` (but not necessary have the same direction).
+     * There is no need to normalize those vectors.
+     *
+     * @param {Goblin.Vector3} other
+     * @return {boolean}
+     */
+    isParallelTo: ( function() {
+        var cross = new Goblin.Vector3();
+
+        return function( another ) {
+            cross.crossVectors( this, another );
+            return cross.isZero();
+        };
+    } )(),
+
+    /**
+     * Checks if this vector is parallel to `other` (but not necessary have the same direction).
+     * This method works only if both vectors are normalized.
+     *
+     * @param {Goblin.Vector3} another
+     * @returns {boolean}
+     */
+    isParallelToNormalized: function( another ) {
+        var dotProduct = Math.abs( this.dot( another ) );
+        return dotProduct > 1 - Goblin.EPSILON && dotProduct < 1 + Goblin.EPSILON;
+    }
 };
 Goblin.EPSILON = 0.00001;
 
@@ -1836,6 +1882,11 @@ Goblin.RigidBody.prototype.updateDerived = function() {
 };
 
 Goblin.RigidBody.prototype.updateFaceNormals = function() {
+    if ( this.rotation.isZero() ) {
+        this.faceNormals = this.shape.faceNormals;
+        return;
+    }
+
     this.faceNormals.length = 0;
     for ( var i = 0; i < this.shape.faceNormals.length; i++ ) {
         var rotatedNormal = new Goblin.Vector3();
@@ -2869,1656 +2920,6 @@ Goblin.BasicPooledBroadphase.prototype.update = function() {
 		}
 	};
 })();
-Goblin.BoxSphere = function( object_a, object_b, do_lightweight_collision ) {
-    var sphere = null;
-    var box = null;
-    if ( object_a.shape.shapeType === Goblin.Shapes.Type.SphereShape ) {
-        sphere = object_a;
-        box = object_b;
-    } else {
-        sphere = object_b;
-        box = object_a;
-    }
-
-    var contact = null;
-    var distance = 0;
-
-    // Transform the center of the sphere into box coordinates
-    box.transform_inverse.transformVector3Into( sphere.position, _tmp_vec3_1 );
-
-    // Early out check to see if we can exclude the contact
-    if ( Math.abs( _tmp_vec3_1.x ) - sphere.shape.radius > box.shape.half_width ||
-        Math.abs( _tmp_vec3_1.y ) - sphere.shape.radius > box.shape.half_height ||
-        Math.abs( _tmp_vec3_1.z ) - sphere.shape.radius > box.shape.half_depth ) {
-        return;
-    }
-
-    // `_tmp_vec3_1` is the center of the sphere in relation to the box
-    // `_tmp_vec3_2` will hold the point on the box closest to the sphere
-    _tmp_vec3_2.x = _tmp_vec3_2.y = _tmp_vec3_2.z = 0;
-
-    // Clamp each coordinate to the box.
-    distance = _tmp_vec3_1.x;
-    if ( distance > box.shape.half_width ) {
-        distance = box.shape.half_width;
-    } else if ( distance < -box.shape.half_width ) {
-        distance = -box.shape.half_width;
-    }
-    _tmp_vec3_2.x = distance;
-
-    distance = _tmp_vec3_1.y;
-    if ( distance > box.shape.half_height ) {
-        distance = box.shape.half_height;
-    } else if ( distance < -box.shape.half_height ) {
-        distance = -box.shape.half_height;
-    }
-    _tmp_vec3_2.y = distance;
-
-    distance = _tmp_vec3_1.z;
-    if ( distance > box.shape.half_depth ) {
-        distance = box.shape.half_depth;
-    } else if ( distance < -box.shape.half_depth ) {
-        distance = -box.shape.half_depth;
-    }
-    _tmp_vec3_2.z = distance;
-
-    // Check we're in contact
-    _tmp_vec3_3.subtractVectors( _tmp_vec3_2, _tmp_vec3_1 );
-    distance = _tmp_vec3_3.lengthSquared();
-    if ( distance > sphere.shape.radius * sphere.shape.radius ) {
-        return;
-    }
-
-    // Get a ContactDetails object populate it
-    contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
-    contact.object_a = sphere;
-    contact.object_b = box;
-
-    if ( do_lightweight_collision ) {
-        contact.is_lightweight = true;
-        return contact;
-    }
-
-    if ( distance === 0 ) {
-
-        // The center of the sphere is contained within the box
-        Goblin.BoxSphere.spherePenetration( box.shape, _tmp_vec3_1, _tmp_vec3_2, contact );
-
-    } else {
-
-        // Center of the sphere is outside of the box
-
-        // Find contact normal and penetration depth
-        contact.contact_normal.subtractVectors( _tmp_vec3_2, _tmp_vec3_1 );
-        contact.penetration_depth = -contact.contact_normal.length();
-        contact.contact_normal.scale( -1 / contact.penetration_depth );
-
-        // Set contact point of `object_b` (the box )
-        contact.contact_point_in_b.copy( _tmp_vec3_2 );
-
-    }
-
-    // Update penetration depth to include sphere's radius
-    contact.penetration_depth += sphere.shape.radius;
-
-    // Convert contact normal to world coordinates
-    box.transform.rotateVector3( contact.contact_normal );
-
-    // Contact point in `object_a` (the sphere) is the normal * radius converted to the sphere's frame
-    sphere.transform_inverse.rotateVector3Into( contact.contact_normal, contact.contact_point_in_a );
-    contact.contact_point_in_a.scale( sphere.shape.radius );
-
-    // Find contact position
-    contact.contact_point.scaleVector( contact.contact_normal, sphere.shape.radius - contact.penetration_depth / 2 );
-    contact.contact_point.add( sphere.position );
-
-    return contact;
-};
-
-Goblin.BoxSphere.spherePenetration = function( box, sphere_center, box_point, contact ) {
-    var min_distance, face_distance;
-
-    if ( sphere_center.x < 0 ) {
-        min_distance = box.half_width + sphere_center.x;
-        box_point.x = -box.half_width;
-        box_point.y = box_point.z = 0;
-        contact.penetration_depth = min_distance;
-    } else {
-        min_distance = box.half_width - sphere_center.x;
-        box_point.x = box.half_width;
-        box_point.y = box_point.z = 0;
-        contact.penetration_depth = min_distance;
-    }
-
-    if ( sphere_center.y < 0 ) {
-        face_distance = box.half_height + sphere_center.y;
-        if ( face_distance < min_distance ) {
-            min_distance = face_distance;
-            box_point.y = -box.half_height;
-            box_point.x = box_point.z = 0;
-            contact.penetration_depth = min_distance;
-        }
-    } else {
-        face_distance = box.half_height - sphere_center.y;
-        if ( face_distance < min_distance ) {
-            min_distance = face_distance;
-            box_point.y = box.half_height;
-            box_point.x = box_point.z = 0;
-            contact.penetration_depth = min_distance;
-        }
-    }
-
-    if ( sphere_center.z < 0 ) {
-        face_distance = box.half_depth + sphere_center.z;
-        if ( face_distance < min_distance ) {
-            box_point.z = -box.half_depth;
-            box_point.x = box_point.y = 0;
-            contact.penetration_depth = min_distance;
-        }
-    } else {
-        face_distance = box.half_depth - sphere_center.z;
-        if ( face_distance < min_distance ) {
-            box_point.z = box.half_depth;
-            box_point.x = box_point.y = 0;
-            contact.penetration_depth = min_distance;
-        }
-    }
-
-    // Set contact point of `object_b` (the box)
-    contact.contact_point_in_b.copy( _tmp_vec3_2 );
-    contact.contact_normal.scaleVector( contact.contact_point_in_b, -1 );
-    contact.contact_normal.normalize();
-};
-Goblin.Collision.Factory = {
-    /**
-     * returns a contact if objects collide with each other and null otherwise.
-     *
-     * @callback getContact
-     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
-     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
-     * @param {boolean} doLightweightCollision - if true then only basic collision information will be returned (w/o normal, penetration depth, etc).
-     * @returns {Goblin.ContactDetails|null}
-     */
-
-    /**
-     * @type {Object<[number, getContact]>}
-     */
-    _collisionTable: null,
-
-    _populateCollisionTable: function() {
-        var table = {};
-        table[ Goblin.Shapes.Type.SphereShape ] = Goblin.Collision.sphereSphere;
-        table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.BoxShape ] = Goblin.BoxSphere;
-        table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.CapsuleShape ] = Goblin.Collision.sphereCapsule;
-        table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.ConvexHullShape ] = Goblin.Collision.sphereConvexHull;
-        Goblin.Collision.Factory._collisionTable = table;
-    },
-
-    /**
-     * @param {object} shapeA
-     * @param {number} shapeA.shapeType
-     * @param {object} shapeB
-     * @param {number} shapeB.shapeType
-     * @returns {getContact}
-     */
-    getCollisionMethod: function( shapeA, shapeB ) {
-        if ( !this._collisionTable ) {
-            // We can't do this during initialization because some shapes might not be added to Goblin object.
-            // Can be resolved with a help of a decent build tool.
-            this._populateCollisionTable();
-        }
-
-        return this._collisionTable[ shapeA.shapeType | shapeB.shapeType ] || Goblin.GjkEpa.findContact;
-    }
-};
-/**
- * Provides the classes and algorithms for running GJK+EPA based collision detection
- *
- * @class GjkEpa
- * @static
- */
-Goblin.GjkEpa = {
-    margins: 0.01,
-    result: null,
-
-    max_iterations: 20,
-    epa_condition: 0.001,
-
-    /**
-     * Holds a point on the edge of a Minkowski difference along with that point's witnesses and the direction used to find the point
-     *
-     * @class SupportPoint
-     * @param witness_a {vec3} Point in first object used to find the supporting point
-     * @param witness_b {vec3} Point in the second object ued to find th supporting point
-     * @param point {vec3} The support point on the edge of the Minkowski difference
-     * @constructor
-     */
-    SupportPoint: function( witness_a, witness_b, point ) {
-        this.witness_a = witness_a;
-        this.witness_b = witness_b;
-        this.point = point;
-    },
-
-    /**
-     * Finds the extant point on the edge of the Minkowski difference for `object_a` - `object_b` in `direction`
-     *
-     * @method findSupportPoint
-     * @param object_a {Goblin.RigidBody} First object in the search
-     * @param object_b {Goblin.RigidBody} Second object in the search
-     * @param direction {vec3} Direction to find the extant point in
-     * @param gjk_point {Goblin.GjkEpa.SupportPoint} `SupportPoint` class to store the resulting point & witnesses in
-     */
-    findSupportPoint: ( function() {
-        var temp = new Goblin.Vector3();
-        return function( object_a, object_b, direction, support_point ) {
-            // Find witnesses from the objects
-            object_a.findSupportPoint( direction, support_point.witness_a );
-            temp.scaleVector( direction, -1 );
-            object_b.findSupportPoint( temp, support_point.witness_b );
-
-            // Find the CSO support point
-            support_point.point.subtractVectors( support_point.witness_a, support_point.witness_b );
-        };
-    } )(),
-
-    findContact: function( object_a, object_b, do_lightweight_collision ) {
-        var simplex = Goblin.GjkEpa.GJK( object_a, object_b, do_lightweight_collision );
-
-        if ( simplex && do_lightweight_collision ) {
-            // Collision is detected and we don't need to calculate its properties - just signal that there is actual contact
-            var dummyContact = Goblin.ObjectPool.getObject( 'ContactDetails' );
-            dummyContact.object_a = object_a;
-            dummyContact.object_b = object_b;
-            dummyContact.is_lightweight = true;
-            return dummyContact;
-        } else if ( Goblin.GjkEpa.result != null ) {
-            return Goblin.GjkEpa.result;
-        } else if ( simplex != null ) {
-            return Goblin.GjkEpa.EPA( simplex );
-        }
-    },
-
-    /**
-     * Returns a closest point on object (either vertex, point on edge or point on face) to a given point.
-     * NOTE: point must lie outside the object, otherwise this method will return null.
-     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object
-     * @param {Goblin.Vector3} point
-     * @returns {Goblin.Vector3|null}
-     */
-    findClosestPointOnObject: ( function() {
-        var origin = new Goblin.Vector3();
-        var closestPointOnSimplex = new Goblin.Vector3();
-        var barycentricCoordinates = new Goblin.Vector3();
-        var a = new Goblin.Vector3();
-        var b = new Goblin.Vector3();
-        var c = new Goblin.Vector3();
-
-        return function( object, point ) {
-            var simplex = new Goblin.GjkEpa.Simplex( object, new Goblin.GjkEpa.PointProxy( point ), true );
-            var gjkResult = simplex.addPoint();
-            while ( gjkResult ) {
-                gjkResult = simplex.addPoint();
-            }
-
-            // gjkResult === null => there is a contact, we can't find closest points.
-            if ( gjkResult === null ) {
-                Goblin.GjkEpa.freeSimplex( simplex );
-                return null;
-            }
-
-            Goblin.GeometryMethods.findClosestPointInTriangle(
-                origin,
-                simplex.points[ 0 ].point,
-                simplex.points[ 1 ].point,
-                simplex.points[ 2 ].point,
-                closestPointOnSimplex
-            );
-
-            Goblin.GeometryMethods.findBarycentricCoordinates( closestPointOnSimplex, simplex.points[ 0 ].point, simplex.points[ 1 ].point, simplex.points[ 2 ].point, barycentricCoordinates );
-
-            var result = new Goblin.Vector3();
-            a.scaleVector( simplex.points[ 0 ].witness_a, barycentricCoordinates.x );
-            b.scaleVector( simplex.points[ 1 ].witness_a, barycentricCoordinates.y );
-            c.scaleVector( simplex.points[ 2 ].witness_a, barycentricCoordinates.z );
-            result.addVectors( a, b );
-            result.add( c );
-
-            Goblin.GjkEpa.freeSimplex( simplex );
-            return result;
-        };
-    } )(),
-
-    /**
-     * Perform GJK algorithm against two objects. Returns a ContactDetails object if there is a collision, else null
-     *
-     * @method GJK
-     * @param object_a {Goblin.RigidBody}
-     * @param object_b {Goblin.RigidBody}
-     * @return {Goblin.ContactDetails|Boolean} Returns `null` if no collision, else a `ContactDetails` object
-     */
-    GJK: ( function() {
-        return function( object_a, object_b, do_lightweight_collision ) {
-            var simplex = new Goblin.GjkEpa.Simplex( object_a, object_b, do_lightweight_collision ),
-                last_point;
-
-            Goblin.GjkEpa.result = null;
-
-            while ( ( last_point = simplex.addPoint() ) ) {
-            }
-
-            // If last_point is false then there is no collision
-            if ( last_point === false ) {
-                Goblin.GjkEpa.freeSimplex( simplex );
-                return null;
-            }
-
-            return simplex;
-        };
-    } )(),
-
-    freeSimplex: function( simplex ) {
-        // Free the support points used by this simplex
-        for ( var i = 0, points_length = simplex.points.length; i < points_length; i++ ) {
-            Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', simplex.points[ i ] );
-        }
-    },
-
-    freePolyhedron: function( polyhedron ) {
-        // Free the support points used by the polyhedron (includes the points from the simplex used to create the polyhedron
-        var pool = Goblin.ObjectPool.pools[ 'GJK2SupportPoint' ];
-
-        for ( var i = 0, faces_length = polyhedron.faces.length; pool.length > 0 && i < faces_length; i++ ) {
-            // The indexOf checking is required because vertices are shared between faces
-            if ( pool.indexOf( polyhedron.faces[ i ].a ) === -1 ) {
-                Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', polyhedron.faces[ i ].a );
-            }
-            if ( pool.indexOf( polyhedron.faces[ i ].b ) === -1 ) {
-                Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', polyhedron.faces[ i ].b );
-            }
-            if ( pool.indexOf( polyhedron.faces[ i ].c ) === -1 ) {
-                Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', polyhedron.faces[ i ].c );
-            }
-        }
-    },
-
-    /**
-     * Performs the Expanding Polytope Algorithm a GJK simplex
-     *
-     * @method EPA
-     * @param simplex {Goblin.GjkEpa.Simplex} Simplex generated by the GJK algorithm
-     * @return {Goblin.ContactDetails}
-     */
-    EPA: ( function() {
-        var barycentric = new Goblin.Vector3(),
-            confirm = {
-                a: new Goblin.Vector3(),
-                b: new Goblin.Vector3(),
-                c: new Goblin.Vector3()
-            };
-        return function( simplex ) {
-            // Time to convert the simplex to real faces
-            // @TODO this should be a priority queue where the position in the queue is ordered by distance from face to origin
-            var polyhedron = new Goblin.GjkEpa.Polyhedron( simplex );
-
-            var i = 0;
-
-            // Expand the polyhedron until it doesn't expand any more
-            while ( ++i ) {
-                polyhedron.findFaceClosestToOrigin();
-
-                // Find a new support point in the direction of the closest point
-                if ( polyhedron.closest_face_distance < Goblin.EPSILON ) {
-                    _tmp_vec3_1.copy( polyhedron.faces[ polyhedron.closest_face ].normal );
-                } else {
-                    _tmp_vec3_1.copy( polyhedron.closest_point );
-                }
-
-                var support_point = Goblin.ObjectPool.getObject( 'GJK2SupportPoint' );
-                Goblin.GjkEpa.findSupportPoint( simplex.object_a, simplex.object_b, _tmp_vec3_1, support_point );
-
-                // Check for terminating condition
-                _tmp_vec3_1.subtractVectors( support_point.point, polyhedron.closest_point );
-                var gap = _tmp_vec3_1.lengthSquared();
-
-                if ( i === Goblin.GjkEpa.max_iterations || ( gap < Goblin.GjkEpa.epa_condition && polyhedron.closest_face_distance > Goblin.EPSILON ) ) {
-
-                    // Get a ContactDetails object and fill out its details
-                    var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
-                    contact.object_a = simplex.object_a;
-                    contact.object_b = simplex.object_b;
-
-                    contact.contact_normal.normalizeVector( polyhedron.closest_point );
-                    if ( contact.contact_normal.lengthSquared() === 0 ) {
-                        contact.contact_normal.subtractVectors( contact.object_b.position, contact.object_a.position );
-                    }
-                    contact.contact_normal.normalize();
-
-                    Goblin.GeometryMethods.findBarycentricCoordinates( polyhedron.closest_point, polyhedron.faces[ polyhedron.closest_face ].a.point, polyhedron.faces[ polyhedron.closest_face ].b.point, polyhedron.faces[ polyhedron.closest_face ].c.point, barycentric );
-
-                    // Contact coordinates of object a
-                    confirm.a.scaleVector( polyhedron.faces[ polyhedron.closest_face ].a.witness_a, barycentric.x );
-                    confirm.b.scaleVector( polyhedron.faces[ polyhedron.closest_face ].b.witness_a, barycentric.y );
-                    confirm.c.scaleVector( polyhedron.faces[ polyhedron.closest_face ].c.witness_a, barycentric.z );
-                    contact.contact_point_in_a.addVectors( confirm.a, confirm.b );
-                    contact.contact_point_in_a.add( confirm.c );
-
-                    // Contact coordinates of object b
-                    confirm.a.scaleVector( polyhedron.faces[ polyhedron.closest_face ].a.witness_b, barycentric.x );
-                    confirm.b.scaleVector( polyhedron.faces[ polyhedron.closest_face ].b.witness_b, barycentric.y );
-                    confirm.c.scaleVector( polyhedron.faces[ polyhedron.closest_face ].c.witness_b, barycentric.z );
-                    contact.contact_point_in_b.addVectors( confirm.a, confirm.b );
-                    contact.contact_point_in_b.add( confirm.c );
-
-                    // Find actual contact point
-                    contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
-                    contact.contact_point.scale( 0.5 );
-
-                    // Set objects' local points
-                    contact.object_a.transform_inverse.transformVector3( contact.contact_point_in_a );
-                    contact.object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
-
-                    // Calculate penetration depth
-                    contact.penetration_depth = polyhedron.closest_point.length() + Goblin.GjkEpa.margins;
-
-                    Goblin.GjkEpa.freePolyhedron( polyhedron );
-
-                    return contact;
-                }
-
-                polyhedron.addVertex( support_point );
-            }
-        };
-    } )(),
-
-    Face: function( polyhedron, a, b, c ) {
-        this.active = true;
-        //this.polyhedron = polyhedron;
-        this.a = a;
-        this.b = b;
-        this.c = c;
-        this.normal = new Goblin.Vector3();
-        this.neighbors = [];
-
-        _tmp_vec3_1.subtractVectors( b.point, a.point );
-        _tmp_vec3_2.subtractVectors( c.point, a.point );
-        this.normal.crossVectors( _tmp_vec3_1, _tmp_vec3_2 );
-        this.normal.normalize();
-    }
-};
-
-Goblin.GjkEpa.Polyhedron = function( simplex ) {
-    this.closest_face = null;
-    this.closest_face_distance = null;
-    this.closest_point = new Goblin.Vector3();
-
-    this.faces = [
-        //BCD, ACB, CAD, DAB
-        new Goblin.GjkEpa.Face( this, simplex.points[ 2 ], simplex.points[ 1 ], simplex.points[ 0 ] ),
-        new Goblin.GjkEpa.Face( this, simplex.points[ 3 ], simplex.points[ 1 ], simplex.points[ 2 ] ),
-        new Goblin.GjkEpa.Face( this, simplex.points[ 1 ], simplex.points[ 3 ], simplex.points[ 0 ] ),
-        new Goblin.GjkEpa.Face( this, simplex.points[ 0 ], simplex.points[ 3 ], simplex.points[ 2 ] )
-    ];
-
-    this.faces[ 0 ].neighbors.push( this.faces[ 1 ], this.faces[ 2 ], this.faces[ 3 ] );
-    this.faces[ 1 ].neighbors.push( this.faces[ 2 ], this.faces[ 0 ], this.faces[ 3 ] );
-    this.faces[ 2 ].neighbors.push( this.faces[ 1 ], this.faces[ 3 ], this.faces[ 0 ] );
-    this.faces[ 3 ].neighbors.push( this.faces[ 2 ], this.faces[ 1 ], this.faces[ 0 ] );
-};
-Goblin.GjkEpa.Polyhedron.prototype = {
-    addVertex: function( vertex ) {
-        var edges = [], faces = [], i, j, a, b, last_b;
-        var e0, e1, e2, e3, e4;
-        this.faces[ this.closest_face ].silhouette( vertex, edges );
-
-        // Re-order the edges if needed
-        for ( i = 0; i < edges.length - 5; i += 5 ) {
-            a = edges[ i + 3 ];
-            b = edges[ i + 4 ];
-
-            // Ensure this edge really should be the next one
-            if ( i !== 0 && last_b !== a ) {
-                // It shouldn't
-                for ( j = i + 5; j < edges.length; j += 5 ) {
-                    if ( edges[ j + 3 ] === last_b ) {
-                        // Found it
-                        //var tmp = edges.slice( i, i + 5 );
-
-                        e0 = edges[ i + 0 ];
-                        e1 = edges[ i + 1 ];
-                        e2 = edges[ i + 2 ];
-                        e3 = edges[ i + 3 ];
-                        e4 = edges[ i + 4 ];
-
-                        edges[ i ] = edges[ j ];
-                        edges[ i + 1 ] = edges[ j + 1 ];
-                        edges[ i + 2 ] = edges[ j + 2 ];
-                        edges[ i + 3 ] = edges[ j + 3 ];
-                        edges[ i + 4 ] = edges[ j + 4 ];
-                        edges[ j ] = e0;
-                        edges[ j + 1 ] = e1;
-                        edges[ j + 2 ] = e2;
-                        edges[ j + 3 ] = e3;
-                        edges[ j + 4 ] = e4;
-
-                        a = edges[ i + 3 ];
-                        b = edges[ i + 4 ];
-                        break;
-                    }
-                }
-            }
-            last_b = b;
-        }
-
-        for ( i = 0; i < edges.length; i += 5 ) {
-            var neighbor = edges[ i ];
-            a = edges[ i + 3 ];
-            b = edges[ i + 4 ];
-
-            var face = new Goblin.GjkEpa.Face( this, b, vertex, a );
-            face.neighbors[ 2 ] = edges[ i ];
-            faces.push( face );
-
-            neighbor.neighbors[ neighbor.neighbors.indexOf( edges[ i + 2 ] ) ] = face;
-        }
-
-        for ( i = 0; i < faces.length; i++ ) {
-            faces[ i ].neighbors[ 0 ] = faces[ i + 1 === faces.length ? 0 : i + 1 ];
-            faces[ i ].neighbors[ 1 ] = faces[ i - 1 < 0 ? faces.length - 1 : i - 1 ];
-        }
-
-        Array.prototype.push.apply( this.faces, faces );
-
-        return edges;
-    },
-
-    findFaceClosestToOrigin: ( function() {
-        var origin = new Goblin.Vector3(),
-            point = new Goblin.Vector3();
-
-        return function() {
-            this.closest_face_distance = Infinity;
-
-            var distance, i, face;
-
-            for ( i = 0; i < this.faces.length; i++ ) {
-                face = this.faces[ i ];
-
-                if ( face.active === false ) {
-                    continue;
-                }
-
-                Goblin.GeometryMethods.findClosestPointInTriangle( origin, face.a.point, face.b.point, face.c.point, point );
-                distance = point.lengthSquared();
-                if ( distance < this.closest_face_distance ) {
-                    this.closest_face_distance = distance;
-                    this.closest_face = i;
-                    this.closest_point.copy( point );
-                }
-            }
-        };
-    } )()
-};
-
-Goblin.GjkEpa.Face.prototype = {
-    /**
-     * Determines if a vertex is in front of or behind the face
-     *
-     * @method classifyVertex
-     * @param vertex {vec3} Vertex to classify
-     * @return {Number} If greater than 0 then `vertex' is in front of the face
-     */
-    classifyVertex: function( vertex ) {
-        var w = this.normal.dot( this.a.point );
-        return this.normal.dot( vertex.point ) - w;
-    },
-
-    silhouette: function( point, edges, source ) {
-        if ( this.active === false ) {
-            return;
-        }
-
-        if ( this.classifyVertex( point ) > 0 ) {
-            // This face is visible from `point`. Deactivate this face and alert the neighbors
-            this.active = false;
-
-            this.neighbors[ 0 ].silhouette( point, edges, this );
-            this.neighbors[ 1 ].silhouette( point, edges, this );
-            this.neighbors[ 2 ].silhouette( point, edges, this );
-        } else if ( source ) {
-            // This face is a neighbor to a now-silhouetted face, determine which neighbor and replace it
-            var neighbor_idx = this.neighbors.indexOf( source ),
-                a, b;
-            if ( neighbor_idx === 0 ) {
-                a = this.a;
-                b = this.b;
-            } else if ( neighbor_idx === 1 ) {
-                a = this.b;
-                b = this.c;
-            } else {
-                a = this.c;
-                b = this.a;
-            }
-            edges.push( this, neighbor_idx, source, b, a );
-        }
-    }
-};
-
-( function() {
-    var origin = new Goblin.Vector3(),
-        ao = new Goblin.Vector3(),
-        ab = new Goblin.Vector3(),
-        ac = new Goblin.Vector3();
-
-    var barycentric = new Goblin.Vector3(),
-        confirm = {
-            a: new Goblin.Vector3(),
-            b: new Goblin.Vector3(),
-            c: new Goblin.Vector3()
-        };
-
-    Goblin.GjkEpa.Simplex = function( object_a, object_b, do_lightweight_collision ) {
-        this.object_a = object_a;
-        this.object_b = object_b;
-        this.do_lightweight_collision = do_lightweight_collision;
-        this.points = [];
-        this.iterations = 0;
-        this.next_direction = new Goblin.Vector3();
-        this.updateDirection();
-    };
-    Goblin.GjkEpa.Simplex.prototype = {
-        addPoint: function() {
-            if ( ++this.iterations === Goblin.GjkEpa.max_iterations ) {
-                return false;
-            }
-
-            var support_point = Goblin.ObjectPool.getObject( 'GJK2SupportPoint' );
-            Goblin.GjkEpa.findSupportPoint( this.object_a, this.object_b, this.next_direction, support_point );
-            this.points.push( support_point );
-
-            if ( support_point.point.dot( this.next_direction ) < 0 && this.points.length > 1 ) {
-                // Check the margins first
-                // @TODO this can be expanded to support 1-simplex (2 points)
-                if ( this.points.length >= 3 ) {
-                    Goblin.GeometryMethods.findClosestPointInTriangle(
-                        origin,
-                        this.points[ 0 ].point,
-                        this.points[ 1 ].point,
-                        this.points[ 2 ].point,
-                        _tmp_vec3_1
-                    );
-                    var distanceSquared = _tmp_vec3_1.lengthSquared();
-
-                    if ( distanceSquared <= Goblin.GjkEpa.margins * Goblin.GjkEpa.margins ) {
-                        // Get a ContactDetails object and fill out its details
-                        var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
-                        contact.object_a = this.object_a;
-                        contact.object_b = this.object_b;
-
-                        contact.contact_normal.normalizeVector( _tmp_vec3_1 );
-                        if ( contact.contact_normal.lengthSquared() === 0 ) {
-                            contact.contact_normal.subtractVectors( contact.object_b.position, contact.object_a.position );
-                        }
-                        contact.contact_normal.normalize();
-                        contact.contact_normal.scale( -1 );
-
-                        contact.penetration_depth = Goblin.GjkEpa.margins - Math.sqrt( distanceSquared );
-
-                        Goblin.GeometryMethods.findBarycentricCoordinates( _tmp_vec3_1, this.points[ 0 ].point, this.points[ 1 ].point, this.points[ 2 ].point, barycentric );
-
-                        if ( isNaN( barycentric.x ) ) {
-                            return false;
-                        }
-
-                        if ( this.do_lightweight_collision ) {
-                            contact.is_lightweight = true;
-                            Goblin.GjkEpa.result = contact;
-                            return null;
-                        }
-
-                        // Contact coordinates of object a
-                        confirm.a.scaleVector( this.points[ 0 ].witness_a, barycentric.x );
-                        confirm.b.scaleVector( this.points[ 1 ].witness_a, barycentric.y );
-                        confirm.c.scaleVector( this.points[ 2 ].witness_a, barycentric.z );
-                        contact.contact_point_in_a.addVectors( confirm.a, confirm.b );
-                        contact.contact_point_in_a.add( confirm.c );
-
-                        // Contact coordinates of object b
-                        contact.contact_point_in_b.scaleVector( contact.contact_normal, -contact.penetration_depth );
-                        contact.contact_point_in_b.add( contact.contact_point_in_a );
-
-                        // Find actual contact point
-                        contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
-                        contact.contact_point.scale( 0.5 );
-
-                        // Set objects' local points
-                        contact.object_a.transform_inverse.transformVector3( contact.contact_point_in_a );
-                        contact.object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
-
-                        Goblin.GjkEpa.result = contact;
-                        return null;
-                    }
-                }
-
-                // if the last added point was not past the origin in the direction
-                // then the Minkowski difference cannot contain the origin because
-                // point added is past the edge of the Minkowski difference
-                return false;
-            }
-
-            if ( this.updateDirection() === true ) {
-                // Found a collision
-                return null;
-            }
-
-            return support_point;
-        },
-
-        findDirectionFromLine: function() {
-            ao.scaleVector( this.points[ 1 ].point, -1 );
-            ab.subtractVectors( this.points[ 0 ].point, this.points[ 1 ].point );
-
-            if ( ab.dot( ao ) < 0 ) {
-                // Origin is on the opposite side of A from B
-                this.next_direction.copy( ao );
-                Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', this.points[ 1 ] );
-                this.points.length = 1; // Remove second point
-            } else {
-                // Origin lies between A and B, move on to a 2-simplex
-                this.next_direction.crossVectors( ab, ao );
-                this.next_direction.cross( ab );
-
-                // In the case that `ab` and `ao` are parallel vectors, direction becomes a 0-vector
-                if (
-                    this.next_direction.x === 0 &&
-                    this.next_direction.y === 0 &&
-                    this.next_direction.z === 0
-                ) {
-                    ab.normalize();
-                    this.next_direction.x = 1 - Math.abs( ab.x );
-                    this.next_direction.y = 1 - Math.abs( ab.y );
-                    this.next_direction.z = 1 - Math.abs( ab.z );
-                }
-            }
-        },
-
-        findDirectionFromTriangle: function() {
-            // Triangle
-            var a = this.points[ 2 ],
-                b = this.points[ 1 ],
-                c = this.points[ 0 ];
-
-            ao.scaleVector( a.point, -1 ); // ao
-            ab.subtractVectors( b.point, a.point ); // ab
-            ac.subtractVectors( c.point, a.point ); // ac
-
-            // Determine the triangle's normal
-            _tmp_vec3_1.crossVectors( ab, ac );
-
-            // Edge cross products
-            _tmp_vec3_2.crossVectors( ab, _tmp_vec3_1 );
-            _tmp_vec3_3.crossVectors( _tmp_vec3_1, ac );
-
-            if ( _tmp_vec3_3.dot( ao ) >= 0 ) {
-                // Origin lies on side of ac opposite the triangle
-                if ( ac.dot( ao ) >= 0 ) {
-                    // Origin outside of the ac line, so we form a new
-                    // 1-simplex (line) with points A and C, leaving B behind
-                    this.points.length = 0;
-                    this.points.push( c, a );
-                    Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', b );
-
-                    // New search direction is from ac towards the origin
-                    this.next_direction.crossVectors( ac, ao );
-                    this.next_direction.cross( ac );
-                } else {
-                    // *
-                    if ( ab.dot( ao ) >= 0 ) {
-                        // Origin outside of the ab line, so we form a new
-                        // 1-simplex (line) with points A and B, leaving C behind
-                        this.points.length = 0;
-                        this.points.push( b, a );
-                        Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
-
-                        // New search direction is from ac towards the origin
-                        this.next_direction.crossVectors( ab, ao );
-                        this.next_direction.cross( ab );
-                    } else {
-                        // only A gives us a good reference point, start over with a 0-simplex
-                        this.points.length = 0;
-                        this.points.push( a );
-                        Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', b );
-                        Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
-                    }
-                    // *
-                }
-
-            } else {
-
-                // Origin lies on the triangle side of ac
-                if ( _tmp_vec3_2.dot( ao ) >= 0 ) {
-                    // Origin lies on side of ab opposite the triangle
-
-                    // *
-                    if ( ab.dot( ao ) >= 0 ) {
-                        // Origin outside of the ab line, so we form a new
-                        // 1-simplex (line) with points A and B, leaving C behind
-                        this.points.length = 0;
-                        this.points.push( b, a );
-                        Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
-
-                        // New search direction is from ac towards the origin
-                        this.next_direction.crossVectors( ab, ao );
-                        this.next_direction.cross( ab );
-                    } else {
-                        // only A gives us a good reference point, start over with a 0-simplex
-                        this.points.length = 0;
-                        this.points.push( a );
-                        Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', b );
-                        Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
-                    }
-                    // *
-
-                } else {
-
-                    // Origin lies somewhere in the triangle or above/below it
-                    if ( _tmp_vec3_1.dot( ao ) >= 0 ) {
-                        // Origin is on the front side of the triangle
-                        this.next_direction.copy( _tmp_vec3_1 );
-                        this.points.length = 0;
-                        this.points.push( a, b, c );
-                    } else {
-                        // Origin is on the back side of the triangle
-                        this.next_direction.copy( _tmp_vec3_1 );
-                        this.next_direction.scale( -1 );
-                    }
-
-                }
-
-            }
-        },
-
-        getFaceNormal: function( a, b, c, destination ) {
-            ab.subtractVectors( b.point, a.point );
-            ac.subtractVectors( c.point, a.point );
-            destination.crossVectors( ab, ac );
-            destination.normalize();
-        },
-
-        faceNormalDotOrigin: function( a, b, c ) {
-            // Find face normal
-            this.getFaceNormal( a, b, c, _tmp_vec3_1 );
-
-            // Find direction of origin from center of face
-            _tmp_vec3_2.addVectors( a.point, b.point );
-            _tmp_vec3_2.add( c.point );
-            _tmp_vec3_2.scale( -3 );
-            _tmp_vec3_2.normalize();
-
-            return _tmp_vec3_1.dot( _tmp_vec3_2 );
-        },
-
-        findDirectionFromTetrahedron: function() {
-            var a = this.points[ 3 ],
-                b = this.points[ 2 ],
-                c = this.points[ 1 ],
-                d = this.points[ 0 ];
-
-            // Check each of the four sides to see which one is facing the origin.
-            // Then keep the three points for that triangle and use its normal as the search direction
-            // The four faces are BCD, ACB, CAD, DAB
-            var closest_face = null,
-                closest_dot = Goblin.EPSILON,
-                face_dot;
-
-            // @TODO we end up calculating the "winning" face normal twice, don't do that
-
-            face_dot = this.faceNormalDotOrigin( b, c, d );
-            if ( face_dot > closest_dot ) {
-                closest_face = 1;
-                closest_dot = face_dot;
-            }
-
-            face_dot = this.faceNormalDotOrigin( a, c, b );
-            if ( face_dot > closest_dot ) {
-                closest_face = 2;
-                closest_dot = face_dot;
-            }
-
-            face_dot = this.faceNormalDotOrigin( c, a, d );
-            if ( face_dot > closest_dot ) {
-                closest_face = 3;
-                closest_dot = face_dot;
-            }
-
-            face_dot = this.faceNormalDotOrigin( d, a, b );
-            if ( face_dot > closest_dot ) {
-                closest_face = 4;
-                closest_dot = face_dot;
-            }
-
-            if ( closest_face === null ) {
-                // We have a collision, ready for EPA
-                return true;
-            } else if ( closest_face === 1 ) {
-                // BCD
-                this.points.length = 0;
-                this.points.push( b, c, d );
-                this.getFaceNormal( b, c, d, _tmp_vec3_1 );
-                this.next_direction.copy( _tmp_vec3_1 );
-            } else if ( closest_face === 2 ) {
-                // ACB
-                this.points.length = 0;
-                this.points.push( a, c, b );
-                this.getFaceNormal( a, c, b, _tmp_vec3_1 );
-                this.next_direction.copy( _tmp_vec3_1 );
-            } else if ( closest_face === 3 ) {
-                // CAD
-                this.points.length = 0;
-                this.points.push( c, a, d );
-                this.getFaceNormal( c, a, d, _tmp_vec3_1 );
-                this.next_direction.copy( _tmp_vec3_1 );
-            } else if ( closest_face === 4 ) {
-                // DAB
-                this.points.length = 0;
-                this.points.push( d, a, b );
-                this.getFaceNormal( d, a, b, _tmp_vec3_1 );
-                this.next_direction.copy( _tmp_vec3_1 );
-            }
-        },
-
-        updateDirection: function() {
-            if ( this.points.length === 0 ) {
-
-                this.next_direction.subtractVectors( this.object_b.position, this.object_a.position );
-
-            } else if ( this.points.length === 1 ) {
-
-                this.next_direction.scale( -1 );
-
-            } else if ( this.points.length === 2 ) {
-
-                this.findDirectionFromLine();
-
-            } else if ( this.points.length === 3 ) {
-
-                this.findDirectionFromTriangle();
-
-            } else {
-
-                return this.findDirectionFromTetrahedron();
-
-            }
-        }
-    };
-} )();
-
-/**
- * Wraps a vector in a proxy object so that it can ne used in GJK / EPA
- * @param {Goblin.Vector3} point
- * @constructor
- */
-Goblin.GjkEpa.PointProxy = function( point ) {
-    this.position = point;
-};
-
-/**
- * @param {Goblin.Vector3} direction direction to use in finding the support point
- * @param {Goblin.Vector3} support_point vec3 variable which will contain the supporting point after calling this method
- */
-Goblin.GjkEpa.PointProxy.prototype.findSupportPoint = function( direction, support_point ) {
-    support_point.copy( this.position );
-};
-Goblin.Collision.SAT = {
-    /**
-     * Performs A SAT collision between to objects. Returns projection (that can be used as a minimum translation vector) or null if there is no collision.
-     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
-     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
-     * @returns {Goblin.Collision.SAT.Projection|null}
-     */
-    performSat: ( function() {
-        var negatedNormal = new Goblin.Vector3();
-
-        return function( objectA, objectB ) {
-            // Step 1: we need to determine the separation axises: they are all normals from object a are all normals from object b
-            // TODO: [EN-242] decide whether to include all cross products or to pass them separately
-            var allNormals = [];
-            var normalsA = objectA.faceNormals;
-            var normalsB = objectB.faceNormals;
-            if ( normalsA.length === 0 ) {
-                allNormals = normalsB;
-            } else if ( normalsB === 0 ) {
-                allNormals = normalsA;
-            } else {
-                allNormals.push.apply( allNormals, normalsA );
-                allNormals.push.apply( allNormals, normalsB );
-                this.removeDuplicatedVectors( allNormals );
-            }
-
-            var allProjections = [];
-            var minimumProjection = null;
-            var minimumOverlap = Infinity;
-
-            // Not we want to project all shapes onto our separation axises.
-            // - If at least one pair of projections is not overlapping then there is no collision at all
-            // - If all projections are overlapping then we want to use the smallest projection as a separation axis.
-            for ( var i = 0; i < allNormals.length; i++ ) {
-                var normal = allNormals[ i ];
-                negatedNormal.scaleVector( normal, -1 );
-                var computedNegativeProjection = this._findProjectionWithNormal( allProjections, negatedNormal );
-
-                var projection = null;
-                if ( computedNegativeProjection ) {
-                    // It's quite likely that we already have a projection on a negative axis
-                    projection = computedNegativeProjection.cloneAndNegate();
-                }
-                if ( !projection ) {
-                    var a1 = this._findMaxDotInDirection( objectA, normal );
-                    var a2 = -this._findMaxDotInDirection( objectA, negatedNormal );
-                    var b1 = this._findMaxDotInDirection( objectB, normal );
-                    var b2 = -this._findMaxDotInDirection( objectB, negatedNormal );
-                    projection = new Goblin.Collision.SAT.Projection( normal, a1, a2, b1, b2 );
-                }
-
-                if ( projection.overlap < Goblin.EPSILON ) {
-                    return null;
-                }
-
-                allProjections.push( projection );
-                if ( projection.overlap < minimumOverlap ) {
-                    minimumOverlap = projection.overlap;
-                    minimumProjection = projection;
-                }
-            }
-
-            return minimumProjection;
-        };
-    } )(),
-
-    /**
-     * Removes all duplicates from array of vectors.
-     * @param {Array<Goblin.Vector3>} vectors
-     */
-    removeDuplicatedVectors: function( vectors ) {
-        for ( var i = 0; i < vectors.length; i++ ) {
-            var vector = vectors[ i ];
-            var isDuplicate = false;
-
-            for ( var j = i + 1; j < vectors.length; j++ ) {
-                isDuplicate = vector.equals( vectors[ j ] );
-                if ( isDuplicate ) {
-                    break;
-                }
-            }
-
-            if ( isDuplicate ) {
-                vectors[ i ] = vectors[ vectors.length - 1 ];
-                vectors.pop();
-                i--;
-            }
-        }
-    },
-
-    /**
-     * Finds a projection with a given normal.
-     * @param {Goblin.Collision.SAT.Projection[]} allProjections
-     * @param {Goblin.Vector3} normal
-     * @returns {Goblin.Collision.SAT.Projection|null}
-     * @private
-     */
-    _findProjectionWithNormal: function( allProjections, normal ) {
-        for ( var i = 0; i < allProjections.length; i++ ) {
-            var projection = allProjections[ i ];
-            if ( projection.normal.equals( normal ) ) {
-                return projection;
-            }
-        }
-
-        return null;
-    },
-
-    /**
-     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object
-     * @param {Goblin.Vector3} direction
-     * @returns {number}
-     * @private
-     */
-    _findMaxDotInDirection: ( function() {
-        var supportPoint = new Goblin.Vector3();
-
-        return function( object, direction ) {
-            object.findSupportPoint( direction, supportPoint );
-            return supportPoint.dot( direction );
-        };
-    } )()
-};
-
-/**
- * Holds details of projection of two objects on some axis. Most useful fields are normal (which is an axis),
- * and overlap (which is a length of minimum translation vector)
- *
- * @param {Goblin.Vector3} normal
- * @param {number} a1 - first point of object's A projection on axis
- * @param {number} a2 - second point of object's A projection on axis
- * @param {number} b1 - first point of object's B projection on axis
- * @param {number} b2 - second point of object's B projection on axis
- * @constructor
- */
-Goblin.Collision.SAT.Projection = function( normal, a1, a2, b1, b2 ) {
-    this.normal = normal;
-    if ( a1 < a2 ) {
-        this.startA = a1;
-        this.endA = a2;
-    } else {
-        this.startA = a2;
-        this.endA = a1;
-    }
-
-    if ( b1 < b2 ) {
-        this.startB = b1;
-        this.endB = b2;
-    } else {
-        this.startB = b2;
-        this.endB = b1;
-    }
-
-    var hasOverlap = this.startA < this.endB && this.endA > this.startB;
-    if ( hasOverlap ) {
-        this.overlap = this.endB - this.startA;
-    } else {
-        this.overlap = 0;
-    }
-};
-
-/**
- * @returns {Goblin.Collision.SAT.Projection}
- */
-Goblin.Collision.SAT.Projection.prototype.cloneAndNegate = function() {
-    var negatedNormal = new Goblin.Vector3();
-    negatedNormal.scaleVector( this.normal, -1 );
-    return new Goblin.Collision.SAT.Projection( negatedNormal, -this.startA, -this.endA, -this.startB, -this.endB );
-};
-/**
- * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
- * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
- * @param {boolean} doLightweightCollision
- * @returns {Goblin.ContactDetails|null}
- */
-Goblin.Collision.sphereCapsule = ( function() {
-    var firstCenterPoint = new Goblin.Vector3();
-    var secondCenterPoint = new Goblin.Vector3();
-
-    return function( objectA, objectB, doLightweightCollision ) {
-        var sphere;
-        var capsule;
-        if ( objectA.shape.shapeType === Goblin.Shapes.Type.SphereShape ) {
-            sphere = objectA;
-            capsule = objectB;
-        } else {
-            sphere = objectB;
-            capsule = objectA;
-        }
-
-        firstCenterPoint.set( 0, capsule.shape.half_height, 0 );
-        secondCenterPoint.set( 0, -capsule.shape.half_height, 0 );
-        capsule.transform.transformVector3( firstCenterPoint );
-        capsule.transform.transformVector3( secondCenterPoint );
-
-        var closestPointOnInnerSegment = Goblin.GeometryMethods.findClosestPointOnASegment( firstCenterPoint, secondCenterPoint, sphere.position );
-        var distanceToClosestPoint = closestPointOnInnerSegment.distanceTo( sphere.position );
-
-        // The sphere overlaps the capsule if the distance of the sphere center to the closest
-        // point on the inner capsule segment is less or equal than the sum of the radii.
-        var penetrationDepth = sphere.shape.radius + capsule.shape.radius - distanceToClosestPoint;
-        if ( penetrationDepth < 0 ) {
-            return null;
-        }
-
-        /**
-         * @type {Goblin.ContactDetails}
-         */
-        var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
-        contact.object_a = sphere;
-        contact.object_b = capsule;
-        if ( doLightweightCollision ) {
-            contact.is_lightweight = true;
-            return contact;
-        }
-
-        contact.penetration_depth = penetrationDepth;
-
-        contact.contact_normal.subtractVectors( closestPointOnInnerSegment, sphere.position );
-        var contactNormalLength = contact.contact_normal.length();
-        if ( Math.abs( contactNormalLength ) < Goblin.EPSILON ) {
-            // Shapes are coincident - set an arbitrary normal
-            contact.contact_normal.set( 0, 1, 0 );
-        } else {
-            contact.contact_normal.scale( 1 / contactNormalLength );
-        }
-
-        // At this stage contact_point_in_a is a contact point in world's space
-        contact.contact_point_in_a.copy( contact.contact_normal );
-        contact.contact_point_in_a.scale( sphere.shape.radius );
-        contact.contact_point_in_a.add( sphere.position );
-
-        // contact_point_in_b is a contact point in capsule in world's space
-        contact.contact_point_in_b.copy( contact.contact_normal );
-        contact.contact_point_in_b.scale( -capsule.shape.radius );
-        contact.contact_point_in_b.add( closestPointOnInnerSegment );
-
-        contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
-        contact.contact_point.scale( 0.5 );
-
-        sphere.transform_inverse.transformVector3( contact.contact_point_in_a );
-        capsule.transform_inverse.transformVector3( contact.contact_point_in_b );
-
-        return contact;
-    };
-} )();
-/**
- * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
- * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
- * @param {boolean} doLightweightCollision
- * @returns {Goblin.ContactDetails|null}
- */
-Goblin.Collision.sphereConvexHull = function( objectA, objectB, doLightweightCollision ) {
-    var sphere;
-    var convexHull;
-    if ( objectA.shape.shapeType === Goblin.Shapes.Type.SphereShape ) {
-        sphere = objectA;
-        convexHull = objectB;
-    } else {
-        sphere = objectB;
-        convexHull = objectA;
-    }
-
-    // If closestPointOnHull is not null then center of the sphere is lying outside the convex hull.
-    // This can mean two things - either there is no collision at all or there is a shallow collision.
-    var closestPointOnHull = Goblin.GjkEpa.findClosestPointOnObject( convexHull, sphere.position );
-    return closestPointOnHull !== null ?
-        Goblin.Collision.sphereConvexHull._shallowSphereConvexHull( sphere, convexHull, closestPointOnHull, doLightweightCollision ) :
-        Goblin.Collision.sphereConvexHull._deepSphereConvexHull( sphere, convexHull, doLightweightCollision );
-};
-
-/**
- * Collision for shallow cases - center of the sphere is lying outside the convex hull.
- * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} sphere
- * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} convexHull
- * @param {Goblin.Vector3} closestPointOnHull
- * @param {boolean} doLightweightCollision
- * @returns {Goblin.ContactDetails|null}
- */
-Goblin.Collision.sphereConvexHull._shallowSphereConvexHull = ( function() {
-    var directionToClosestPoint = new Goblin.Vector3();
-    var collisionNormal = new Goblin.Vector3();
-
-    return function( sphere, convexHull, closestPointOnHull, doLightweightCollision ) {
-        directionToClosestPoint.subtractVectors( closestPointOnHull, sphere.position );
-        var distance = collisionNormal.normalizeVector( directionToClosestPoint );
-        if ( distance > sphere.shape.radius ) {
-            return null;
-        }
-
-        /**
-         * @type {Goblin.ContactDetails}
-         */
-        var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
-        contact.object_a = sphere;
-        contact.object_b = convexHull;
-        if ( doLightweightCollision ) {
-            contact.is_lightweight = true;
-            return contact;
-        }
-
-        contact.penetration_depth = sphere.shape.radius - distance;
-        contact.contact_normal.copy( collisionNormal );
-
-        contact.contact_point_in_a.scaleVector( collisionNormal, sphere.shape.radius );
-        contact.contact_point_in_a.add( sphere.position );
-
-        contact.contact_point_in_b.copy( closestPointOnHull );
-
-        contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
-        contact.contact_point.scale( 0.5 );
-
-        sphere.transform_inverse.transformVector3( contact.contact_point_in_a );
-        convexHull.transform_inverse.transformVector3( contact.contact_point_in_b );
-
-        return contact;
-    };
-} )();
-
-
-/**
- * Collision for deep cases - center of the sphere is lying inside the convex hull.
- * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} sphere
- * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} convexHull
- * @param {boolean} doLightweightCollision
- * @returns {Goblin.ContactDetails|null}
- */
-Goblin.Collision.sphereConvexHull._deepSphereConvexHull = ( function() {
-    return function( sphere, convexHull, doLightweightCollision ) {
-        var minimumProjection = Goblin.Collision.SAT.performSat( sphere, convexHull );
-        if ( minimumProjection === null ) {
-            return null;
-        }
-
-        /**
-         * @type {Goblin.ContactDetails}
-         */
-        var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
-        contact.object_a = sphere;
-        contact.object_b = convexHull;
-        if ( doLightweightCollision ) {
-            contact.is_lightweight = true;
-            return contact;
-        }
-
-        contact.penetration_depth = minimumProjection.overlap;
-        contact.contact_normal.scaleVector( minimumProjection.normal, -1 );
-
-        contact.contact_point_in_a.scaleVector( contact.contact_normal, sphere.shape.radius );
-        contact.contact_point_in_a.add( sphere.position );
-
-        contact.contact_point_in_b.scaleVector( minimumProjection.normal, minimumProjection.overlap - sphere.shape.radius );
-        contact.contact_point_in_b.add( sphere.position );
-
-        contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
-        contact.contact_point.scale( 0.5 );
-
-        sphere.transform_inverse.transformVector3( contact.contact_point_in_a );
-        convexHull.transform_inverse.transformVector3( contact.contact_point_in_b );
-
-        return contact;
-    };
-} )();
-/**
- * @param {Goblin.RigidBody} objectA
- * @param {Goblin.RigidBody} objectB
- * @param {boolean} doLightweightCollision
- * @returns {Goblin.ContactDetails|null}
- */
-Goblin.Collision.sphereSphere = function( objectA, objectB, doLightweightCollision ) {
-    // Cache positions of the spheres
-    var positionA = objectA.position;
-    var positionB = objectB.position;
-
-    // Get the vector between the two objects
-    _tmp_vec3_1.subtractVectors( positionB, positionA );
-    var distanceBetweenCenters = _tmp_vec3_1.length();
-    var radiiSum = objectA.shape.radius + objectB.shape.radius;
-
-    // If the distance between the objects is greater than their combined radii
-    // then they are not touching, continue processing the other possible contacts
-    if ( distanceBetweenCenters > radiiSum ) {
-        return null;
-    }
-
-    /**
-     * @type {Goblin.ContactDetails}
-     */
-    var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
-    contact.object_a = objectA;
-    contact.object_b = objectB;
-
-    if ( doLightweightCollision ) {
-        contact.is_lightweight = true;
-        return contact;
-    }
-
-
-    if ( Math.abs( distanceBetweenCenters ) < Goblin.EPSILON ) {
-        // Spheres are coincident - set an arbitrary normal
-        contact.contact_normal.set( 0, 1, 0 );
-    } else {
-        // Contact normal = the normalized difference of the center points
-        // Because we already have the distance (vector magnitude), don't normalize
-        // instead we will calculate this value manually
-        contact.contact_normal.scaleVector( _tmp_vec3_1, 1 / distanceBetweenCenters );
-    }
-
-    // The penetration depth is simply the distance between center points minus the sum of sphere radii
-    contact.penetration_depth = radiiSum - distanceBetweenCenters;
-
-    // Contact points in both objects
-    contact.contact_point_in_a.scaleVector( contact.contact_normal, contact.object_a.shape.radius );
-    contact.contact_point_in_b.scaleVector( contact.contact_normal, -contact.object_b.shape.radius );
-
-    // Actual contact point - between two surface points. We need to add objects' positions because contact points are in object's space.
-    contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
-    contact.contact_point.add( positionA );
-    contact.contact_point.add( positionB );
-    contact.contact_point.scale( 0.5 );
-
-    return contact;
-};
-/**
- * Performs an intersection test between two triangles
- *
- * @method TriangleTriangle
- * @param tri_a {TriangleShape}
- * @param tri_b {TriangleShape}
- */
-Goblin.TriangleTriangle = function( tri_a, tri_b, do_lightweight_collision ) {
-    var dv1_0 = tri_b.classifyVertex( tri_a.a ),
-        dv1_1 = tri_b.classifyVertex( tri_a.b ),
-        dv1_2 = tri_b.classifyVertex( tri_a.c );
-
-    if (
-        ( dv1_0 > 0 && dv1_1 > 0 && dv1_2 > 0 ) ||
-        ( dv1_0 < 0 && dv1_1 < 0 && dv1_2 < 0 )
-    ) {
-        // All vertices of tri_a are on the same side of tri_b, no intersection possible
-        return null;
-    }
-
-    var dv2_0 = tri_a.classifyVertex( tri_b.a ),
-        dv2_1 = tri_a.classifyVertex( tri_b.b ),
-        dv2_2 = tri_a.classifyVertex( tri_b.c );
-    if (
-        ( dv2_0 > 0 && dv2_1 > 0 && dv2_2 > 0 ) ||
-        ( dv2_0 < 0 && dv2_1 < 0 && dv2_2 < 0 )
-    ) {
-        // All vertices of tri_b are on the same side of tri_a, no intersection possible
-        return null;
-    }
-
-    var d = new Goblin.Vector3();
-    d.crossVectors( tri_a.normal, tri_b.normal );
-    d.normalize();
-
-    var pv1_0 = d.dot( tri_a.a ),
-        pv1_1 = d.dot( tri_a.b ),
-        pv1_2 = d.dot( tri_a.c ),
-        pv2_0 = d.dot( tri_b.a ),
-        pv2_1 = d.dot( tri_b.b ),
-        pv2_2 = d.dot( tri_b.c );
-
-    var aa = tri_a.a,
-        ab = tri_a.b,
-        ac = tri_a.c,
-        ba = tri_b.a,
-        bb = tri_b.b,
-        bc = tri_b.c;
-
-    var tmp;
-    if ( Math.sign( dv1_0 ) === Math.sign( dv1_1 ) ) {
-        tmp = dv1_0;
-        dv1_0 = dv1_2;
-        dv1_2 = tmp;
-
-        tmp = pv1_0;
-        pv1_0 = pv1_2;
-        pv1_2 = tmp;
-
-        tmp = aa;
-        aa = ac;
-        ac = tmp;
-    } else if ( Math.sign( dv1_0 ) === Math.sign( dv1_2 ) ) {
-        tmp = dv1_0;
-        dv1_0 = dv1_1;
-        dv1_1 = tmp;
-
-        tmp = pv1_0;
-        pv1_0 = pv1_1;
-        pv1_1 = tmp;
-
-        tmp = aa;
-        aa = ab;
-        ab = tmp;
-    }
-
-    if ( Math.sign( dv2_0 ) === Math.sign( dv2_1 ) ) {
-        tmp = dv2_0;
-        dv2_0 = dv2_2;
-        dv2_2 = tmp;
-
-        tmp = pv2_0;
-        pv2_0 = pv2_2;
-        pv2_2 = tmp;
-
-        tmp = ba;
-        ba = bc;
-        bc = tmp;
-    } else if ( Math.sign( dv2_0 ) === Math.sign( dv2_2 ) ) {
-        tmp = dv2_0;
-        dv2_0 = dv2_1;
-        dv2_1 = tmp;
-
-        tmp = pv2_0;
-        pv2_0 = pv2_1;
-        pv2_1 = tmp;
-
-        tmp = ba;
-        ba = bb;
-        bb = tmp;
-    }
-
-    var a_t1 = pv1_0 + ( pv1_1 - pv1_0 ) * ( dv1_0 / ( dv1_0 - dv1_1 ) ),
-        a_t2 = pv1_0 + ( pv1_2 - pv1_0 ) * ( dv1_0 / ( dv1_0 - dv1_2 ) ),
-        b_t1 = pv2_0 + ( pv2_1 - pv2_0 ) * ( dv2_0 / ( dv2_0 - dv2_1 ) ),
-        b_t2 = pv2_0 + ( pv2_2 - pv2_0 ) * ( dv2_0 / ( dv2_0 - dv2_2 ) );
-
-    if ( a_t1 > a_t2 ) {
-        tmp = a_t1;
-        a_t1 = a_t2;
-        a_t2 = tmp;
-
-        tmp = pv1_1;
-        pv1_1 = pv1_2;
-        pv1_2 = tmp;
-
-        tmp = ab;
-        ab = ac;
-        ac = tmp;
-    }
-    if ( b_t1 > b_t2 ) {
-        tmp = b_t1;
-        b_t1 = b_t2;
-        b_t2 = tmp;
-
-        tmp = pv2_1;
-        pv2_1 = pv2_2;
-        pv2_2 = tmp;
-
-        tmp = bb;
-        bb = bc;
-        bc = tmp;
-    }
-
-    if (
-        ( a_t1 >= b_t1 && a_t1 <= b_t2 ) ||
-        ( a_t2 >= b_t1 && a_t2 <= b_t2 ) ||
-        ( b_t1 >= a_t1 && b_t1 <= a_t2 ) ||
-        ( b_t2 >= a_t1 && b_t2 <= a_t2 )
-    ) {
-        var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
-
-        contact.object_a = tri_a;
-        contact.object_b = tri_b;
-
-        if ( do_lightweight_collision ) {
-            contact.is_lightweight = true;
-            return contact;
-        }
-
-        var best_a_a = new Goblin.Vector3(),
-            best_a_b = new Goblin.Vector3(),
-            best_a_n = new Goblin.Vector3(),
-            best_b_a = new Goblin.Vector3(),
-            best_b_b = new Goblin.Vector3(),
-            best_b_n = new Goblin.Vector3(),
-            has_a = false,
-            has_b = false;
-
-        if ( tri_b.classifyVertex( aa ) <= 0 ) {
-            // aa is penetrating tri_b
-            has_a = true;
-            Goblin.GeometryMethods.findClosestPointInTriangle( aa, ba, bb, bc, best_a_b );
-            best_a_a.copy( aa );
-            best_a_n.copy( tri_b.normal );
-            best_a_n.scale( -1 );
-        } else {
-            if ( a_t1 >= b_t1 && a_t1 <= b_t2 ) {
-                // ab is penetrating tri_b
-                has_a = true;
-                Goblin.GeometryMethods.findClosestPointInTriangle( ab, ba, bb, bc, best_a_b );
-                best_a_a.copy( ab );
-                best_a_n.copy( tri_b.normal );
-                best_a_n.scale( -1 );
-            } else if ( a_t2 >= b_t1 && a_t2 <= b_t2 ) {
-                // ac is penetration tri_b
-                has_a = true;
-                Goblin.GeometryMethods.findClosestPointInTriangle( ac, ba, bb, bc, best_a_b );
-                best_a_a.copy( ac );
-                best_a_n.copy( tri_b.normal );
-                best_a_n.scale( -1 );
-            }
-        }
-
-        if ( tri_a.classifyVertex( ba ) <= 0 ) {
-            // ba is penetrating tri_a
-            has_b = true;
-            Goblin.GeometryMethods.findClosestPointInTriangle( ba, aa, ab, ac, best_b_a );
-            best_b_b.copy( ba );
-            best_b_n.copy( tri_a.normal );
-        } else {
-            if ( b_t1 >= a_t1 && b_t1 <= a_t2 ) {
-                // bb is penetrating tri_a
-                has_b = true;
-                Goblin.GeometryMethods.findClosestPointInTriangle( bb, aa, ab, ac, best_b_a );
-                best_b_b.copy( bb );
-                best_b_n.copy( tri_a.normal );
-            } else if ( b_t2 >= a_t1 && b_t2 <= a_t2 ) {
-                // bc is penetration tri_a
-                has_b = true;
-                Goblin.GeometryMethods.findClosestPointInTriangle( bc, aa, ab, ac, best_b_a );
-                best_b_b.copy( bc );
-                best_b_n.copy( tri_a.normal );
-            }
-        }
-
-        _tmp_vec3_1.subtractVectors( best_a_a, best_a_b );
-        _tmp_vec3_2.subtractVectors( best_b_a, best_b_b );
-        if ( !has_b || ( has_a && _tmp_vec3_1.lengthSquared() < _tmp_vec3_2.lengthSquared() ) ) {
-            contact.contact_point_in_a.copy( best_a_a );
-            contact.contact_point_in_b.copy( best_a_b );
-            contact.contact_normal.copy( best_a_n );
-        } else {
-            contact.contact_point_in_a.copy( best_b_a );
-            contact.contact_point_in_b.copy( best_b_b );
-            contact.contact_normal.copy( best_b_n );
-        }
-        _tmp_vec3_1.subtractVectors( contact.contact_point_in_a, contact.contact_point_in_b );
-        contact.penetration_depth = _tmp_vec3_1.length();
-        contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
-        contact.contact_point.scale( 0.5 );
-
-        return contact;
-    }
-
-    return null;
-};
-
 Goblin.Constraint = (function() {
 	var constraint_count = 0;
 
@@ -4983,82 +3384,2446 @@ Goblin.FrictionConstraint.prototype.update = (function(){
 	};
 })();
 /**
-* adds a drag force to associated objects
-*
-* @class DragForce
-* @extends ForceGenerator
-* @constructor
-*/
-Goblin.DragForce = function( drag_coefficient, squared_drag_coefficient ) {
-	/**
-	* drag coefficient
-	*
-	* @property drag_coefficient
-	* @type {Number}
-	* @default 0
-	*/
-	this.drag_coefficient = drag_coefficient || 0;
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object_a
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object_b
+ * @param {boolean} do_lightweight_collision
+ * @returns {Goblin.ContactDetails[]|null}
+ */
+Goblin.Collision.boxSphere = function( object_a, object_b, do_lightweight_collision ) {
+    var sphere = null;
+    var box = null;
+    if ( object_a.shape.shapeType === Goblin.Shapes.Type.SphereShape ) {
+        sphere = object_a;
+        box = object_b;
+    } else {
+        sphere = object_b;
+        box = object_a;
+    }
 
-	/**
-	* drag coefficient
-	*
-	* @property drag_coefficient
-	* @type {Number}
-	* @default 0
-	*/
-	this.squared_drag_coefficient = squared_drag_coefficient || 0;
+    var contact = null;
+    var distance = 0;
 
-	/**
-	* whether or not the force generator is enabled
-	*
-	* @property enabled
-	* @type {Boolean}
-	* @default true
-	*/
-	this.enabled = true;
+    // Transform the center of the sphere into box coordinates
+    box.transform_inverse.transformVector3Into( sphere.position, _tmp_vec3_1 );
 
-	/**
-	* array of objects affected by the generator
-	*
-	* @property affected
-	* @type {Array}
-	* @default []
-	* @private
-	*/
-	this.affected = [];
+    // Early out check to see if we can exclude the contact
+    if ( Math.abs( _tmp_vec3_1.x ) - sphere.shape.radius > box.shape.half_width ||
+        Math.abs( _tmp_vec3_1.y ) - sphere.shape.radius > box.shape.half_height ||
+        Math.abs( _tmp_vec3_1.z ) - sphere.shape.radius > box.shape.half_depth ) {
+        return null;
+    }
+
+    // `_tmp_vec3_1` is the center of the sphere in relation to the box
+    // `_tmp_vec3_2` will hold the point on the box closest to the sphere
+    _tmp_vec3_2.x = _tmp_vec3_2.y = _tmp_vec3_2.z = 0;
+
+    // Clamp each coordinate to the box.
+    distance = _tmp_vec3_1.x;
+    if ( distance > box.shape.half_width ) {
+        distance = box.shape.half_width;
+    } else if ( distance < -box.shape.half_width ) {
+        distance = -box.shape.half_width;
+    }
+    _tmp_vec3_2.x = distance;
+
+    distance = _tmp_vec3_1.y;
+    if ( distance > box.shape.half_height ) {
+        distance = box.shape.half_height;
+    } else if ( distance < -box.shape.half_height ) {
+        distance = -box.shape.half_height;
+    }
+    _tmp_vec3_2.y = distance;
+
+    distance = _tmp_vec3_1.z;
+    if ( distance > box.shape.half_depth ) {
+        distance = box.shape.half_depth;
+    } else if ( distance < -box.shape.half_depth ) {
+        distance = -box.shape.half_depth;
+    }
+    _tmp_vec3_2.z = distance;
+
+    // Check we're in contact
+    _tmp_vec3_3.subtractVectors( _tmp_vec3_2, _tmp_vec3_1 );
+    distance = _tmp_vec3_3.lengthSquared();
+    if ( distance > sphere.shape.radius * sphere.shape.radius ) {
+        return null;
+    }
+
+    // Get a ContactDetails object populate it
+    contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
+    contact.object_a = sphere;
+    contact.object_b = box;
+
+    if ( do_lightweight_collision ) {
+        contact.is_lightweight = true;
+        return [ contact ];
+    }
+
+    if ( distance === 0 ) {
+
+        // The center of the sphere is contained within the box
+        Goblin.Collision.boxSphere.spherePenetration( box.shape, _tmp_vec3_1, _tmp_vec3_2, contact );
+
+    } else {
+
+        // Center of the sphere is outside of the box
+
+        // Find contact normal and penetration depth
+        contact.contact_normal.subtractVectors( _tmp_vec3_2, _tmp_vec3_1 );
+        contact.penetration_depth = -contact.contact_normal.length();
+        contact.contact_normal.scale( -1 / contact.penetration_depth );
+
+        // Set contact point of `object_b` (the box )
+        contact.contact_point_in_b.copy( _tmp_vec3_2 );
+
+    }
+
+    // Update penetration depth to include sphere's radius
+    contact.penetration_depth += sphere.shape.radius;
+
+    // Convert contact normal to world coordinates
+    box.transform.rotateVector3( contact.contact_normal );
+
+    // Contact point in `object_a` (the sphere) is the normal * radius converted to the sphere's frame
+    sphere.transform_inverse.rotateVector3Into( contact.contact_normal, contact.contact_point_in_a );
+    contact.contact_point_in_a.scale( sphere.shape.radius );
+
+    // Find contact position
+    contact.contact_point.scaleVector( contact.contact_normal, sphere.shape.radius - contact.penetration_depth / 2 );
+    contact.contact_point.add( sphere.position );
+
+    return [ contact ];
 };
-Goblin.DragForce.prototype.enable = Goblin.ForceGenerator.prototype.enable;
-Goblin.DragForce.prototype.disable = Goblin.ForceGenerator.prototype.disable;
-Goblin.DragForce.prototype.affect = Goblin.ForceGenerator.prototype.affect;
-Goblin.DragForce.prototype.unaffect = Goblin.ForceGenerator.prototype.unaffect;
+
+Goblin.Collision.boxSphere.spherePenetration = function( box, sphere_center, box_point, contact ) {
+    var min_distance, face_distance;
+
+    if ( sphere_center.x < 0 ) {
+        min_distance = box.half_width + sphere_center.x;
+        box_point.x = -box.half_width;
+        box_point.y = box_point.z = 0;
+        contact.penetration_depth = min_distance;
+    } else {
+        min_distance = box.half_width - sphere_center.x;
+        box_point.x = box.half_width;
+        box_point.y = box_point.z = 0;
+        contact.penetration_depth = min_distance;
+    }
+
+    if ( sphere_center.y < 0 ) {
+        face_distance = box.half_height + sphere_center.y;
+        if ( face_distance < min_distance ) {
+            min_distance = face_distance;
+            box_point.y = -box.half_height;
+            box_point.x = box_point.z = 0;
+            contact.penetration_depth = min_distance;
+        }
+    } else {
+        face_distance = box.half_height - sphere_center.y;
+        if ( face_distance < min_distance ) {
+            min_distance = face_distance;
+            box_point.y = box.half_height;
+            box_point.x = box_point.z = 0;
+            contact.penetration_depth = min_distance;
+        }
+    }
+
+    if ( sphere_center.z < 0 ) {
+        face_distance = box.half_depth + sphere_center.z;
+        if ( face_distance < min_distance ) {
+            box_point.z = -box.half_depth;
+            box_point.x = box_point.y = 0;
+            contact.penetration_depth = min_distance;
+        }
+    } else {
+        face_distance = box.half_depth - sphere_center.z;
+        if ( face_distance < min_distance ) {
+            box_point.z = box.half_depth;
+            box_point.x = box_point.y = 0;
+            contact.penetration_depth = min_distance;
+        }
+    }
+
+    // Set contact point of `object_b` (the box)
+    contact.contact_point_in_b.copy( _tmp_vec3_2 );
+    contact.contact_normal.scaleVector( contact.contact_point_in_b, -1 );
+    contact.contact_normal.normalize();
+};
 /**
-* applies force to the associated objects
-*
-* @method applyForce
-*/
-Goblin.DragForce.prototype.applyForce = function() {
-	if ( !this.enabled ) {
-		return;
-	}
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
+ * @param {boolean} doLightweightCollision
+ * @returns {Goblin.ContactDetails[]|null}
+ */
+Goblin.Collision.capsuleCapsule = ( function() {
+    var innerSegmentStartA = new Goblin.Vector3();
+    var innerSegmentEndA = new Goblin.Vector3();
 
-	var i, affected_count, object, drag,
-		force = _tmp_vec3_1;
+    var innerSegmentStartB = new Goblin.Vector3();
+    var innerSegmentEndB = new Goblin.Vector3();
 
-	for ( i = 0, affected_count = this.affected.length; i < affected_count; i++ ) {
-		object = this.affected[i];
+    var closestPointA = new Goblin.Vector3();
+    var closestPointB = new Goblin.Vector3();
 
-		force.copy( object.linear_velocity );
+    var directionA = new Goblin.Vector3();
+    var directionB = new Goblin.Vector3();
 
-		// Calculate the total drag coefficient.
-		drag = force.length();
-		drag = ( this.drag_coefficient * drag ) + ( this.squared_drag_coefficient * drag * drag );
+    var startClipPoint = new Goblin.Vector3();
+    var endClipPoint = new Goblin.Vector3();
 
-		// Calculate the final force and apply it.
-		force.normalize();
-		force.scale( -drag );
-		object.applyForce( force  );
-	}
+    return function( objectA, objectB, doLightweightCollision ) {
+        innerSegmentStartA.set( 0, objectA.shape.half_height, 0 );
+        innerSegmentEndA.set( 0, -objectA.shape.half_height, 0 );
+        objectA.transform.transformVector3( innerSegmentStartA );
+        objectA.transform.transformVector3( innerSegmentEndA );
+
+        innerSegmentStartB.set( 0, objectB.shape.half_height, 0 );
+        innerSegmentEndB.set( 0, -objectB.shape.half_height, 0 );
+        objectB.transform.transformVector3( innerSegmentStartB );
+        objectB.transform.transformVector3( innerSegmentEndB );
+
+        var distance = Math.sqrt( Goblin.GeometryMethods.findClosestPointsOnSegments( innerSegmentStartA, innerSegmentEndA, innerSegmentStartB, innerSegmentEndB, closestPointA, closestPointB ) );
+        var radiiSum = objectA.shape.radius + objectB.shape.radius;
+        // Two capsules overlap if the distance between their inner segments is less or equal
+        // than the sum of their radii.
+        if ( distance > radiiSum ) {
+            return null;
+        }
+
+        // Once we have the closest points we can build virtual spheres around the closest
+        // points again and think of this as sphere vs sphere.
+        var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
+        contact.object_a = objectA;
+        contact.object_b = objectB;
+
+        if ( doLightweightCollision ) {
+            contact.is_lightweight = true;
+            return [ contact ];
+        }
+
+        if ( distance < Goblin.EPSILON ) {
+            // Capsules are coincident - set an arbitrary normal
+            contact.contact_normal.set( 0, 1, 0 );
+        } else {
+            contact.contact_normal.subtractVectors( closestPointB, closestPointA );
+            contact.contact_normal.normalize();
+        }
+        contact.penetration_depth = radiiSum - distance;
+
+        directionA.subtractVectors( innerSegmentEndA, innerSegmentStartA );
+        directionA.normalize();
+        directionB.subtractVectors( innerSegmentEndB, innerSegmentStartB );
+        directionB.normalize();
+
+        // If two inner segment are parallel we need to generate two contact points in order to get a stable manifold.
+        // Note that it's not a final decision yet, because we may have a sphere-sphere collision (spheres at the end of inner segments of capsules),
+        // in which case we receive a contact point at the end of inner segment - it will do just fine by itself.
+        var weProbablyNeedToGenerateTwoContactPoints = directionA.isParallelToNormalized( directionB );
+        if ( !weProbablyNeedToGenerateTwoContactPoints ) {
+            Goblin.Collision.capsuleCapsule._fillContactWithDetails( contact, closestPointA, closestPointB );
+            return [ contact ];
+        }
+
+        // Clip objectB's inner segment with a planes located at the end of objectA's inner segment. Note that we use the same normal twice, so we need to negate
+        // distance in the second case.
+        var distanceToInnerSegmentStart = Goblin.GeometryMethods.findClosestPointToPlaneOnLineSegment( innerSegmentStartA, directionA, innerSegmentStartB, innerSegmentEndB, startClipPoint );
+        var distanceToInnerSegmentEnd = -Goblin.GeometryMethods.findClosestPointToPlaneOnLineSegment( innerSegmentEndA, directionA, innerSegmentStartB, innerSegmentEndB, endClipPoint );
+
+        if ( distanceToInnerSegmentStart < 0 || distanceToInnerSegmentEnd < 0 ) {
+            // Inner segment of objectB is fully behind or in front of inner segment of objectA - we have a sphere vs sphere collision
+            Goblin.Collision.capsuleCapsule._fillContactWithDetails( contact, closestPointA, closestPointB );
+            return [ contact ];
+        }
+
+        var contactAtTheStart = contact;
+        var contactAtTheEnd = Goblin.ObjectPool.getObject( 'ContactDetails' );
+        contactAtTheEnd.object_a = objectA;
+        contactAtTheEnd.object_b = objectB;
+        contactAtTheEnd.contact_normal.copy( contactAtTheStart.contact_normal );
+        contactAtTheEnd.penetration_depth = contactAtTheStart.penetration_depth;
+
+        if ( distanceToInnerSegmentStart === 0 ) {
+            Goblin.Collision.capsuleCapsule._fillContactWithDetails( contactAtTheStart, innerSegmentStartA, startClipPoint );
+        } else {
+            closestPointA.scaleVector( directionA, distanceToInnerSegmentStart );
+            closestPointA.add( innerSegmentStartA );
+            Goblin.Collision.capsuleCapsule._fillContactWithDetails( contactAtTheStart, closestPointA, startClipPoint );
+        }
+
+        if ( distanceToInnerSegmentEnd === 0 ) {
+            Goblin.Collision.capsuleCapsule._fillContactWithDetails( contactAtTheEnd, innerSegmentEndA, endClipPoint );
+        } else {
+            closestPointA.scaleVector( directionA, -distanceToInnerSegmentEnd );
+            closestPointA.add( innerSegmentEndA );
+            Goblin.Collision.capsuleCapsule._fillContactWithDetails( contactAtTheEnd, closestPointA, endClipPoint );
+        }
+
+        return [ contactAtTheStart, contactAtTheEnd ];
+    };
+} )();
+
+/**
+ * Fills all contact points details given closest points on inner segments of both objects and partially calculated contract.
+ *
+ * @param {Goblin.ContactDetails} contact
+ * @param {Goblin.Vector3} closestPointA - closest point on inner segment for the objectA
+ * @param {Goblin.Vector3} closestPointB - closest point on inner segment for the objectB
+ */
+Goblin.Collision.capsuleCapsule._fillContactWithDetails = function( contact, closestPointA, closestPointB ) {
+    contact.contact_point_in_a.scaleVector( contact.contact_normal, contact.object_a.shape.radius );
+    contact.contact_point_in_a.add( closestPointA );
+
+    contact.contact_point_in_b.scaleVector( contact.contact_normal, -contact.object_b.shape.radius );
+    contact.contact_point_in_b.add( closestPointB );
+
+    contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
+    contact.contact_point.scale( 0.5 );
+
+    contact.object_a.transform_inverse.transformVector3( contact.contact_point_in_a );
+    contact.object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
 };
+/**
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
+ * @param {boolean} doLightweightCollision
+ * @returns {Goblin.ContactDetails[]|null}
+ */
+Goblin.Collision.capsuleConvexHull = ( function() {
+    var innerSegmentStart = new Goblin.Vector3();
+    var innerSegmentEnd = new Goblin.Vector3();
+
+    return function( objectA, objectB, doLightweightCollision ) {
+        var capsule;
+        var convexHull;
+        if ( objectA.shape.shapeType === Goblin.Shapes.Type.CapsuleShape ) {
+            capsule = objectA;
+            convexHull = objectB;
+        } else {
+            capsule = objectB;
+            convexHull = objectA;
+        }
+
+        innerSegmentStart.set( 0, capsule.shape.half_height, 0 );
+        innerSegmentEnd.set( 0, -capsule.shape.half_height, 0 );
+        capsule.transform.transformVector3( innerSegmentStart );
+        capsule.transform.transformVector3( innerSegmentEnd );
+
+        // If closestPointOnHull is not null then the inner segment does not collide with convex hull.
+        // This can mean two things - either there is no collision at all or there is a shallow collision.
+        var closestPointOnHull = Goblin.GjkEpa.findClosestPointOnObjectToLineSegment( convexHull, innerSegmentStart, innerSegmentEnd );
+        return closestPointOnHull !== null ?
+            Goblin.Collision.capsuleConvexHull._shallowCapsuleConvexHull( capsule, convexHull, closestPointOnHull, innerSegmentStart, innerSegmentEnd, doLightweightCollision ) :
+            Goblin.Collision.capsuleConvexHull._deepCapsuleConvexHull( capsule, convexHull, innerSegmentStart, innerSegmentEnd, doLightweightCollision );
+    };
+} )();
+
+/**
+ * Capsule vs Convex Hull collision for cases when the inner segment of the capsule is fully outside the convex hull.
+ *
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} capsule
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} convexHull
+ * @param {Goblin.Vector3} closestPointOnHull
+ * @param {Goblin.Vector3} innerSegmentStart
+ * @param {Goblin.Vector3} innerSegmentEnd
+ * @param {boolean} doLightweightCollision
+ */
+Goblin.Collision.capsuleConvexHull._shallowCapsuleConvexHull = ( function() {
+    var closestPointOnInnerSegment = new Goblin.Vector3();
+    var contactNormal = new Goblin.Vector3();
+    var invertedRotationQuaternion = new Goblin.Quaternion();
+    var referencePlaneNormal = new Goblin.Vector3();
+    var transformedInnerSegmentStart = new Goblin.Vector3();
+    var transformedInnerSegmentEnd = new Goblin.Vector3();
+    var transformedClippedInnerSegmentStart = new Goblin.Vector3();
+    var transformedClippedInnerSegmentEnd = new Goblin.Vector3();
+    var clippedInnerSegmentStart = new Goblin.Vector3();
+    var clippedInnerSegmentEnd = new Goblin.Vector3();
+    var innerSegmentDirection = new Goblin.Vector3();
+
+    return function( capsule, convexHull, closestPointOnHull, innerSegmentStart, innerSegmentEnd, doLightweightCollision ) {
+        Goblin.GeometryMethods.findClosestPointOnASegment( innerSegmentStart, innerSegmentEnd, closestPointOnHull, closestPointOnInnerSegment );
+        contactNormal.subtractVectors( closestPointOnHull, closestPointOnInnerSegment );
+        var distanceToClosestPoint = contactNormal.normalize();
+
+        // The capsule overlaps the hull if the distance of the inner capsule segment to the hull
+        // is less or equal than the capsule radius.
+        var penetrationDepth = capsule.shape.radius - distanceToClosestPoint;
+        if ( penetrationDepth < Goblin.EPSILON ) {
+            return null;
+        }
+
+        var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
+        contact.object_a = capsule;
+        contact.object_b = convexHull;
+        if ( doLightweightCollision ) {
+            contact.is_lightweight = true;
+            return [ contact ];
+        }
+
+        contact.penetration_depth = penetrationDepth;
+        contact.contact_normal.copy( contactNormal );
+
+        // We may want to generate two contact points (at the start / end of clipped inner segment).
+        // But first, we need to check if inner segment is perpendicular to the contact normal, so that
+        // we can specify the same penetration depth for the both contact points.
+        innerSegmentDirection.subtractVectors( innerSegmentEnd, innerSegmentStart );
+        innerSegmentDirection.normalize();
+        var dotBetweenInnerSegmentDirectionAndContactNormal = innerSegmentDirection.dot( contactNormal );
+        if ( Math.abs( dotBetweenInnerSegmentDirectionAndContactNormal ) > Goblin.Collision.capsuleConvexHull._epsilon ) {
+            Goblin.Collision.capsuleConvexHull._fillContactWithDetails( contact, closestPointOnInnerSegment, closestPointOnHull );
+            return [ contact ];
+        }
+
+        // Ok, inner segment is definitely perpendicular to contact normal, but we aren't done yet. Now we want to
+        // find the face which is pushing us away and use it to clip inner segment - because capsule may be located
+        // at the very end of that face, and we can't just take start and end points of the inner segment - we need
+        // to find the part of the inner segment which is actually located above the face.
+        invertedRotationQuaternion.invertQuaternion( convexHull.rotation );
+        invertedRotationQuaternion.transformVector3Into( contactNormal, referencePlaneNormal );
+        referencePlaneNormal.scale( -1 );
+        var referenceFace = null;
+        for ( var i = 0; i < convexHull.shape.faces.length; i++ ) {
+            var face = convexHull.shape.faces[ i ];
+            // Let's take a moment and pray for convex hull building algorithm to successfully merge all faces with the same normal.
+            if ( face.normal.equals( referencePlaneNormal, Goblin.Collision.capsuleConvexHull._epsilon ) ) {
+                referenceFace = face;
+                break;
+            }
+        }
+
+        if ( referenceFace === null ) {
+            Goblin.Collision.capsuleConvexHull._fillContactWithDetails( contact, closestPointOnInnerSegment, closestPointOnHull );
+            return [ contact ];
+        }
+
+        convexHull.transform_inverse.transformVector3Into( innerSegmentStart, transformedInnerSegmentStart );
+        convexHull.transform_inverse.transformVector3Into( innerSegmentEnd, transformedInnerSegmentEnd );
+        var clippingWasSuccessful = Goblin.Collision.capsuleConvexHull._clipLineSegmentWithFace(
+            transformedInnerSegmentStart,
+            transformedInnerSegmentEnd,
+            referenceFace,
+            transformedClippedInnerSegmentStart,
+            transformedClippedInnerSegmentEnd
+        );
+        convexHull.transform.transformVector3Into( transformedClippedInnerSegmentStart, clippedInnerSegmentStart );
+        convexHull.transform.transformVector3Into( transformedClippedInnerSegmentEnd, clippedInnerSegmentEnd );
+
+        // Clipping can fail if we've found a wrong face - for example, there are two faces with the same normal
+        // which haven't been merged for some reason. In this case we can fall back to our closest point
+        // and generate at least some collision (which is most likely will lead to unstable manifold).
+        if ( !clippingWasSuccessful ) {
+            Goblin.Collision.capsuleConvexHull._fillContactWithDetails( contact, closestPointOnInnerSegment, closestPointOnHull );
+            return [ contact ];
+        }
+
+        var contactAtTheStart = contact;
+        var contactAtTheEnd = Goblin.ObjectPool.getObject( 'ContactDetails' );
+        contactAtTheEnd.object_a = capsule;
+        contactAtTheEnd.object_b = convexHull;
+        contactAtTheEnd.contact_normal.copy( contactAtTheStart.contact_normal );
+        contactAtTheEnd.penetration_depth = contactAtTheStart.penetration_depth;
+
+        contactAtTheStart.contact_point_in_b.scaleVector( contactNormal, capsule.shape.radius - penetrationDepth );
+        contactAtTheStart.contact_point_in_b.add( clippedInnerSegmentStart );
+        contactAtTheEnd.contact_point_in_b.scaleVector( contactNormal, capsule.shape.radius - penetrationDepth );
+        contactAtTheEnd.contact_point_in_b.add( clippedInnerSegmentEnd );
+
+        Goblin.Collision.capsuleConvexHull._fillContactWithDetails( contactAtTheStart, clippedInnerSegmentStart, contactAtTheStart.contact_point_in_b );
+        Goblin.Collision.capsuleConvexHull._fillContactWithDetails( contactAtTheEnd, clippedInnerSegmentEnd, contactAtTheEnd.contact_point_in_b );
+
+        // console.log('2 points');
+        return [ contactAtTheStart, contactAtTheEnd ];
+    };
+} )();
+
+/**
+ * Capsule vs Convex Hull collision for cases when the inner segment of the capsule is intersecting with the convex hull.
+ *
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} capsule
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} convexHull
+ * @param {Goblin.Vector3} innerSegmentStart
+ * @param {Goblin.Vector3} innerSegmentEnd
+ * @param {boolean} doLightweightCollision
+ */
+Goblin.Collision.capsuleConvexHull._deepCapsuleConvexHull = ( function() {
+    var innerSegmentDirection = new Goblin.Vector3();
+    var pointOnEdge = new Goblin.Vector3();
+
+    return function( capsule, convexHull, innerSegmentStart, innerSegmentEnd, doLightweightCollision ) {
+        var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
+        contact.object_a = capsule;
+        contact.object_b = convexHull;
+        if ( doLightweightCollision ) {
+            contact.is_lightweight = true;
+            return [ contact ];
+        }
+
+        innerSegmentDirection.subtractVectors( innerSegmentStart, innerSegmentEnd );
+        innerSegmentDirection.normalize();
+
+        // In order to determine minimum translation vector for such collision we need to perform SAT with 2 types
+        // of axes - first type is just the face normals of the convex hull and the second type is cross products
+        // between inner segment and all edges of the convex hull.
+        // If the MTV was generated using the first type of axes we have a deep face collision, otherwise
+        // we are dealing with a deep edge collision.
+        var faceNormals = [];
+        for ( var i = 0; i < convexHull.shape.faceNormals.length; i++ ) {
+            var faceNormal = convexHull.shape.faceNormals[ i ];
+            var rotatedNormal = new Goblin.Vector3();
+            convexHull.rotation.transformVector3Into( faceNormal, rotatedNormal );
+            faceNormals.push( rotatedNormal );
+        }
+
+        var edgeCrossNormals = [];
+        for ( i = 0; i < convexHull.shape.edgeDirections.length; i++ ) {
+            var edgeDirection = convexHull.shape.edgeDirections[ i ];
+            var crossProduct = new Goblin.Vector3();
+            convexHull.rotation.transformVector3Into( edgeDirection, crossProduct );
+            crossProduct.cross( innerSegmentDirection );
+            edgeCrossNormals.push( crossProduct );
+        }
+
+        var normals = [];
+        normals.push.apply( normals, faceNormals );
+        normals.push.apply( normals, edgeCrossNormals );
+        // There will be a lot of duplicates, mostly because we are dealing with half-edges, so we always have
+        // at least two edges pointing in the same direction.
+        // We still need to preserve faceNormals and edgeCrossNormals arrays in order to determine which type of
+        // collision we're dealing with.
+        Goblin.Collision.SAT.sanitizeAndRemoveDuplicatedVectors( normals );
+
+        var minimumProjection = Goblin.Collision.SAT.performSat( capsule, convexHull, normals );
+        if ( minimumProjection === null ) {
+            // Shouldn't really be there
+            throw new Error( 'Inner segment of the capsule overlaps convex hull, but SAT does not think so.' );
+        }
+
+        var referenceFace = null;
+        for ( i = 0; i < faceNormals.length; i++ ) {
+            if ( faceNormals[ i ].equals( minimumProjection.normal ) ) {
+                referenceFace = convexHull.shape.faces[ i ];
+                break;
+            }
+        }
+
+        if ( referenceFace !== null ) {
+            // Deep face contact
+            return Goblin.Collision.capsuleConvexHull._deepCapsuleConvexHullOnFace(
+                capsule,
+                convexHull,
+                innerSegmentStart,
+                innerSegmentEnd,
+                minimumProjection,
+                referenceFace
+            );
+        }
+
+        // Deep edge contact
+        var referenceEdge = null;
+        var segmentDot = Math.min( innerSegmentStart.dot( minimumProjection.normal ), innerSegmentEnd.dot( ( minimumProjection.normal ) ) );
+        for ( i = 0; i < edgeCrossNormals.length; i++ ) {
+            // Ok, so as I said we will have at least two candidates for the reference edge. We can detect the real reference edge
+            // by performing a simple test - it should be located in minimumProjection.overlap - capsule.shape.radius units
+            // from inner segment in the minimumProjection.normal direction.
+            if ( !edgeCrossNormals[ i ].equals( minimumProjection.normal ) ) {
+                continue;
+            }
+
+            var potentialReferenceEdge = convexHull.shape.edges[ i ];
+            convexHull.transform.transformVector3Into( potentialReferenceEdge.getTail().position, pointOnEdge );
+            var edgeDot = pointOnEdge.dot( minimumProjection.normal );
+            if ( Math.abs( edgeDot - segmentDot - minimumProjection.overlap + capsule.shape.radius ) < Goblin.EPSILON ) {
+                referenceEdge = potentialReferenceEdge;
+                break;
+            }
+        }
+
+        if ( referenceEdge === null ) {
+            // Huh? What kind of normal have we used in that case?
+            throw new Error( 'Deep contact: cannot find reference face nor reference edge' );
+        }
+
+        return Goblin.Collision.capsuleConvexHull._deepCapsuleConvexHullOnEdge(
+            capsule,
+            convexHull,
+            innerSegmentStart,
+            innerSegmentEnd,
+            minimumProjection,
+            referenceEdge
+        );
+    };
+} )();
+
+/**
+ * Capsule vs Convex Hull collision for cases when the inner segment of the capsule is intersecting with the convex hull
+ * and our minimum translation vector is obtained using one of the face normals.
+ *
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} capsule
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} convexHull
+ * @param {Goblin.Vector3} innerSegmentStart
+ * @param {Goblin.Vector3} innerSegmentEnd
+ * @param {Goblin.Collision.SAT.Projection} minimumProjection
+ * @param {Goblin.ConvexHullShape.Face} face
+ */
+Goblin.Collision.capsuleConvexHull._deepCapsuleConvexHullOnFace = ( function() {
+    var innerSegmentDirection = new Goblin.Vector3();
+    var transformedInnerSegmentStart = new Goblin.Vector3();
+    var transformedInnerSegmentEnd = new Goblin.Vector3();
+    var transformedClippedInnerSegmentStart = new Goblin.Vector3();
+    var transformedClippedInnerSegmentEnd = new Goblin.Vector3();
+    var clippedInnerSegmentStart = new Goblin.Vector3();
+    var clippedInnerSegmentEnd = new Goblin.Vector3();
+
+    return function( capsule, convexHull, innerSegmentStart, innerSegmentEnd, minimumProjection, face ) {
+        innerSegmentDirection.subtractVectors( innerSegmentStart, innerSegmentEnd );
+        innerSegmentDirection.normalize();
+
+        var deepestPointOnInnerSegment = innerSegmentStart.dot( minimumProjection.normal ) < innerSegmentEnd.dot( minimumProjection.normal ) ?
+            innerSegmentStart : innerSegmentEnd;
+
+        var contactAtTheStart = Goblin.ObjectPool.getObject( 'ContactDetails' );
+        var contactAtTheEnd = Goblin.ObjectPool.getObject( 'ContactDetails' );
+        contactAtTheStart.object_a = contactAtTheEnd.object_a = capsule;
+        contactAtTheStart.object_b = contactAtTheEnd.object_b = convexHull;
+        contactAtTheStart.penetration_depth = contactAtTheEnd.penetration_depth = minimumProjection.overlap;
+        contactAtTheStart.contact_normal.scaleVector( minimumProjection.normal, -1 );
+        contactAtTheEnd.contact_normal.scaleVector( minimumProjection.normal, -1 );
+        contactAtTheStart.contact_point_in_b.scaleVector( contactAtTheStart.contact_normal, -( minimumProjection.overlap - capsule.shape.radius ) );
+        contactAtTheEnd.contact_point_in_b.copy( contactAtTheStart.contact_point_in_b );
+
+        // We may want to generate two contact points in order to get a stable contact manifold, but first we need to perform a sanity check.
+        // We should verify thet the inner segment is perpendicular to the face, so we can use the same penetration depth for both points.
+        // If it's not the case - we can always fall back to deepestPointOnInnerSegment, which is definitely related to out penetration depth.
+        var dotBetweenInnerSegmentDirectionAndContactNormal = innerSegmentDirection.dot( contactAtTheStart.contact_normal );
+        if ( Math.abs( dotBetweenInnerSegmentDirectionAndContactNormal ) > Goblin.Collision.capsuleConvexHull._epsilon ) {
+            contactAtTheStart.contact_point_in_b.add( deepestPointOnInnerSegment );
+            Goblin.Collision.capsuleConvexHull._fillContactWithDetails( contactAtTheStart, deepestPointOnInnerSegment, contactAtTheStart.contact_point_in_b );
+            return [ contactAtTheStart ];
+        }
+
+        // We also want to clip the inner segment by the face, in case the capsule is hanging on the edge of the convex hull.
+        convexHull.transform_inverse.transformVector3Into( innerSegmentStart, transformedInnerSegmentStart );
+        convexHull.transform_inverse.transformVector3Into( innerSegmentEnd, transformedInnerSegmentEnd );
+        var clippingWasSuccessful = Goblin.Collision.capsuleConvexHull._clipLineSegmentWithFace(
+            transformedInnerSegmentStart,
+            transformedInnerSegmentEnd,
+            face,
+            transformedClippedInnerSegmentStart,
+            transformedClippedInnerSegmentEnd
+        );
+        convexHull.transform.transformVector3Into( transformedClippedInnerSegmentStart, clippedInnerSegmentStart );
+        convexHull.transform.transformVector3Into( transformedClippedInnerSegmentEnd, clippedInnerSegmentEnd );
+
+        if ( !clippingWasSuccessful ) {
+            // Shouldn't really get there, but fine - we still can use good old deepestPointOnInnerSegment and generate one contact point.
+            contactAtTheStart.contact_point_in_b.add( deepestPointOnInnerSegment );
+            Goblin.Collision.capsuleConvexHull._fillContactWithDetails( contactAtTheStart, deepestPointOnInnerSegment, contactAtTheStart.contact_point_in_b );
+            return [ contactAtTheStart ];
+        }
+
+        contactAtTheStart.contact_point_in_b.add( clippedInnerSegmentStart );
+        contactAtTheEnd.contact_point_in_b.add( clippedInnerSegmentEnd );
+        Goblin.Collision.capsuleConvexHull._fillContactWithDetails( contactAtTheStart, clippedInnerSegmentStart, contactAtTheStart.contact_point_in_b );
+        Goblin.Collision.capsuleConvexHull._fillContactWithDetails( contactAtTheEnd, clippedInnerSegmentEnd, contactAtTheEnd.contact_point_in_b );
+
+        return [ contactAtTheStart, contactAtTheEnd ];
+    };
+} )();
+
+/**
+ * Capsule vs Convex Hull collision for cases when the inner segment of the capsule is intersecting with the convex hull
+ * and our minimum translation vector is obtained using the cross product of edge and inner segment.
+ *
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} capsule
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} convexHull
+ * @param {Goblin.Vector3} innerSegmentStart
+ * @param {Goblin.Vector3} innerSegmentEnd
+ * @param {Goblin.Collision.SAT.Projection} minimumProjection
+ * @param {Goblin.ConvexHullShape.Face} face
+ */
+Goblin.Collision.capsuleConvexHull._deepCapsuleConvexHullOnEdge = ( function() {
+    var edgeStart = new Goblin.Vector3();
+    var edgeEnd = new Goblin.Vector3();
+    var shiftedEdgeStart = new Goblin.Vector3();
+    var shiftedEdgeEnd = new Goblin.Vector3();
+    var closestPointOnInnerSegment = new Goblin.Vector3();
+    var closestPointOnEdge = new Goblin.Vector3();
+
+    return function( capsule, convexHull, innerSegmentStart, innerSegmentEnd, minimumProjection, edge ) {
+        convexHull.transform.transformVector3Into( edge.getHead().position, edgeStart );
+        convexHull.transform.transformVector3Into( edge.getTail().position, edgeEnd );
+
+        // An easy way to find a contact point on the inner segment - we can shift the edge in the direction of minimumProjection
+        // and intersect it with the inner segment itself. Note, that we can't just obtain that point using a perpendicular from the edge to the inner segment
+        // because they might have a different rotation.
+        shiftedEdgeStart.scaleVector( minimumProjection.normal, -( minimumProjection.overlap - capsule.shape.radius ) );
+        shiftedEdgeEnd.copy( shiftedEdgeStart );
+        shiftedEdgeStart.add( edgeStart );
+        shiftedEdgeEnd.add( edgeEnd );
+
+        var intersectionWasSuccessful = Goblin.GeometryMethods.getLineSegmentsIntersection(
+            innerSegmentStart,
+            innerSegmentEnd,
+            shiftedEdgeStart,
+            shiftedEdgeEnd,
+            closestPointOnInnerSegment
+        );
+        if ( !intersectionWasSuccessful ) {
+            // The only way we can end up here is when we've selected minimizing edge incorrectly.
+            throw new Error( 'Cannot find an intersection between shifted edge and inner segment' );
+        }
+
+        var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
+        contact.object_a = capsule;
+        contact.object_b = convexHull;
+        contact.contact_normal.scaleVector( minimumProjection.normal, -1 );
+        contact.penetration_depth = minimumProjection.overlap;
+        closestPointOnEdge.scaleVector( minimumProjection.normal, minimumProjection.overlap - capsule.shape.radius );
+        closestPointOnEdge.add( closestPointOnInnerSegment );
+
+        Goblin.Collision.capsuleConvexHull._fillContactWithDetails( contact, closestPointOnInnerSegment, closestPointOnEdge );
+        return [ contact ];
+    };
+} )();
+
+/**
+ * Fills the contact with some boring details given the partially populated contact (with both objects, penetration depth and normal),
+ * and two points.
+ *
+ * @param {Goblin.ContactDetails} contact
+ * @param {Goblin.Vector3} closestPointOnInnerSegment - closest point on inner segment for the objectA
+ * @param {Goblin.Vector3} closestPointOnHull - closest point on inner segment for the objectB
+ */
+Goblin.Collision.capsuleConvexHull._fillContactWithDetails = function( contact, closestPointOnInnerSegment, closestPointOnHull ) {
+    contact.contact_point_in_a.scaleVector( contact.contact_normal, contact.object_a.shape.radius );
+    contact.contact_point_in_a.add( closestPointOnInnerSegment );
+
+    contact.contact_point_in_b.copy( closestPointOnHull );
+
+    contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
+    contact.contact_point.scale( 0.5 );
+
+    contact.object_a.transform_inverse.transformVector3( contact.contact_point_in_a );
+    contact.object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
+};
+
+/**
+ * Clips the given line segment with a face of convex hull. Line segment and face don't need to be coplanar - this method
+ * will handle this for you. Returns `true` if clipping was successful (segment intersects with the face or lies fully inside)
+ * and `false` otherwise (if segment lies fully outside the face).
+ *
+ * @param {Goblin.Vector3} lineSegmentStart
+ * @param {Goblin.Vector3} lineSegmentEnd
+ * @param {Goblin.ConvexHullShape.Face} face
+ * @param {Goblin.Vector3} clippedSegmentStart
+ * @param {Goblin.Vector3} clippedSegmentEnd
+ * @returns {boolean}
+ */
+Goblin.Collision.capsuleConvexHull._clipLineSegmentWithFace = ( function() {
+    var projectedLineSegmentStart = new Goblin.Vector3();
+    var projectedLineSegmentEnd = new Goblin.Vector3();
+    var edgeDirection = new Goblin.Vector3();
+    var edgeNormal = new Goblin.Vector3();
+    var intersectionPoint = new Goblin.Vector3();
+    var edgeDot = 0;
+    var segmentStartDistance = 0;
+    var segmentEndDistance = 0;
+    var faceDistance = 0;
+
+    return function( lineSegmentStart, lineSegmentEnd, face, clippedSegmentStart, clippedSegmentEnd ) {
+        clippedSegmentStart.copy( lineSegmentStart );
+        clippedSegmentEnd.copy( lineSegmentEnd );
+
+        faceDistance = Goblin.GeometryMethods.projectPointOnPlane( face.edge.getTail().position, face.normal, lineSegmentStart, projectedLineSegmentStart );
+        Goblin.GeometryMethods.projectPointOnPlane( face.edge.getTail().position, face.normal, lineSegmentEnd, projectedLineSegmentEnd );
+
+        var currentEdge = face.edge;
+        var segmentStartIsInside = true;
+        var segmentEndIsInside = true;
+        var intersectionsCount = 0;
+
+        do {
+            var edgeStart = currentEdge.getHead().position;
+            var edgeEnd = currentEdge.getTail().position;
+            edgeDirection.subtractVectors( edgeEnd, edgeStart );
+            edgeNormal.crossVectors( face.normal, edgeDirection );
+            edgeNormal.normalize();
+
+            edgeDot = edgeStart.dot( edgeNormal );
+            segmentStartDistance = projectedLineSegmentStart.dot( edgeNormal ) - edgeDot;
+            segmentEndDistance = projectedLineSegmentEnd.dot( edgeNormal ) - edgeDot;
+
+            if ( segmentStartDistance > Goblin.EPSILON ) {
+                segmentStartIsInside = false;
+            }
+            if ( segmentEndDistance > Goblin.EPSILON ) {
+                segmentEndIsInside = false;
+            }
+
+            if ( Math.sign( segmentStartDistance ) === Math.sign( segmentEndDistance ) ) {
+                currentEdge = currentEdge.next;
+                continue;
+            }
+
+            var thereWasAnIntersection = Goblin.GeometryMethods.getLineSegmentsIntersection( edgeStart, edgeEnd, projectedLineSegmentStart, projectedLineSegmentEnd, intersectionPoint );
+            if ( !thereWasAnIntersection ) {
+                currentEdge = currentEdge.next;
+                continue;
+            }
+
+            intersectionsCount++;
+
+            var pointToUse = segmentStartDistance > 0 ? clippedSegmentStart : clippedSegmentEnd;
+            pointToUse.scaleVector( face.normal, faceDistance );
+            pointToUse.add( intersectionPoint );
+            // At most two intersection with a convex object, this is a law.
+            if ( intersectionsCount === 2 ) {
+                return true;
+            }
+
+            currentEdge = currentEdge.next;
+        } while ( currentEdge !== face.edge );
+
+        // Here we're mostly trying to distinguish two cases when we have no intersections - first one when segment lies inside the face (which is fine)
+        // and the second one when segment lies outside the face (which is absolutely not acceptable).
+        return intersectionsCount !== 0 || ( segmentStartIsInside && segmentEndIsInside );
+    };
+} )();
+
+// This moderately small number (which is, however, bigger than the Goblin.EPSILON) allows us to generate two contact points more often, which will lead to a more stable manifolds.
+// In practice, this leads to mush stable contact resolution, even if we aren't so precise with rotations.
+Goblin.Collision.capsuleConvexHull._epsilon = 0.01;
+Goblin.Collision.Factory = {
+    /**
+     * returns a contact if objects collide with each other and null otherwise.
+     *
+     * @callback getContact
+     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
+     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
+     * @param {boolean} doLightweightCollision - if true then only basic collision information will be returned (w/o normal, penetration depth, etc).
+     * @returns {Goblin.ContactDetails[]|null}
+     */
+
+    /**
+     * @type {Object<number, getContact>}
+     */
+    _collisionTable: null,
+
+    _populateCollisionTable: function() {
+        var table = {};
+        table[ Goblin.Shapes.Type.SphereShape ] = Goblin.Collision.sphereSphere;
+        table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.BoxShape ] = Goblin.Collision.boxSphere;
+        table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.CapsuleShape ] = Goblin.Collision.sphereCapsule;
+        table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.ConvexHullShape ] = Goblin.Collision.sphereConvexHull;
+        table[ Goblin.Shapes.Type.CapsuleShape ] = Goblin.Collision.capsuleCapsule;
+        table[ Goblin.Shapes.Type.CapsuleShape | Goblin.Shapes.Type.ConvexHullShape ] = Goblin.Collision.capsuleConvexHull;
+        Goblin.Collision.Factory._collisionTable = table;
+    },
+
+    /**
+     * @param {object} shapeA
+     * @param {number} shapeA.shapeType
+     * @param {object} shapeB
+     * @param {number} shapeB.shapeType
+     * @returns {getContact}
+     */
+    getCollisionMethod: function( shapeA, shapeB ) {
+        if ( !this._collisionTable ) {
+            // We can't do this during initialization because some shapes might not be added to Goblin object.
+            // Can be resolved with a help of a decent build tool.
+            this._populateCollisionTable();
+        }
+
+        return this._collisionTable[ shapeA.shapeType | shapeB.shapeType ] || Goblin.GjkEpa.findContacts;
+    }
+};
+/**
+ * Provides the classes and algorithms for running GJK+EPA based collision detection
+ *
+ * @class GjkEpa
+ * @static
+ */
+Goblin.GjkEpa = {
+    margins: 0.01,
+    result: null,
+
+    max_iterations: 20,
+    epa_condition: 0.001,
+
+    /**
+     * Holds a point on the edge of a Minkowski difference along with that point's witnesses and the direction used to find the point
+     *
+     * @class SupportPoint
+     * @param witness_a {vec3} Point in first object used to find the supporting point
+     * @param witness_b {vec3} Point in the second object ued to find th supporting point
+     * @param point {vec3} The support point on the edge of the Minkowski difference
+     * @constructor
+     */
+    SupportPoint: function( witness_a, witness_b, point ) {
+        this.witness_a = witness_a;
+        this.witness_b = witness_b;
+        this.point = point;
+    },
+
+    /**
+     * Finds the extant point on the edge of the Minkowski difference for `object_a` - `object_b` in `direction`
+     *
+     * @method findSupportPoint
+     * @param object_a {Goblin.RigidBody} First object in the search
+     * @param object_b {Goblin.RigidBody} Second object in the search
+     * @param direction {vec3} Direction to find the extant point in
+     * @param gjk_point {Goblin.GjkEpa.SupportPoint} `SupportPoint` class to store the resulting point & witnesses in
+     */
+    findSupportPoint: ( function() {
+        var temp = new Goblin.Vector3();
+        return function( object_a, object_b, direction, support_point ) {
+            // Find witnesses from the objects
+            object_a.findSupportPoint( direction, support_point.witness_a );
+            temp.scaleVector( direction, -1 );
+            object_b.findSupportPoint( temp, support_point.witness_b );
+
+            // Find the CSO support point
+            support_point.point.subtractVectors( support_point.witness_a, support_point.witness_b );
+        };
+    } )(),
+
+    findContacts: function( object_a, object_b, do_lightweight_collision ) {
+        var simplex = Goblin.GjkEpa.GJK( object_a, object_b, do_lightweight_collision );
+
+        if ( simplex && do_lightweight_collision ) {
+            // Collision is detected and we don't need to calculate its properties - just signal that there is actual contact
+            var dummyContact = Goblin.ObjectPool.getObject( 'ContactDetails' );
+            dummyContact.object_a = object_a;
+            dummyContact.object_b = object_b;
+            dummyContact.is_lightweight = true;
+            return [ dummyContact ];
+        } else if ( Goblin.GjkEpa.result != null ) {
+            return [ Goblin.GjkEpa.result ];
+        } else if ( simplex != null ) {
+            return [ Goblin.GjkEpa.EPA( simplex ) ];
+        }
+
+        return null;
+    },
+
+    /**
+     * Returns a closest point on object (either vertex, point on edge or point on face) to a given object.
+     * NOTE: point must lie outside the object, otherwise this method will return null.
+     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object
+     * @param {object} anotherObject - something that implements GJK API (.position and .findSupportPoint)
+     * @returns {Goblin.Vector3|null}
+     */
+    findClosestPointOnObject: ( function() {
+        var closestPointOnSimplex = new Goblin.Vector3();
+        var currentClosestPointOnSimplex = new Goblin.Vector3();
+        var barycentricCoordinates = new Goblin.Vector3();
+        var a = new Goblin.Vector3();
+        var b = new Goblin.Vector3();
+        var c = new Goblin.Vector3();
+
+        var getRealCoordinatesOnObjectA = function( simplex, closestPointOnSimplex, output ) {
+            simplex.findBarycentricCoordinatesOf( closestPointOnSimplex, barycentricCoordinates );
+
+            a.scaleVector( simplex.points[ 0 ].witness_a, barycentricCoordinates.x );
+            b.scaleVector( simplex.points[ 1 ].witness_a, barycentricCoordinates.y );
+            output.addVectors( a, b );
+
+            // We may end up with a simplex with two or three points. findPointClosestToOrigin and findBarycentricCoordinatesOf handles them just fine.
+            if ( simplex.points.length > 2 ) {
+                c.scaleVector( simplex.points[ 2 ].witness_a, barycentricCoordinates.z );
+                output.add( c );
+            }
+        };
+
+        return function( object, anotherObject ) {
+            var simplex = new Goblin.GjkEpa.Simplex( object, anotherObject, true );
+            var gjkResult = simplex.addPoint();
+            while ( gjkResult ) {
+                gjkResult = simplex.addPoint();
+            }
+
+            // gjkResult === null => there is a contact, we can't find closest points.
+            if ( gjkResult === null ) {
+                Goblin.GjkEpa.freeSimplex( simplex );
+                return null;
+            }
+            var result = new Goblin.Vector3();
+            // Ok, now we're sure that our simplex does not contains origin, but we still may not be as close to origin as possible.
+            // We should expand further it until it includes the closest possible point to the origin.
+
+            // Just in case we've completely failed to expand our simplex in recent direction and ended up with some duplicates.
+            simplex.deduplicatePoints();
+            // updateDirection call serves two purposes.
+            // 1) We're most likely will be dealing with a simplex with four points here (one or two of which is definitely redundant). updateDirection will eliminate them.
+            // 2) We still want to perform at leas one expansion here, so we will need an expansion direction anyway.
+            simplex.updateDirection();
+            simplex.findPointClosestToOrigin( closestPointOnSimplex );
+            getRealCoordinatesOnObjectA( simplex, closestPointOnSimplex, result );
+
+            while ( true ) {
+                // So, let's expand our simplex couple of times and see if we can get something better.
+                // Should really be a one or two iteration cycle, even for a tricky shapes.
+                simplex.addPoint();
+                simplex.findPointClosestToOrigin( currentClosestPointOnSimplex );
+                if ( currentClosestPointOnSimplex.lengthSquared() + Goblin.EPSILON >= closestPointOnSimplex.lengthSquared() ) {
+                    break;
+                }
+                closestPointOnSimplex.copy( currentClosestPointOnSimplex );
+                getRealCoordinatesOnObjectA( simplex, closestPointOnSimplex, result );
+                simplex.deduplicatePoints();
+                simplex.updateDirection();
+            }
+            Goblin.GjkEpa.freeSimplex( simplex );
+
+            return result;
+        };
+    } )(),
+
+    /**
+     * Returns a closest point on object (either vertex, point on edge or point on face) to a given point.
+     * NOTE: point must lie outside the object, otherwise this method will return null.
+     *
+     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object
+     * @param {Goblin.Vector3} point
+     * @returns {Goblin.Vector3|null}
+     */
+    findClosestPointOnObjectToPoint: function( object, point ) {
+        return Goblin.GjkEpa.findClosestPointOnObject( object, new Goblin.GjkEpa.PointProxy( point ) );
+    },
+
+    /**
+     * Returns a closest point on object (either vertex, point on edge or point on face) to a given line segment.
+     * NOTE: line segment must fully lie outside the object, otherwise this method will return null.
+     *
+     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object
+     * @param {Goblin.Vector3} lineSegmentStart
+     * @param {Goblin.Vector3} lineSegmentEnd
+     * @returns {Goblin.Vector3|null}
+     */
+    findClosestPointOnObjectToLineSegment: function( object, lineSegmentStart, lineSegmentEnd ) {
+        return Goblin.GjkEpa.findClosestPointOnObject( object, new Goblin.GjkEpa.LineSegmentProxy( lineSegmentStart, lineSegmentEnd ) );
+    },
+
+    /**
+     * Perform GJK algorithm against two objects. Returns a ContactDetails object if there is a collision, else null
+     *
+     * @method GJK
+     * @param object_a {Goblin.RigidBody}
+     * @param object_b {Goblin.RigidBody}
+     * @return {Goblin.ContactDetails|Boolean} Returns `null` if no collision, else a `ContactDetails` object
+     */
+    GJK: ( function() {
+        return function( object_a, object_b, do_lightweight_collision ) {
+            var simplex = new Goblin.GjkEpa.Simplex( object_a, object_b, do_lightweight_collision ),
+                last_point;
+
+            Goblin.GjkEpa.result = null;
+
+            while ( ( last_point = simplex.addPoint() ) ) {
+            }
+
+            // If last_point is false then there is no collision
+            if ( last_point === false ) {
+                Goblin.GjkEpa.freeSimplex( simplex );
+                return null;
+            }
+
+            return simplex;
+        };
+    } )(),
+
+    freeSimplex: function( simplex ) {
+        // Free the support points used by this simplex
+        for ( var i = 0, points_length = simplex.points.length; i < points_length; i++ ) {
+            Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', simplex.points[ i ] );
+        }
+    },
+
+    freePolyhedron: function( polyhedron ) {
+        // Free the support points used by the polyhedron (includes the points from the simplex used to create the polyhedron
+        var pool = Goblin.ObjectPool.pools[ 'GJK2SupportPoint' ];
+
+        for ( var i = 0, faces_length = polyhedron.faces.length; pool.length > 0 && i < faces_length; i++ ) {
+            // The indexOf checking is required because vertices are shared between faces
+            if ( pool.indexOf( polyhedron.faces[ i ].a ) === -1 ) {
+                Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', polyhedron.faces[ i ].a );
+            }
+            if ( pool.indexOf( polyhedron.faces[ i ].b ) === -1 ) {
+                Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', polyhedron.faces[ i ].b );
+            }
+            if ( pool.indexOf( polyhedron.faces[ i ].c ) === -1 ) {
+                Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', polyhedron.faces[ i ].c );
+            }
+        }
+    },
+
+    /**
+     * Performs the Expanding Polytope Algorithm a GJK simplex
+     *
+     * @method EPA
+     * @param simplex {Goblin.GjkEpa.Simplex} Simplex generated by the GJK algorithm
+     * @return {Goblin.ContactDetails}
+     */
+    EPA: ( function() {
+        var barycentric = new Goblin.Vector3(),
+            confirm = {
+                a: new Goblin.Vector3(),
+                b: new Goblin.Vector3(),
+                c: new Goblin.Vector3()
+            };
+        return function( simplex ) {
+            // Time to convert the simplex to real faces
+            // @TODO this should be a priority queue where the position in the queue is ordered by distance from face to origin
+            var polyhedron = new Goblin.GjkEpa.Polyhedron( simplex );
+
+            var i = 0;
+
+            // Expand the polyhedron until it doesn't expand any more
+            while ( ++i ) {
+                polyhedron.findFaceClosestToOrigin();
+
+                // Find a new support point in the direction of the closest point
+                if ( polyhedron.closest_face_distance < Goblin.EPSILON ) {
+                    _tmp_vec3_1.copy( polyhedron.faces[ polyhedron.closest_face ].normal );
+                } else {
+                    _tmp_vec3_1.copy( polyhedron.closest_point );
+                }
+
+                var support_point = Goblin.ObjectPool.getObject( 'GJK2SupportPoint' );
+                Goblin.GjkEpa.findSupportPoint( simplex.object_a, simplex.object_b, _tmp_vec3_1, support_point );
+
+                // Check for terminating condition
+                _tmp_vec3_1.subtractVectors( support_point.point, polyhedron.closest_point );
+                var gap = _tmp_vec3_1.lengthSquared();
+
+                if ( i === Goblin.GjkEpa.max_iterations || ( gap < Goblin.GjkEpa.epa_condition && polyhedron.closest_face_distance > Goblin.EPSILON ) ) {
+
+                    // Get a ContactDetails object and fill out its details
+                    var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
+                    contact.object_a = simplex.object_a;
+                    contact.object_b = simplex.object_b;
+
+                    contact.contact_normal.normalizeVector( polyhedron.closest_point );
+                    if ( contact.contact_normal.lengthSquared() === 0 ) {
+                        contact.contact_normal.subtractVectors( contact.object_b.position, contact.object_a.position );
+                    }
+                    contact.contact_normal.normalize();
+
+                    Goblin.GeometryMethods.findBarycentricCoordinates( polyhedron.closest_point, polyhedron.faces[ polyhedron.closest_face ].a.point, polyhedron.faces[ polyhedron.closest_face ].b.point, polyhedron.faces[ polyhedron.closest_face ].c.point, barycentric );
+
+                    // Contact coordinates of object a
+                    confirm.a.scaleVector( polyhedron.faces[ polyhedron.closest_face ].a.witness_a, barycentric.x );
+                    confirm.b.scaleVector( polyhedron.faces[ polyhedron.closest_face ].b.witness_a, barycentric.y );
+                    confirm.c.scaleVector( polyhedron.faces[ polyhedron.closest_face ].c.witness_a, barycentric.z );
+                    contact.contact_point_in_a.addVectors( confirm.a, confirm.b );
+                    contact.contact_point_in_a.add( confirm.c );
+
+                    // Contact coordinates of object b
+                    confirm.a.scaleVector( polyhedron.faces[ polyhedron.closest_face ].a.witness_b, barycentric.x );
+                    confirm.b.scaleVector( polyhedron.faces[ polyhedron.closest_face ].b.witness_b, barycentric.y );
+                    confirm.c.scaleVector( polyhedron.faces[ polyhedron.closest_face ].c.witness_b, barycentric.z );
+                    contact.contact_point_in_b.addVectors( confirm.a, confirm.b );
+                    contact.contact_point_in_b.add( confirm.c );
+
+                    // Find actual contact point
+                    contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
+                    contact.contact_point.scale( 0.5 );
+
+                    // Set objects' local points
+                    contact.object_a.transform_inverse.transformVector3( contact.contact_point_in_a );
+                    contact.object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
+
+                    // Calculate penetration depth
+                    contact.penetration_depth = polyhedron.closest_point.length() + Goblin.GjkEpa.margins;
+
+                    Goblin.GjkEpa.freePolyhedron( polyhedron );
+
+                    return contact;
+                }
+
+                polyhedron.addVertex( support_point );
+            }
+        };
+    } )(),
+
+    Face: function( polyhedron, a, b, c ) {
+        this.active = true;
+        //this.polyhedron = polyhedron;
+        this.a = a;
+        this.b = b;
+        this.c = c;
+        this.normal = new Goblin.Vector3();
+        this.neighbors = [];
+
+        _tmp_vec3_1.subtractVectors( b.point, a.point );
+        _tmp_vec3_2.subtractVectors( c.point, a.point );
+        this.normal.crossVectors( _tmp_vec3_1, _tmp_vec3_2 );
+        this.normal.normalize();
+    }
+};
+
+Goblin.GjkEpa.Polyhedron = function( simplex ) {
+    this.closest_face = null;
+    this.closest_face_distance = null;
+    this.closest_point = new Goblin.Vector3();
+
+    this.faces = [
+        //BCD, ACB, CAD, DAB
+        new Goblin.GjkEpa.Face( this, simplex.points[ 2 ], simplex.points[ 1 ], simplex.points[ 0 ] ),
+        new Goblin.GjkEpa.Face( this, simplex.points[ 3 ], simplex.points[ 1 ], simplex.points[ 2 ] ),
+        new Goblin.GjkEpa.Face( this, simplex.points[ 1 ], simplex.points[ 3 ], simplex.points[ 0 ] ),
+        new Goblin.GjkEpa.Face( this, simplex.points[ 0 ], simplex.points[ 3 ], simplex.points[ 2 ] )
+    ];
+
+    this.faces[ 0 ].neighbors.push( this.faces[ 1 ], this.faces[ 2 ], this.faces[ 3 ] );
+    this.faces[ 1 ].neighbors.push( this.faces[ 2 ], this.faces[ 0 ], this.faces[ 3 ] );
+    this.faces[ 2 ].neighbors.push( this.faces[ 1 ], this.faces[ 3 ], this.faces[ 0 ] );
+    this.faces[ 3 ].neighbors.push( this.faces[ 2 ], this.faces[ 1 ], this.faces[ 0 ] );
+};
+Goblin.GjkEpa.Polyhedron.prototype = {
+    addVertex: function( vertex ) {
+        var edges = [], faces = [], i, j, a, b, last_b;
+        var e0, e1, e2, e3, e4;
+        this.faces[ this.closest_face ].silhouette( vertex, edges );
+
+        // Re-order the edges if needed
+        for ( i = 0; i < edges.length - 5; i += 5 ) {
+            a = edges[ i + 3 ];
+            b = edges[ i + 4 ];
+
+            // Ensure this edge really should be the next one
+            if ( i !== 0 && last_b !== a ) {
+                // It shouldn't
+                for ( j = i + 5; j < edges.length; j += 5 ) {
+                    if ( edges[ j + 3 ] === last_b ) {
+                        // Found it
+                        //var tmp = edges.slice( i, i + 5 );
+
+                        e0 = edges[ i + 0 ];
+                        e1 = edges[ i + 1 ];
+                        e2 = edges[ i + 2 ];
+                        e3 = edges[ i + 3 ];
+                        e4 = edges[ i + 4 ];
+
+                        edges[ i ] = edges[ j ];
+                        edges[ i + 1 ] = edges[ j + 1 ];
+                        edges[ i + 2 ] = edges[ j + 2 ];
+                        edges[ i + 3 ] = edges[ j + 3 ];
+                        edges[ i + 4 ] = edges[ j + 4 ];
+                        edges[ j ] = e0;
+                        edges[ j + 1 ] = e1;
+                        edges[ j + 2 ] = e2;
+                        edges[ j + 3 ] = e3;
+                        edges[ j + 4 ] = e4;
+
+                        a = edges[ i + 3 ];
+                        b = edges[ i + 4 ];
+                        break;
+                    }
+                }
+            }
+            last_b = b;
+        }
+
+        for ( i = 0; i < edges.length; i += 5 ) {
+            var neighbor = edges[ i ];
+            a = edges[ i + 3 ];
+            b = edges[ i + 4 ];
+
+            var face = new Goblin.GjkEpa.Face( this, b, vertex, a );
+            face.neighbors[ 2 ] = edges[ i ];
+            faces.push( face );
+
+            neighbor.neighbors[ neighbor.neighbors.indexOf( edges[ i + 2 ] ) ] = face;
+        }
+
+        for ( i = 0; i < faces.length; i++ ) {
+            faces[ i ].neighbors[ 0 ] = faces[ i + 1 === faces.length ? 0 : i + 1 ];
+            faces[ i ].neighbors[ 1 ] = faces[ i - 1 < 0 ? faces.length - 1 : i - 1 ];
+        }
+
+        Array.prototype.push.apply( this.faces, faces );
+
+        return edges;
+    },
+
+    findFaceClosestToOrigin: ( function() {
+        var origin = new Goblin.Vector3(),
+            point = new Goblin.Vector3();
+
+        return function() {
+            this.closest_face_distance = Infinity;
+
+            var distance, i, face;
+
+            for ( i = 0; i < this.faces.length; i++ ) {
+                face = this.faces[ i ];
+
+                if ( face.active === false ) {
+                    continue;
+                }
+
+                Goblin.GeometryMethods.findClosestPointInTriangle( origin, face.a.point, face.b.point, face.c.point, point );
+                distance = point.lengthSquared();
+                if ( distance < this.closest_face_distance ) {
+                    this.closest_face_distance = distance;
+                    this.closest_face = i;
+                    this.closest_point.copy( point );
+                }
+            }
+        };
+    } )()
+};
+
+Goblin.GjkEpa.Face.prototype = {
+    /**
+     * Determines if a vertex is in front of or behind the face
+     *
+     * @method classifyVertex
+     * @param vertex {vec3} Vertex to classify
+     * @return {Number} If greater than 0 then `vertex' is in front of the face
+     */
+    classifyVertex: function( vertex ) {
+        var w = this.normal.dot( this.a.point );
+        return this.normal.dot( vertex.point ) - w;
+    },
+
+    silhouette: function( point, edges, source ) {
+        if ( this.active === false ) {
+            return;
+        }
+
+        if ( this.classifyVertex( point ) > 0 ) {
+            // This face is visible from `point`. Deactivate this face and alert the neighbors
+            this.active = false;
+
+            this.neighbors[ 0 ].silhouette( point, edges, this );
+            this.neighbors[ 1 ].silhouette( point, edges, this );
+            this.neighbors[ 2 ].silhouette( point, edges, this );
+        } else if ( source ) {
+            // This face is a neighbor to a now-silhouetted face, determine which neighbor and replace it
+            var neighbor_idx = this.neighbors.indexOf( source ),
+                a, b;
+            if ( neighbor_idx === 0 ) {
+                a = this.a;
+                b = this.b;
+            } else if ( neighbor_idx === 1 ) {
+                a = this.b;
+                b = this.c;
+            } else {
+                a = this.c;
+                b = this.a;
+            }
+            edges.push( this, neighbor_idx, source, b, a );
+        }
+    }
+};
+
+( function() {
+    var ao = new Goblin.Vector3();
+    var ab = new Goblin.Vector3();
+    var ac = new Goblin.Vector3();
+    var bc = new Goblin.Vector3();
+
+    var barycentric = new Goblin.Vector3(),
+        confirm = {
+            a: new Goblin.Vector3(),
+            b: new Goblin.Vector3(),
+            c: new Goblin.Vector3()
+        };
+
+    Goblin.GjkEpa.Simplex = function( object_a, object_b, do_lightweight_collision ) {
+        this.object_a = object_a;
+        this.object_b = object_b;
+        this.do_lightweight_collision = do_lightweight_collision;
+        this.points = [];
+        this.iterations = 0;
+        this.next_direction = new Goblin.Vector3();
+        this.updateDirection();
+    };
+    Goblin.GjkEpa.Simplex.prototype = {
+        addPoint: function() {
+            if ( ++this.iterations === Goblin.GjkEpa.max_iterations ) {
+                return false;
+            }
+
+            var support_point = Goblin.ObjectPool.getObject( 'GJK2SupportPoint' );
+            Goblin.GjkEpa.findSupportPoint( this.object_a, this.object_b, this.next_direction, support_point );
+            this.points.push( support_point );
+
+            if ( support_point.point.dot( this.next_direction ) < 0 && this.points.length > 1 ) {
+                // Check the margins first
+                // @TODO this can be expanded to support 1-simplex (2 points)
+                if ( this.points.length >= 3 ) {
+                    this.findPointClosestToOrigin( _tmp_vec3_1 );
+                    var distanceSquared = _tmp_vec3_1.lengthSquared();
+
+                    if ( distanceSquared <= Goblin.GjkEpa.margins * Goblin.GjkEpa.margins ) {
+                        // Get a ContactDetails object and fill out its details
+                        var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
+                        contact.object_a = this.object_a;
+                        contact.object_b = this.object_b;
+
+                        contact.contact_normal.normalizeVector( _tmp_vec3_1 );
+                        if ( contact.contact_normal.lengthSquared() === 0 ) {
+                            contact.contact_normal.subtractVectors( contact.object_b.position, contact.object_a.position );
+                        }
+                        contact.contact_normal.normalize();
+                        contact.contact_normal.scale( -1 );
+
+                        contact.penetration_depth = Goblin.GjkEpa.margins - Math.sqrt( distanceSquared );
+
+                        this.findBarycentricCoordinatesOf( _tmp_vec3_1, barycentric );
+
+                        if ( this.do_lightweight_collision ) {
+                            contact.is_lightweight = true;
+                            Goblin.GjkEpa.result = contact;
+                            return null;
+                        }
+
+                        // Contact coordinates of object a
+                        confirm.a.scaleVector( this.points[ 0 ].witness_a, barycentric.x );
+                        confirm.b.scaleVector( this.points[ 1 ].witness_a, barycentric.y );
+                        confirm.c.scaleVector( this.points[ 2 ].witness_a, barycentric.z );
+                        contact.contact_point_in_a.addVectors( confirm.a, confirm.b );
+                        contact.contact_point_in_a.add( confirm.c );
+
+                        // Contact coordinates of object b
+                        contact.contact_point_in_b.scaleVector( contact.contact_normal, -contact.penetration_depth );
+                        contact.contact_point_in_b.add( contact.contact_point_in_a );
+
+                        // Find actual contact point
+                        contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
+                        contact.contact_point.scale( 0.5 );
+
+                        // Set objects' local points
+                        contact.object_a.transform_inverse.transformVector3( contact.contact_point_in_a );
+                        contact.object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
+
+                        Goblin.GjkEpa.result = contact;
+                        return null;
+                    }
+                }
+
+                // if the last added point was not past the origin in the direction
+                // then the Minkowski difference cannot contain the origin because
+                // point added is past the edge of the Minkowski difference
+                return false;
+            }
+
+            if ( this.updateDirection() === true ) {
+                // Found a collision
+                return null;
+            }
+
+            return support_point;
+        },
+
+        deduplicatePoints: function() {
+            for ( var i = 0; i < this.points.length; i++ ) {
+                for ( var j = i + 1; j < this.points.length; j++ ) {
+                    if ( this.points[ i ].point.equals( this.points[ j ].point ) ) {
+                        this.points[ j ] = this.points[ this.points.length - 1 ];
+                        this.points.pop();
+                        i--;
+                        break;
+                    }
+                }
+            }
+        },
+
+        findDirectionFromLine: function() {
+            ao.scaleVector( this.points[ 1 ].point, -1 );
+            ab.subtractVectors( this.points[ 0 ].point, this.points[ 1 ].point );
+
+            if ( ab.dot( ao ) < 0 ) {
+                // Origin is on the opposite side of A from B
+                this.next_direction.copy( ao );
+                Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', this.points[ 1 ] );
+                this.points.length = 1; // Remove second point
+            } else {
+                // Origin lies between A and B, move on to a 2-simplex
+                this.next_direction.crossVectors( ab, ao );
+                this.next_direction.cross( ab );
+
+                // In the case that `ab` and `ao` are parallel vectors, direction becomes a 0-vector
+                if (
+                    this.next_direction.x === 0 &&
+                    this.next_direction.y === 0 &&
+                    this.next_direction.z === 0
+                ) {
+                    ab.normalize();
+                    this.next_direction.x = 1 - Math.abs( ab.x );
+                    this.next_direction.y = 1 - Math.abs( ab.y );
+                    this.next_direction.z = 1 - Math.abs( ab.z );
+                }
+            }
+        },
+
+        findDirectionFromTriangle: ( function() {
+            var triangleNormal = new Goblin.Vector3();
+            var abNormal = new Goblin.Vector3();
+            var acNormal = new Goblin.Vector3();
+            var bcNormal = new Goblin.Vector3();
+
+            return function() {
+                // Triangle
+                var a = this.points[ 2 ];
+                var b = this.points[ 1 ];
+                var c = this.points[ 0 ];
+
+                ao.scaleVector( a.point, -1 );
+                ab.subtractVectors( b.point, a.point );
+                ac.subtractVectors( c.point, a.point );
+                bc.subtractVectors( c.point, b.point );
+
+                triangleNormal.crossVectors( ab, ac );
+
+                // Edge cross products
+                abNormal.crossVectors( ab, triangleNormal );
+                acNormal.crossVectors( triangleNormal, ac );
+                bcNormal.crossVectors( bc, triangleNormal );
+
+                var acNormalDotAo = acNormal.dot( ao );
+                var abNormalDotAo = abNormal.dot( ao );
+                var bcNormalDotAo = bcNormal.dot( ao );
+
+                if ( Math.abs( acNormalDotAo ) < Goblin.EPSILON ) {
+                    // Origin lies on AC
+                    this.next_direction.copy( acNormal );
+                    return;
+                } else if ( Math.abs( abNormalDotAo ) < Goblin.EPSILON ) {
+                    // Origin lies on AB
+                    this.next_direction.copy( abNormal );
+                    return;
+                } else if ( Math.abs( bcNormalDotAo ) < Goblin.EPSILON ) {
+                    // Origin lies on BC
+                    this.next_direction.copy( bcNormal );
+                    return;
+                }
+
+                if ( acNormalDotAo >= 0 ) {
+                    // Origin lies on side of ac opposite the triangle
+                    if ( ac.dot( ao ) >= 0 ) {
+                        // Origin outside of the ac line, so we form a new
+                        // 1-simplex (line) with points A and C, leaving B behind
+                        this.points.length = 0;
+                        this.points.push( c, a );
+                        Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', b );
+
+                        // New search direction is from ac towards the origin
+                        this.next_direction.crossVectors( ac, ao );
+                        this.next_direction.cross( ac );
+                    } else {
+                        if ( ab.dot( ao ) >= 0 ) {
+                            // Origin outside of the ab line, so we form a new
+                            // 1-simplex (line) with points A and B, leaving C behind
+                            this.points.length = 0;
+                            this.points.push( b, a );
+                            Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
+
+                            // New search direction is from ac towards the origin
+                            this.next_direction.crossVectors( ab, ao );
+                            this.next_direction.cross( ab );
+                        } else {
+                            // only A gives us a good reference point, start over with a 0-simplex
+                            this.points.length = 0;
+                            this.points.push( a );
+                            Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', b );
+                            Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
+                        }
+                    }
+                } else {
+                    // Origin lies on the triangle side of ac
+                    if ( abNormalDotAo >= 0 ) {
+                        // Origin lies on side of ab opposite the triangle
+                        if ( ab.dot( ao ) >= 0 ) {
+                            // Origin outside of the ab line, so we form a new
+                            // 1-simplex (line) with points A and B, leaving C behind
+                            this.points.length = 0;
+                            this.points.push( b, a );
+                            Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
+
+                            // New search direction is from ac towards the origin
+                            this.next_direction.crossVectors( ab, ao );
+                            this.next_direction.cross( ab );
+                        } else {
+                            // only A gives us a good reference point, start over with a 0-simplex
+                            this.points.length = 0;
+                            this.points.push( a );
+                            Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', b );
+                            Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
+                        }
+                    } else {
+                        // Origin lies somewhere in the triangle or above/below it
+                        if ( triangleNormal.dot( ao ) >= 0 ) {
+                            // Origin is on the front side of the triangle
+                            this.next_direction.copy( triangleNormal );
+                            this.points.length = 0;
+                            this.points.push( a, b, c );
+                        } else {
+                            // Origin is on the back side of the triangle
+                            this.next_direction.copy( triangleNormal );
+                            this.next_direction.scale( -1 );
+                        }
+                    }
+                }
+            };
+        } )(),
+
+        getFaceNormal: function( a, b, c, destination ) {
+            ab.subtractVectors( b.point, a.point );
+            ac.subtractVectors( c.point, a.point );
+            destination.crossVectors( ab, ac );
+            destination.normalize();
+        },
+
+        faceNormalDotOrigin: function( a, b, c ) {
+            // Find face normal
+            this.getFaceNormal( a, b, c, _tmp_vec3_1 );
+
+            // Find direction of origin from center of face
+            _tmp_vec3_2.addVectors( a.point, b.point );
+            _tmp_vec3_2.add( c.point );
+            _tmp_vec3_2.scale( -3 );
+            _tmp_vec3_2.normalize();
+
+            return _tmp_vec3_1.dot( _tmp_vec3_2 );
+        },
+
+        findDirectionFromTetrahedron: function() {
+            var a = this.points[ 3 ],
+                b = this.points[ 2 ],
+                c = this.points[ 1 ],
+                d = this.points[ 0 ];
+
+            // Check each of the four sides to see which one is facing the origin.
+            // Then keep the three points for that triangle and use its normal as the search direction
+            // The four faces are BCD, ACB, CAD, DAB
+            var closest_face = null,
+                closest_dot = Goblin.EPSILON,
+                face_dot;
+
+            // @TODO we end up calculating the "winning" face normal twice, don't do that
+
+            face_dot = this.faceNormalDotOrigin( b, c, d );
+            if ( face_dot > closest_dot ) {
+                closest_face = 1;
+                closest_dot = face_dot;
+            }
+
+            face_dot = this.faceNormalDotOrigin( a, c, b );
+            if ( face_dot > closest_dot ) {
+                closest_face = 2;
+                closest_dot = face_dot;
+            }
+
+            face_dot = this.faceNormalDotOrigin( c, a, d );
+            if ( face_dot > closest_dot ) {
+                closest_face = 3;
+                closest_dot = face_dot;
+            }
+
+            face_dot = this.faceNormalDotOrigin( d, a, b );
+            if ( face_dot > closest_dot ) {
+                closest_face = 4;
+                closest_dot = face_dot;
+            }
+
+            if ( closest_face === null ) {
+                // We have a collision, ready for EPA
+                return true;
+            } else if ( closest_face === 1 ) {
+                // BCD
+                this.points.length = 0;
+                this.points.push( b, c, d );
+                this.getFaceNormal( b, c, d, _tmp_vec3_1 );
+                this.next_direction.copy( _tmp_vec3_1 );
+            } else if ( closest_face === 2 ) {
+                // ACB
+                this.points.length = 0;
+                this.points.push( a, c, b );
+                this.getFaceNormal( a, c, b, _tmp_vec3_1 );
+                this.next_direction.copy( _tmp_vec3_1 );
+            } else if ( closest_face === 3 ) {
+                // CAD
+                this.points.length = 0;
+                this.points.push( c, a, d );
+                this.getFaceNormal( c, a, d, _tmp_vec3_1 );
+                this.next_direction.copy( _tmp_vec3_1 );
+            } else if ( closest_face === 4 ) {
+                // DAB
+                this.points.length = 0;
+                this.points.push( d, a, b );
+                this.getFaceNormal( d, a, b, _tmp_vec3_1 );
+                this.next_direction.copy( _tmp_vec3_1 );
+            }
+
+            return false;
+        },
+
+        updateDirection: function() {
+            if ( this.points.length === 0 ) {
+                this.next_direction.subtractVectors( this.object_b.position, this.object_a.position );
+                return false;
+            } else if ( this.points.length === 1 ) {
+                this.next_direction.scale( -1 );
+                return false;
+            } else if ( this.points.length === 2 ) {
+                this.findDirectionFromLine();
+                return false;
+            } else if ( this.points.length === 3 ) {
+                this.findDirectionFromTriangle();
+                return false;
+            } else {
+                return this.findDirectionFromTetrahedron();
+            }
+        },
+
+        /**
+         * This method handle simplexes with any number of points, however, it's result isn't reliable for the simplexes
+         * with more than three points.
+         *
+         * @param {Goblin.Vector3} outputPoint
+         */
+        findPointClosestToOrigin: ( function() {
+            var origin = new Goblin.Vector3();
+
+            return function( outputPoint ) {
+                var points = this.points;
+
+                if ( points.length === 1 ) {
+                    outputPoint.copy( points[ 0 ].point );
+                } else if ( points.length === 2 ) {
+                    Goblin.GeometryMethods.findClosestPointOnASegment( points[ 0 ].point, points[ 1 ].point, origin, outputPoint );
+                } else {
+                    // TODO: Should we really use first 3 points if simplex length > 3? Seems to be the case in current GJK implementation.
+                    Goblin.GeometryMethods.findClosestPointInTriangle(
+                        origin,
+                        points[ 0 ].point,
+                        points[ 1 ].point,
+                        points[ 2 ].point,
+                        outputPoint
+                    );
+                }
+            };
+        } )(),
+
+        /**
+         * This method handle simplexes with any number of points, however, it's result isn't reliable for the simplexes
+         * with more than three points.
+         *
+         * @param {Goblin.Vector3} point
+         * @param {Goblin.Vector3} outputPoint
+         */
+        findBarycentricCoordinatesOf: ( function() {
+            var lineDirection = new Goblin.Vector3();
+            var pointDirection = new Goblin.Vector3();
+
+            return function( point, outputPoint ) {
+                var points = this.points;
+
+                if ( points.length === 1 ) {
+                    outputPoint.set( 1, 0, 0 );
+                } else if ( points.length === 2 ) {
+                    lineDirection.subtractVectors( points[ 1 ].point, points[ 0 ].point );
+                    pointDirection.subtractVectors( point, points[ 0 ].point );
+                    var t = Math.sqrt( pointDirection.lengthSquared() / lineDirection.lengthSquared() );
+                    outputPoint.set( 1 - t, t );
+                } else {
+                    Goblin.GeometryMethods.findBarycentricCoordinates( point, points[ 0 ].point, points[ 1 ].point, points[ 2 ].point, outputPoint );
+                }
+            };
+        } )()
+    };
+} )();
+
+/**
+ * Wraps a vector in a proxy object so that it can ne used in GJK.
+ * @param {Goblin.Vector3} point
+ * @constructor
+ */
+Goblin.GjkEpa.PointProxy = function( point ) {
+    this.position = point;
+};
+
+/**
+ * @param {Goblin.Vector3} direction - direction to use in finding the support point
+ * @param {Goblin.Vector3} supportPoint - variable which will contain the supporting point after calling this method
+ */
+Goblin.GjkEpa.PointProxy.prototype.findSupportPoint = function( direction, supportPoint ) {
+    supportPoint.copy( this.position );
+};
+
+/**
+ * Wraps a line segment in a proxy object so that it can be used in GJK.
+ *
+ * @param {Goblin.Vector3} lineSegmentStart
+ * @param {Goblin.Vector3} lineSegmentEnd
+ * @constructor
+ */
+Goblin.GjkEpa.LineSegmentProxy = function( lineSegmentStart, lineSegmentEnd ) {
+    this.position = new Goblin.Vector3();
+    this.position.addVectors( lineSegmentStart, lineSegmentEnd );
+    this.position.scale( 0.5 );
+
+    this.lineSegmentStart = lineSegmentStart;
+    this.lineSegmentEnd = lineSegmentEnd;
+};
+
+/**
+ * @param {Goblin.Vector3} direction - direction to use in finding the support point
+ * @param {Goblin.Vector3} supportPoint - variable which will contain the supporting point after calling this method
+ */
+Goblin.GjkEpa.LineSegmentProxy.prototype.findSupportPoint = function( direction, supportPoint ) {
+    var dotStart = this.lineSegmentStart.dot( direction );
+    var dotEnd = this.lineSegmentEnd.dot( direction );
+
+    if ( dotStart > dotEnd ) {
+        supportPoint.copy( this.lineSegmentStart );
+    } else {
+        supportPoint.copy( this.lineSegmentEnd );
+    }
+};
+Goblin.Collision.SAT = {
+    /**
+     * Performs A SAT collision between to objects. Returns projection (that can be used as a minimum translation vector) or null if there is no collision.
+     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
+     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
+     * @param {Goblin.Vector3[]} normals
+     * @returns {Goblin.Collision.SAT.Projection|null}
+     */
+    performSat: ( function() {
+        var negatedNormal = new Goblin.Vector3();
+
+        return function( objectA, objectB, normals ) {
+            var allProjections = [];
+            var minimumProjection = null;
+            var minimumOverlap = Infinity;
+
+            // We want to project all shapes onto our separation axises.
+            // - if at least one pair of projections is not overlapping then there is no collision at all;
+            // - if all projections are overlapping then we want to use the smallest projection as a separation axis.
+            for ( var i = 0; i < normals.length; i++ ) {
+                var normal = normals[ i ];
+
+                var projectionWithNormal = this._findProjectionWithNormal( allProjections, normal );
+                if (projectionWithNormal !== null) {
+                    // We already projected on this axis
+                    continue;
+                }
+
+                negatedNormal.scaleVector( normal, -1 );
+                var computedNegativeProjection = this._findProjectionWithNormal( allProjections, negatedNormal );
+
+                var projection = null;
+                if ( computedNegativeProjection ) {
+                    // It's quite likely that we already have a projection on a negative axis
+                    projection = computedNegativeProjection.cloneAndNegate();
+                }
+                if ( !projection ) {
+                    var a1 = this._findMaxDotInDirection( objectA, normal );
+                    var a2 = -this._findMaxDotInDirection( objectA, negatedNormal );
+                    var b1 = this._findMaxDotInDirection( objectB, normal );
+                    var b2 = -this._findMaxDotInDirection( objectB, negatedNormal );
+                    projection = new Goblin.Collision.SAT.Projection( normal, a1, a2, b1, b2 );
+                }
+
+                if ( projection.overlap < Goblin.EPSILON ) {
+                    return null;
+                }
+
+                allProjections.push( projection );
+                if ( projection.overlap < minimumOverlap ) {
+                    minimumOverlap = projection.overlap;
+                    minimumProjection = projection;
+                }
+            }
+
+            return minimumProjection;
+        };
+    } )(),
+
+    /**
+     * Removes all duplicates from array of vectors.
+     * @param {Array<Goblin.Vector3>} vectors
+     */
+    sanitizeAndRemoveDuplicatedVectors: (function () {
+        var isDuplicate = function (vectors, i) {
+            for ( var j = i + 1; j < vectors.length; j++ ) {
+                if ( vectors[i].equals( vectors[ j ] ) ) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        return function( vectors ) {
+            for ( var i = 0; i < vectors.length; i++ ) {
+                var shouldBeRemoved = vectors[ i ].isZero() || isDuplicate(vectors, i);
+                if ( shouldBeRemoved ) {
+                    vectors[ i ] = vectors[ vectors.length - 1 ];
+                    vectors.pop();
+                    i--;
+                }
+            }
+        };
+    })(),
+
+    /**
+     * Finds a projection with a given normal.
+     * @param {Goblin.Collision.SAT.Projection[]} allProjections
+     * @param {Goblin.Vector3} normal
+     * @returns {Goblin.Collision.SAT.Projection|null}
+     * @private
+     */
+    _findProjectionWithNormal: function( allProjections, normal ) {
+        for ( var i = 0; i < allProjections.length; i++ ) {
+            var projection = allProjections[ i ];
+            if ( projection.normal.equals( normal ) ) {
+                return projection;
+            }
+        }
+
+        return null;
+    },
+
+    /**
+     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object
+     * @param {Goblin.Vector3} direction
+     * @returns {number}
+     * @private
+     */
+    _findMaxDotInDirection: ( function() {
+        var supportPoint = new Goblin.Vector3();
+
+        return function( object, direction ) {
+            object.findSupportPoint( direction, supportPoint );
+            return supportPoint.dot( direction );
+        };
+    } )()
+};
+
+/**
+ * Holds details of projection of two objects on some axis. Most useful fields are normal (which is an axis),
+ * and overlap (which is a length of minimum translation vector)
+ *
+ * @param {Goblin.Vector3} normal
+ * @param {number} a1 - first point of object's A projection on axis
+ * @param {number} a2 - second point of object's A projection on axis
+ * @param {number} b1 - first point of object's B projection on axis
+ * @param {number} b2 - second point of object's B projection on axis
+ * @constructor
+ */
+Goblin.Collision.SAT.Projection = function( normal, a1, a2, b1, b2 ) {
+    this.normal = normal;
+
+    if ( a1 < a2 ) {
+        this.startA = a1;
+        this.endA = a2;
+    } else {
+        this.startA = a2;
+        this.endA = a1;
+    }
+
+    if ( b1 < b2 ) {
+        this.startB = b1;
+        this.endB = b2;
+    } else {
+        this.startB = b2;
+        this.endB = b1;
+    }
+
+    var hasOverlap = this.startA < this.endB && this.endA > this.startB;
+    if ( hasOverlap ) {
+        this.overlap = this.endB - this.startA;
+    } else {
+        this.overlap = 0;
+    }
+};
+
+/**
+ * @returns {Goblin.Collision.SAT.Projection}
+ */
+Goblin.Collision.SAT.Projection.prototype.cloneAndNegate = function() {
+    var negatedNormal = new Goblin.Vector3();
+    negatedNormal.scaleVector( this.normal, -1 );
+    return new Goblin.Collision.SAT.Projection( negatedNormal, -this.startA, -this.endA, -this.startB, -this.endB );
+};
+/**
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
+ * @param {boolean} doLightweightCollision
+ * @returns {Goblin.ContactDetails[]|null}
+ */
+Goblin.Collision.sphereCapsule = ( function() {
+    var innerSegmentStart = new Goblin.Vector3();
+    var innerSegmentEnd = new Goblin.Vector3();
+    var closestPointOnInnerSegment = new Goblin.Vector3();
+
+    return function( objectA, objectB, doLightweightCollision ) {
+        var sphere;
+        var capsule;
+        if ( objectA.shape.shapeType === Goblin.Shapes.Type.SphereShape ) {
+            sphere = objectA;
+            capsule = objectB;
+        } else {
+            sphere = objectB;
+            capsule = objectA;
+        }
+
+        innerSegmentStart.set( 0, capsule.shape.half_height, 0 );
+        innerSegmentEnd.set( 0, -capsule.shape.half_height, 0 );
+        capsule.transform.transformVector3( innerSegmentStart );
+        capsule.transform.transformVector3( innerSegmentEnd );
+
+        Goblin.GeometryMethods.findClosestPointOnASegment( innerSegmentStart, innerSegmentEnd, sphere.position, closestPointOnInnerSegment );
+        var distanceToClosestPoint = closestPointOnInnerSegment.distanceTo( sphere.position );
+
+        // The sphere overlaps the capsule if the distance of the sphere center to the closest
+        // point on the inner capsule segment is less or equal than the sum of the radii.
+        var penetrationDepth = sphere.shape.radius + capsule.shape.radius - distanceToClosestPoint;
+        if ( penetrationDepth < 0 ) {
+            return null;
+        }
+
+        var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
+        contact.object_a = sphere;
+        contact.object_b = capsule;
+        if ( doLightweightCollision ) {
+            contact.is_lightweight = true;
+            return [ contact ];
+        }
+
+        contact.penetration_depth = penetrationDepth;
+
+        contact.contact_normal.subtractVectors( closestPointOnInnerSegment, sphere.position );
+        var contactNormalLength = contact.contact_normal.length();
+        if ( Math.abs( contactNormalLength ) < Goblin.EPSILON ) {
+            // Shapes are coincident - set an arbitrary normal
+            contact.contact_normal.set( 0, 1, 0 );
+        } else {
+            contact.contact_normal.scale( 1 / contactNormalLength );
+        }
+
+        // At this stage contact_point_in_a is a contact point in world's space
+        contact.contact_point_in_a.copy( contact.contact_normal );
+        contact.contact_point_in_a.scale( sphere.shape.radius );
+        contact.contact_point_in_a.add( sphere.position );
+
+        // contact_point_in_b is a contact point in capsule in world's space
+        contact.contact_point_in_b.copy( contact.contact_normal );
+        contact.contact_point_in_b.scale( -capsule.shape.radius );
+        contact.contact_point_in_b.add( closestPointOnInnerSegment );
+
+        contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
+        contact.contact_point.scale( 0.5 );
+
+        sphere.transform_inverse.transformVector3( contact.contact_point_in_a );
+        capsule.transform_inverse.transformVector3( contact.contact_point_in_b );
+
+        return [ contact ];
+    };
+} )();
+/**
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectA
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} objectB
+ * @param {boolean} doLightweightCollision
+ * @returns {Goblin.ContactDetails[]|null}
+ */
+Goblin.Collision.sphereConvexHull = function( objectA, objectB, doLightweightCollision ) {
+    var sphere;
+    var convexHull;
+    if ( objectA.shape.shapeType === Goblin.Shapes.Type.SphereShape ) {
+        sphere = objectA;
+        convexHull = objectB;
+    } else {
+        sphere = objectB;
+        convexHull = objectA;
+    }
+
+    // If closestPointOnHull is not null then center of the sphere is lying outside the convex hull.
+    // This can mean two things - either there is no collision at all or there is a shallow collision.
+    var closestPointOnHull = Goblin.GjkEpa.findClosestPointOnObjectToPoint( convexHull, sphere.position );
+    return closestPointOnHull !== null ?
+        Goblin.Collision.sphereConvexHull._shallowSphereConvexHull( sphere, convexHull, closestPointOnHull, doLightweightCollision ) :
+        Goblin.Collision.sphereConvexHull._deepSphereConvexHull( sphere, convexHull, doLightweightCollision );
+};
+
+/**
+ * Collision for shallow cases - center of the sphere is lying outside the convex hull.
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} sphere
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} convexHull
+ * @param {Goblin.Vector3} closestPointOnHull
+ * @param {boolean} doLightweightCollision
+ * @returns {Goblin.ContactDetails[]|null}
+ */
+Goblin.Collision.sphereConvexHull._shallowSphereConvexHull = ( function() {
+    var directionToClosestPoint = new Goblin.Vector3();
+    var collisionNormal = new Goblin.Vector3();
+
+    return function( sphere, convexHull, closestPointOnHull, doLightweightCollision ) {
+        directionToClosestPoint.subtractVectors( closestPointOnHull, sphere.position );
+        var distance = collisionNormal.normalizeVector( directionToClosestPoint );
+        if ( distance > sphere.shape.radius ) {
+            return null;
+        }
+
+        var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
+        contact.object_a = sphere;
+        contact.object_b = convexHull;
+        if ( doLightweightCollision ) {
+            contact.is_lightweight = true;
+            return [ contact ];
+        }
+
+        contact.penetration_depth = sphere.shape.radius - distance;
+        contact.contact_normal.copy( collisionNormal );
+
+        contact.contact_point_in_a.scaleVector( collisionNormal, sphere.shape.radius );
+        contact.contact_point_in_a.add( sphere.position );
+
+        contact.contact_point_in_b.copy( closestPointOnHull );
+
+        contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
+        contact.contact_point.scale( 0.5 );
+
+        sphere.transform_inverse.transformVector3( contact.contact_point_in_a );
+        convexHull.transform_inverse.transformVector3( contact.contact_point_in_b );
+
+        return [ contact ];
+    };
+} )();
+
+
+/**
+ * Collision for deep cases - center of the sphere is lying inside the convex hull.
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} sphere
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} convexHull
+ * @param {boolean} doLightweightCollision
+ * @returns {Goblin.ContactDetails|null}
+ */
+Goblin.Collision.sphereConvexHull._deepSphereConvexHull = ( function() {
+    return function( sphere, convexHull, doLightweightCollision ) {
+        var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
+        contact.object_a = sphere;
+        contact.object_b = convexHull;
+        if ( doLightweightCollision ) {
+            contact.is_lightweight = true;
+            return [ contact ];
+        }
+
+        var minimumProjection = Goblin.Collision.SAT.performSat( sphere, convexHull, convexHull.faceNormals );
+        if ( minimumProjection === null ) {
+            // Umm, what?
+            throw new Error( 'Center of the sphere is inside the complex hull, but SAT thinks that they do not overlap.' );
+        }
+
+        contact.penetration_depth = minimumProjection.overlap;
+        contact.contact_normal.scaleVector( minimumProjection.normal, -1 );
+
+        contact.contact_point_in_a.scaleVector( contact.contact_normal, sphere.shape.radius );
+        contact.contact_point_in_a.add( sphere.position );
+
+        contact.contact_point_in_b.scaleVector( minimumProjection.normal, minimumProjection.overlap - sphere.shape.radius );
+        contact.contact_point_in_b.add( sphere.position );
+
+        contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
+        contact.contact_point.scale( 0.5 );
+
+        sphere.transform_inverse.transformVector3( contact.contact_point_in_a );
+        convexHull.transform_inverse.transformVector3( contact.contact_point_in_b );
+
+        return [ contact ];
+    };
+} )();
+/**
+ * @param {Goblin.RigidBody} objectA
+ * @param {Goblin.RigidBody} objectB
+ * @param {boolean} doLightweightCollision
+ * @returns {Goblin.ContactDetails[]|null}
+ */
+Goblin.Collision.sphereSphere = function( objectA, objectB, doLightweightCollision ) {
+    // Cache positions of the spheres
+    var positionA = objectA.position;
+    var positionB = objectB.position;
+
+    // Get the vector between the two objects
+    _tmp_vec3_1.subtractVectors( positionB, positionA );
+    var distanceBetweenCenters = _tmp_vec3_1.length();
+    var radiiSum = objectA.shape.radius + objectB.shape.radius;
+
+    // If the distance between the objects is greater than their combined radii
+    // then they are not touching, continue processing the other possible contacts
+    if ( distanceBetweenCenters > radiiSum ) {
+        return null;
+    }
+
+    var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
+    contact.object_a = objectA;
+    contact.object_b = objectB;
+
+    if ( doLightweightCollision ) {
+        contact.is_lightweight = true;
+        return [ contact ];
+    }
+
+
+    if ( distanceBetweenCenters < Goblin.EPSILON ) {
+        // Spheres are coincident - set an arbitrary normal
+        contact.contact_normal.set( 0, 1, 0 );
+    } else {
+        // Contact normal = the normalized difference of the center points
+        // Because we already have the distance (vector magnitude), don't normalize
+        // instead we will calculate this value manually
+        contact.contact_normal.scaleVector( _tmp_vec3_1, 1 / distanceBetweenCenters );
+    }
+
+    // The penetration depth is simply the distance between center points minus the sum of sphere radii
+    contact.penetration_depth = radiiSum - distanceBetweenCenters;
+
+    // Contact points in both objects
+    contact.contact_point_in_a.scaleVector( contact.contact_normal, contact.object_a.shape.radius );
+    contact.contact_point_in_b.scaleVector( contact.contact_normal, -contact.object_b.shape.radius );
+
+    // Actual contact point - between two surface points. We need to add objects' positions because contact points are in object's space.
+    contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
+    contact.contact_point.add( positionA );
+    contact.contact_point.add( positionB );
+    contact.contact_point.scale( 0.5 );
+
+    return [ contact ];
+};
+/**
+ * Performs an intersection test between two triangles
+ *
+ * @param {Goblin.TriangleShape} tri_a
+ * @param {Goblin.TriangleShape} tri_b
+ * @param {boolean} do_lightweight_collision
+ * @returns {Goblin.ContactDetails[]|null}
+ */
+Goblin.Collision.triangleTriangle = function( tri_a, tri_b, do_lightweight_collision ) {
+    var dv1_0 = tri_b.classifyVertex( tri_a.a ),
+        dv1_1 = tri_b.classifyVertex( tri_a.b ),
+        dv1_2 = tri_b.classifyVertex( tri_a.c );
+
+    if (
+        ( dv1_0 > 0 && dv1_1 > 0 && dv1_2 > 0 ) ||
+        ( dv1_0 < 0 && dv1_1 < 0 && dv1_2 < 0 )
+    ) {
+        // All vertices of tri_a are on the same side of tri_b, no intersection possible
+        return null;
+    }
+
+    var dv2_0 = tri_a.classifyVertex( tri_b.a ),
+        dv2_1 = tri_a.classifyVertex( tri_b.b ),
+        dv2_2 = tri_a.classifyVertex( tri_b.c );
+    if (
+        ( dv2_0 > 0 && dv2_1 > 0 && dv2_2 > 0 ) ||
+        ( dv2_0 < 0 && dv2_1 < 0 && dv2_2 < 0 )
+    ) {
+        // All vertices of tri_b are on the same side of tri_a, no intersection possible
+        return null;
+    }
+
+    var d = new Goblin.Vector3();
+    d.crossVectors( tri_a.normal, tri_b.normal );
+    d.normalize();
+
+    var pv1_0 = d.dot( tri_a.a ),
+        pv1_1 = d.dot( tri_a.b ),
+        pv1_2 = d.dot( tri_a.c ),
+        pv2_0 = d.dot( tri_b.a ),
+        pv2_1 = d.dot( tri_b.b ),
+        pv2_2 = d.dot( tri_b.c );
+
+    var aa = tri_a.a,
+        ab = tri_a.b,
+        ac = tri_a.c,
+        ba = tri_b.a,
+        bb = tri_b.b,
+        bc = tri_b.c;
+
+    var tmp;
+    if ( Math.sign( dv1_0 ) === Math.sign( dv1_1 ) ) {
+        tmp = dv1_0;
+        dv1_0 = dv1_2;
+        dv1_2 = tmp;
+
+        tmp = pv1_0;
+        pv1_0 = pv1_2;
+        pv1_2 = tmp;
+
+        tmp = aa;
+        aa = ac;
+        ac = tmp;
+    } else if ( Math.sign( dv1_0 ) === Math.sign( dv1_2 ) ) {
+        tmp = dv1_0;
+        dv1_0 = dv1_1;
+        dv1_1 = tmp;
+
+        tmp = pv1_0;
+        pv1_0 = pv1_1;
+        pv1_1 = tmp;
+
+        tmp = aa;
+        aa = ab;
+        ab = tmp;
+    }
+
+    if ( Math.sign( dv2_0 ) === Math.sign( dv2_1 ) ) {
+        tmp = dv2_0;
+        dv2_0 = dv2_2;
+        dv2_2 = tmp;
+
+        tmp = pv2_0;
+        pv2_0 = pv2_2;
+        pv2_2 = tmp;
+
+        tmp = ba;
+        ba = bc;
+        bc = tmp;
+    } else if ( Math.sign( dv2_0 ) === Math.sign( dv2_2 ) ) {
+        tmp = dv2_0;
+        dv2_0 = dv2_1;
+        dv2_1 = tmp;
+
+        tmp = pv2_0;
+        pv2_0 = pv2_1;
+        pv2_1 = tmp;
+
+        tmp = ba;
+        ba = bb;
+        bb = tmp;
+    }
+
+    var a_t1 = pv1_0 + ( pv1_1 - pv1_0 ) * ( dv1_0 / ( dv1_0 - dv1_1 ) ),
+        a_t2 = pv1_0 + ( pv1_2 - pv1_0 ) * ( dv1_0 / ( dv1_0 - dv1_2 ) ),
+        b_t1 = pv2_0 + ( pv2_1 - pv2_0 ) * ( dv2_0 / ( dv2_0 - dv2_1 ) ),
+        b_t2 = pv2_0 + ( pv2_2 - pv2_0 ) * ( dv2_0 / ( dv2_0 - dv2_2 ) );
+
+    if ( a_t1 > a_t2 ) {
+        tmp = a_t1;
+        a_t1 = a_t2;
+        a_t2 = tmp;
+
+        tmp = pv1_1;
+        pv1_1 = pv1_2;
+        pv1_2 = tmp;
+
+        tmp = ab;
+        ab = ac;
+        ac = tmp;
+    }
+    if ( b_t1 > b_t2 ) {
+        tmp = b_t1;
+        b_t1 = b_t2;
+        b_t2 = tmp;
+
+        tmp = pv2_1;
+        pv2_1 = pv2_2;
+        pv2_2 = tmp;
+
+        tmp = bb;
+        bb = bc;
+        bc = tmp;
+    }
+
+    if (
+        ( a_t1 >= b_t1 && a_t1 <= b_t2 ) ||
+        ( a_t2 >= b_t1 && a_t2 <= b_t2 ) ||
+        ( b_t1 >= a_t1 && b_t1 <= a_t2 ) ||
+        ( b_t2 >= a_t1 && b_t2 <= a_t2 )
+    ) {
+        var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
+
+        contact.object_a = tri_a;
+        contact.object_b = tri_b;
+
+        if ( do_lightweight_collision ) {
+            contact.is_lightweight = true;
+            return [ contact ];
+        }
+
+        var best_a_a = new Goblin.Vector3(),
+            best_a_b = new Goblin.Vector3(),
+            best_a_n = new Goblin.Vector3(),
+            best_b_a = new Goblin.Vector3(),
+            best_b_b = new Goblin.Vector3(),
+            best_b_n = new Goblin.Vector3(),
+            has_a = false,
+            has_b = false;
+
+        if ( tri_b.classifyVertex( aa ) <= 0 ) {
+            // aa is penetrating tri_b
+            has_a = true;
+            Goblin.GeometryMethods.findClosestPointInTriangle( aa, ba, bb, bc, best_a_b );
+            best_a_a.copy( aa );
+            best_a_n.copy( tri_b.normal );
+            best_a_n.scale( -1 );
+        } else {
+            if ( a_t1 >= b_t1 && a_t1 <= b_t2 ) {
+                // ab is penetrating tri_b
+                has_a = true;
+                Goblin.GeometryMethods.findClosestPointInTriangle( ab, ba, bb, bc, best_a_b );
+                best_a_a.copy( ab );
+                best_a_n.copy( tri_b.normal );
+                best_a_n.scale( -1 );
+            } else if ( a_t2 >= b_t1 && a_t2 <= b_t2 ) {
+                // ac is penetration tri_b
+                has_a = true;
+                Goblin.GeometryMethods.findClosestPointInTriangle( ac, ba, bb, bc, best_a_b );
+                best_a_a.copy( ac );
+                best_a_n.copy( tri_b.normal );
+                best_a_n.scale( -1 );
+            }
+        }
+
+        if ( tri_a.classifyVertex( ba ) <= 0 ) {
+            // ba is penetrating tri_a
+            has_b = true;
+            Goblin.GeometryMethods.findClosestPointInTriangle( ba, aa, ab, ac, best_b_a );
+            best_b_b.copy( ba );
+            best_b_n.copy( tri_a.normal );
+        } else {
+            if ( b_t1 >= a_t1 && b_t1 <= a_t2 ) {
+                // bb is penetrating tri_a
+                has_b = true;
+                Goblin.GeometryMethods.findClosestPointInTriangle( bb, aa, ab, ac, best_b_a );
+                best_b_b.copy( bb );
+                best_b_n.copy( tri_a.normal );
+            } else if ( b_t2 >= a_t1 && b_t2 <= a_t2 ) {
+                // bc is penetration tri_a
+                has_b = true;
+                Goblin.GeometryMethods.findClosestPointInTriangle( bc, aa, ab, ac, best_b_a );
+                best_b_b.copy( bc );
+                best_b_n.copy( tri_a.normal );
+            }
+        }
+
+        _tmp_vec3_1.subtractVectors( best_a_a, best_a_b );
+        _tmp_vec3_2.subtractVectors( best_b_a, best_b_b );
+        if ( !has_b || ( has_a && _tmp_vec3_1.lengthSquared() < _tmp_vec3_2.lengthSquared() ) ) {
+            contact.contact_point_in_a.copy( best_a_a );
+            contact.contact_point_in_b.copy( best_a_b );
+            contact.contact_normal.copy( best_a_n );
+        } else {
+            contact.contact_point_in_a.copy( best_b_a );
+            contact.contact_point_in_b.copy( best_b_b );
+            contact.contact_normal.copy( best_b_n );
+        }
+        _tmp_vec3_1.subtractVectors( contact.contact_point_in_a, contact.contact_point_in_b );
+        contact.penetration_depth = _tmp_vec3_1.length();
+        contact.contact_point.addVectors( contact.contact_point_in_a, contact.contact_point_in_b );
+        contact.contact_point.scale( 0.5 );
+
+        return [ contact ];
+    }
+
+    return null;
+};
+
 Goblin.RayIntersection = function() {
 	this.object = null;
     this.shape = null;
@@ -5530,7 +6295,7 @@ Goblin.CompoundShape.prototype.updateFaceNormals = function() {
         this.faceNormals.push.apply( this.faceNormals, this.child_shapes[ i ].faceNormals );
     }
 
-    Goblin.Collision.SAT.removeDuplicatedVectors( this.faceNormals );
+    Goblin.Collision.SAT.sanitizeAndRemoveDuplicatedVectors( this.faceNormals );
 };
 
 /**
@@ -5733,10 +6498,15 @@ Goblin.CompoundShapeChild.prototype.updateDerived = function() {
     this.transform.invertInto( this.transform_inverse );
     this.aabb.transform( this.shape.aabb, this.transform );
 
-    for ( var i = 0; i < this.shape.faceNormals.length; i++ ) {
-        var rotatedNormal = new Goblin.Vector3();
-        this.rotation.transformVector3Into( this.shape.faceNormals[ i ], rotatedNormal );
-        this.faceNormals.push( rotatedNormal );
+    if ( this.rotation.isZero() ) {
+        this.faceNormals = this.shape.faceNormals;
+    } else {
+        this.faceNormals.length = 0;
+        for ( var i = 0; i < this.shape.faceNormals.length; i++ ) {
+            var rotatedNormal = new Goblin.Vector3();
+            this.rotation.transformVector3Into( this.shape.faceNormals[ i ], rotatedNormal );
+            this.faceNormals.push( rotatedNormal );
+        }
     }
 };
 /**
@@ -5756,6 +6526,10 @@ Goblin.ConvexHullShape = function( verticesCloud, material ) {
      */
     this.vertices = [];
     /**
+     * @type {Goblin.ConvexHullShape.HalfEdge[]}
+     */
+    this.edges = [];
+    /**
      * @type {Array<Goblin.ConvexHullShape.Face>}
      */
     this.faces = [];
@@ -5768,9 +6542,15 @@ Goblin.ConvexHullShape = function( verticesCloud, material ) {
      */
     this.aabb = new Goblin.AABB();
     /**
+     * NOTE: this field should preserve size and order of `this.faces`, because collision algorithm relies on it.
      * @type {Array<Goblin.Vector3>}
      */
     this.faceNormals = [];
+    /**
+     * NOTE: this field should preserve size and order of `this.edges`, because collision algorithm relies on it.
+     * @type {Goblin.Vector3[]}
+     */
+    this.edgeDirections = [];
     /**
      * the convex hull's volume
      * @type {number}
@@ -5790,7 +6570,7 @@ Goblin.ConvexHullShape = function( verticesCloud, material ) {
 
     this._buildInitialSimplex( verticesCloud );
     this._processUnclaimedPoints();
-    this._calculateVerticesAndNormalsFromFaces();
+    this._calculateVerticesEdgesAndNormals();
     this._cleanup();
     this.calculateLocalAABB( this.aabb );
     this.computeVolume();
@@ -6443,11 +7223,12 @@ Goblin.ConvexHullShape.prototype._assignUnusedVertex = function( vertex, facesTo
 };
 
 /**
- * Populates this.vertices from all unique vertices which can be found in this.faces.
+ * Populates this.vertices, this.edges. this.faceNormals and this.edgeDirections
  * @private
  */
-Goblin.ConvexHullShape.prototype._calculateVerticesAndNormalsFromFaces = function() {
+Goblin.ConvexHullShape.prototype._calculateVerticesEdgesAndNormals = function() {
     this.vertices.length = 0;
+    this.edges.length = 0;
 
     for ( var i = 0; i < this.faces.length; i++ ) {
         var face = this.faces[ i ];
@@ -6455,6 +7236,14 @@ Goblin.ConvexHullShape.prototype._calculateVerticesAndNormalsFromFaces = functio
         this.faceNormals.push( face.normal );
 
         do {
+            if ( this.edges.indexOf( currentEdge ) === -1 ) {
+                this.edges.push( currentEdge );
+                var edgeDirection = new Goblin.Vector3();
+                edgeDirection.subtractVectors( currentEdge.getTail().position, currentEdge.getHead().position );
+                edgeDirection.normalize();
+                this.edgeDirections.push( edgeDirection );
+            }
+
             var vertex = currentEdge.getTail();
             if ( this.vertices.indexOf( vertex ) === -1 ) {
                 this.vertices.push( vertex );
@@ -6462,8 +7251,6 @@ Goblin.ConvexHullShape.prototype._calculateVerticesAndNormalsFromFaces = functio
             currentEdge = currentEdge.next;
         } while ( currentEdge !== face.edge );
     }
-
-    Goblin.Collision.SAT.removeDuplicatedVectors( this.faceNormals );
 };
 
 /**
@@ -7201,7 +7988,7 @@ Goblin.MeshShape.prototype.getInertiaTensor = function( mass ) {
  * @param support_point {vec3} vec3 variable which will contain the supporting point after calling this method
  */
 Goblin.MeshShape.prototype.findSupportPoint = function( direction, support_point ) {
-     // MeshShape isn't convex so it cannot be used directly in GJK
+    // MeshShape isn't convex so it cannot be used directly in GJK
 };
 
 /**
@@ -8058,7 +8845,7 @@ Goblin.GeometryMethods = {
      * @param {Goblin.Vector3} segmentStart
      * @param {Goblin.Vector3} segmentEnd
      * @param {Goblin.Vector3} point
-     * @returns {Goblin.Vector3}
+     * @param {Goblin.Vector3} outputPoint
      */
     findClosestPointOnASegment: ( function() {
         var v = new Goblin.Vector3();
@@ -8066,34 +8853,40 @@ Goblin.GeometryMethods = {
         var u = new Goblin.Vector3();
         var t = 0;
 
-        return function( segmentStart, segmentEnd, point ) {
+        return function( segmentStart, segmentEnd, point, outputPoint ) {
             v.subtractVectors( segmentEnd, segmentStart );
             vNormalized.copy( v );
             vNormalized.normalize();
             u.subtractVectors( point, segmentStart );
 
-            var closestPoint = new Goblin.Vector3();
-            closestPoint.copy( vNormalized );
-            closestPoint.scale( u.dot( vNormalized ) ); // It's now a vector from segmentStart to a closest point on a line (not on the line segment)
+            outputPoint.copy( vNormalized );
+            outputPoint.scale( u.dot( vNormalized ) ); // It's now a vector from segmentStart to a closest point on a line (not on the line segment)
 
-            t = v.dot( closestPoint ) / v.dot( v );
+            t = v.dot( outputPoint ) / v.dot( v );
             t = Goblin.Math.Utils.clamp( t, 0, 1 );
 
-            closestPoint.copy( v );
-            closestPoint.scale( t );
-            closestPoint.add( segmentStart );
-
-            return closestPoint;
+            outputPoint.copy( v );
+            outputPoint.scale( t );
+            outputPoint.add( segmentStart );
         };
     } )(),
 
+    /**
+     * Populates p1 and p2 with a closest points on both segments. Returns squared distance between them.
+     *
+     * @param {Goblin.Vector3} aa - first segment start
+     * @param {Goblin.Vector3} ab - first segment end
+     * @param {Goblin.Vector3} ba - second segment start
+     * @param {Goblin.Vector3} bb - second segment end
+     * @param {Goblin.Vector3} p1 - closest point on first segment
+     * @param {Goblin.Vector3} p2 - closest point on second segment
+     * @returns {number} - squared distance between p1 and p2
+     */
     findClosestPointsOnSegments: ( function() {
-        var d1 = new Goblin.Vector3(),
-            d2 = new Goblin.Vector3(),
-            r = new Goblin.Vector3(),
-            clamp = function( x, min, max ) {
-                return Math.min( Math.max( x, min ), max );
-            };
+        var d1 = new Goblin.Vector3();
+        var d2 = new Goblin.Vector3();
+        var r = new Goblin.Vector3();
+        var diff = new Goblin.Vector3();
 
         return function( aa, ab, ba, bb, p1, p2 ) {
             d1.subtractVectors( ab, aa );
@@ -8111,29 +8904,29 @@ Goblin.GeometryMethods = {
                 s = t = 0;
                 p1.copy( aa );
                 p2.copy( ba );
-                _tmp_vec3_1.subtractVectors( p1, p2 );
-                return _tmp_vec3_1.dot( _tmp_vec3_1 );
+                diff.subtractVectors( p1, p2 );
+                return diff.dot( diff );
             }
 
             if ( a <= Goblin.EPSILON ) {
                 // Only first segment is degenerate
                 s = 0;
                 t = f / e;
-                t = clamp( t, 0, 1 );
+                t = Goblin.Utils.clamp( t, 0, 1 );
             } else {
                 var c = d1.dot( r );
                 if ( e <= Goblin.EPSILON ) {
                     // Second segment is degenerate
                     t = 0;
-                    s = clamp( -c / a, 0, 1 );
+                    s = Goblin.Math.Utils.clamp( -c / a, 0, 1 );
                 } else {
                     // Neither segment is degenerate
-                    var b = d1.dot( d2 ),
-                        denom = a * e - b * b;
+                    var b = d1.dot( d2 );
+                    var denom = a * e - b * b;
 
                     if ( denom !== 0 ) {
                         // Segments aren't parallel
-                        s = clamp( ( b * f - c * e ) / denom, 0, 1 );
+                        s = Goblin.Math.Utils.clamp( ( b * f - c * e ) / denom, 0, 1 );
                     } else {
                         s = 0;
                     }
@@ -8144,10 +8937,10 @@ Goblin.GeometryMethods = {
                     // validate t, if it needs clamping then clamp and recompute s
                     if ( t < 0 ) {
                         t = 0;
-                        s = clamp( -c / a, 0, 1 );
+                        s = Goblin.Math.Utils.clamp( -c / a, 0, 1 );
                     } else if ( t > 1 ) {
                         t = 1;
-                        s = clamp( ( b - c ) / a, 0, 1 );
+                        s = Goblin.Math.Utils.clamp( ( b - c ) / a, 0, 1 );
                     }
                 }
             }
@@ -8158,83 +8951,205 @@ Goblin.GeometryMethods = {
             p2.scaleVector( d2, t );
             p2.add( ba );
 
-            _tmp_vec3_1.subtractVectors( p1, p2 );
-            return _tmp_vec3_1.dot( _tmp_vec3_1 );
+            diff.subtractVectors( p1, p2 );
+            return diff.dot( diff );
+        };
+    } )(),
+
+    /**
+     * Finds a closest point to plane on a given line segments. Writes result into `outPoint`.
+     * Returns a distance from nearest point on the line segment to the plane.
+     * If distance === 0 then `outPoint` is a point on line segment, otherwise it's either `lineStart` or `lineEnd`.
+     *
+     * @param {Goblin.Vector3} planeOrigin
+     * @param {Goblin.Vector3} planeNormal
+     * @param {Goblin.Vector3} lineStart
+     * @param {Goblin.Vector3} lineEnd
+     * @param {Goblin.Vector3} outPoint
+     * @returns {number} - distance from nearest point on the line segment to the plane. It equals 0 if plane intersects line segment.
+     */
+    findClosestPointToPlaneOnLineSegment: ( function() {
+        return function( planeOrigin, planeNormal, lineStart, lineEnd, outPoint ) {
+            var planeDistance = planeOrigin.dot( planeNormal );
+            var lineStartDistance = lineStart.dot( planeNormal ) - planeDistance;
+            var lineEndDistance = lineEnd.dot( planeNormal ) - planeDistance;
+
+            if ( lineStartDistance < -Goblin.EPSILON && lineEndDistance < -Goblin.EPSILON ) {
+                // line segment if fully behind the plane
+                if ( lineStartDistance > lineEndDistance ) {
+                    outPoint.copy( lineStart );
+                    return lineStartDistance;
+                } else {
+                    outPoint.copy( lineEnd );
+                    return lineEndDistance;
+                }
+            } else if ( lineStartDistance > Goblin.EPSILON && lineEndDistance > Goblin.EPSILON ) {
+                // line segment is fully in front of the plane
+                if ( lineStartDistance < lineEndDistance ) {
+                    outPoint.copy( lineStart );
+                    return lineStartDistance;
+                } else {
+                    outPoint.copy( lineEnd );
+                    return lineEndDistance;
+                }
+            }
+
+            outPoint.scaleVector( planeNormal, -lineEndDistance );
+            outPoint.add( lineEnd );
+            return 0;
+        };
+    } )(),
+
+    /**
+     * Projects the point on the given plane. Returns distance between them
+     *
+     * @param {Goblin.Vector3} planeOrigin
+     * @param {Goblin.Vector3} planeNormal
+     * @param {Goblin.Vector3} point
+     * @param {Goblin.Vector3} outputPoint
+     * @returns {number}
+     */
+    projectPointOnPlane: ( function() {
+        var v = new Goblin.Vector3();
+        var distance = 0;
+
+        return function( planeOrigin, planeNormal, point, outputPoint ) {
+            v.subtractVectors( point, planeOrigin );
+            distance = v.dot( planeNormal );
+            outputPoint.scaleVector( planeNormal, -distance );
+            outputPoint.add( point );
+
+            return distance;
+        };
+    } )(),
+
+    /**
+     * Given two coplanar line segments finds an intersection point on them.
+     * Returns `true` if such point is found and `false` otherwise.
+     * Sponsored by https://stackoverflow.com/a/33825948/2646756
+     *
+     * @param {Goblin.Vector3} lineSegmentStartA
+     * @param {Goblin.Vector3} lineSegmentEndA
+     * @param {Goblin.Vector3} lineSegmentStartB
+     * @param {Goblin.Vector3} lineSegmentEndB
+     * @param {Goblin.Vector3} outputPoint
+     * @returns {boolean}
+     */
+    getLineSegmentsIntersection: ( function() {
+        var da = new Goblin.Vector3();
+        var db = new Goblin.Vector3();
+        var dc = new Goblin.Vector3();
+
+        var dcdb = new Goblin.Vector3();
+        var dcda = new Goblin.Vector3();
+        var dadb = new Goblin.Vector3();
+
+        var det = 0;
+        var s = 0;
+        var t = 0;
+
+        return function( lineSegmentStartA, lineSegmentEndA, lineSegmentStartB, lineSegmentEndB, outputPoint ) {
+            da.subtractVectors( lineSegmentEndA, lineSegmentStartA );
+            db.subtractVectors( lineSegmentEndB, lineSegmentStartB );
+            dc.subtractVectors( lineSegmentStartB, lineSegmentStartA );
+
+            dcdb.crossVectors( dc, db );
+            dadb.crossVectors( da, db );
+
+            det = dadb.lengthSquared();
+            if ( det < Goblin.EPSILON ) {
+                return false;
+            }
+
+            s = dcdb.dot( dadb ) / det;
+            if ( s < 0 || s > 1 ) {
+                return false;
+            }
+
+            dcda.crossVectors( dc, da );
+            t = dcda.dot( dadb ) / det;
+            if ( t < 0 || t > 1 ) {
+                return false;
+            }
+
+            outputPoint.scaleVector( da, s );
+            outputPoint.add( lineSegmentStartA );
+            return true;
         };
     } )()
 };
-(function(){
-	Goblin.MinHeap = function( array ) {
-		this.heap = array == null ? [] : array.slice();
+( function() {
+    Goblin.MinHeap = function( array ) {
+        this.heap = array == null ? [] : array.slice();
 
-		if ( this.heap.length > 0 ) {
-			this.heapify();
-		}
-	};
-	Goblin.MinHeap.prototype = {
-		heapify: function() {
-			var start = ~~( ( this.heap.length - 2 ) / 2 );
-			while ( start >= 0 ) {
-				this.siftUp( start, this.heap.length - 1 );
-				start--;
-			}
-		},
-		siftUp: function( start, end ) {
-			var root = start;
+        if ( this.heap.length > 0 ) {
+            this.heapify();
+        }
+    };
+    Goblin.MinHeap.prototype = {
+        heapify: function() {
+            var start = ~~( ( this.heap.length - 2 ) / 2 );
+            while ( start >= 0 ) {
+                this.siftUp( start, this.heap.length - 1 );
+                start--;
+            }
+        },
+        siftUp: function( start, end ) {
+            var root = start;
 
-			while ( root * 2 + 1 <= end ) {
-				var child = root * 2 + 1;
+            while ( root * 2 + 1 <= end ) {
+                var child = root * 2 + 1;
 
-				if ( child + 1 <= end && this.heap[child + 1].valueOf() < this.heap[child].valueOf() ) {
-					child++;
-				}
+                if ( child + 1 <= end && this.heap[ child + 1 ].valueOf() < this.heap[ child ].valueOf() ) {
+                    child++;
+                }
 
-				if ( this.heap[child].valueOf() < this.heap[root].valueOf() ) {
-					var tmp = this.heap[child];
-					this.heap[child] = this.heap[root];
-					this.heap[root] = tmp;
-					root = child;
-				} else {
-					return;
-				}
-			}
-		},
-		push: function( item ) {
-			this.heap.push( item );
+                if ( this.heap[ child ].valueOf() < this.heap[ root ].valueOf() ) {
+                    var tmp = this.heap[ child ];
+                    this.heap[ child ] = this.heap[ root ];
+                    this.heap[ root ] = tmp;
+                    root = child;
+                } else {
+                    return;
+                }
+            }
+        },
+        push: function( item ) {
+            this.heap.push( item );
 
-			var root = this.heap.length - 1;
-			while ( root !== 0 ) {
-				var parent = ~~( ( root - 1 ) / 2 );
+            var root = this.heap.length - 1;
+            while ( root !== 0 ) {
+                var parent = ~~( ( root - 1 ) / 2 );
 
-				if ( this.heap[parent].valueOf() > this.heap[root].valueOf() ) {
-					var tmp = this.heap[parent];
-					this.heap[parent] = this.heap[root];
-					this.heap[root] = tmp;
-				}
+                if ( this.heap[ parent ].valueOf() > this.heap[ root ].valueOf() ) {
+                    var tmp = this.heap[ parent ];
+                    this.heap[ parent ] = this.heap[ root ];
+                    this.heap[ root ] = tmp;
+                }
 
-				root = parent;
-			}
-		},
-		peek: function() {
-			return this.heap.length > 0 ? this.heap[0] : null;
-		},
-		pop: function() {
-			var entry = this.heap[0];
-			this.heap[0] = this.heap[this.heap.length - 1];
-			this.heap.length = this.heap.length - 1;
-			this.siftUp( 0, this.heap.length - 1 );
+                root = parent;
+            }
+        },
+        peek: function() {
+            return this.heap.length > 0 ? this.heap[ 0 ] : null;
+        },
+        pop: function() {
+            var entry = this.heap[ 0 ];
+            this.heap[ 0 ] = this.heap[ this.heap.length - 1 ];
+            this.heap.length = this.heap.length - 1;
+            this.siftUp( 0, this.heap.length - 1 );
 
-			return entry;
-		}
-	};
-})();
+            return entry;
+        }
+    };
+} )();
 Goblin.Utility = {
-	getUid: (function() {
-		var uid = 0;
-		return function() {
-			return uid++;
-		};
-	})()
+    getUid: ( function() {
+        var uid = 0;
+        return function() {
+            return uid++;
+        };
+    } )()
 };
 /**
  * Extends a given shape by sweeping a line around it
@@ -8246,57 +9161,57 @@ Goblin.Utility = {
  * @constructor
  */
 Goblin.LineSweptShape = function( start, end, shape ) {
-	/**
-	 * starting point of the line
-	 *
-	 * @property start
-	 * @type {Vector3}
-	 */
-	this.start = start;
+    /**
+     * starting point of the line
+     *
+     * @property start
+     * @type {Vector3}
+     */
+    this.start = start;
 
-	/**
-	 * line's end point
-	 *
-	 * @property end
-	 * @type {Vector3}
-	 */
-	this.end = end;
+    /**
+     * line's end point
+     *
+     * @property end
+     * @type {Vector3}
+     */
+    this.end = end;
 
-	/**
-	 * shape being swept
-	 *
-	 * @property shape
-	 */
-	this.shape = shape;
+    /**
+     * shape being swept
+     *
+     * @property shape
+     */
+    this.shape = shape;
 
-	/**
-	 * unit direction of the line
-	 *
-	 * @property direction
-	 * @type {Vector3}
-	 */
-	this.direction = new Goblin.Vector3();
-	this.direction.subtractVectors( end, start );
+    /**
+     * unit direction of the line
+     *
+     * @property direction
+     * @type {Vector3}
+     */
+    this.direction = new Goblin.Vector3();
+    this.direction.subtractVectors( end, start );
 
-	/**
-	 * length of the line
-	 *
-	 * @property length
-	 * @type {Number}
-	 */
-	this.length = this.direction.length();
-	this.direction.normalize();
+    /**
+     * length of the line
+     *
+     * @property length
+     * @type {Number}
+     */
+    this.length = this.direction.length();
+    this.direction.normalize();
 
-	/**
-	 * axis-aligned bounding box of this shape
-	 *
-	 * @property aabb
-	 * @type {AABB}
-	 */
-	this.aabb = new Goblin.AABB();
-	this.calculateLocalAABB( this.aabb );
+    /**
+     * axis-aligned bounding box of this shape
+     *
+     * @property aabb
+     * @type {AABB}
+     */
+    this.aabb = new Goblin.AABB();
+    this.calculateLocalAABB( this.aabb );
 
-	this.material = null;
+    this.material = null;
 };
 
 /**
@@ -8306,20 +9221,20 @@ Goblin.LineSweptShape = function( start, end, shape ) {
  * @param aabb {AABB}
  */
 Goblin.LineSweptShape.prototype.calculateLocalAABB = function( aabb ) {
-	this.shape.calculateLocalAABB( aabb );
+    this.shape.calculateLocalAABB( aabb );
 
-	aabb.min.x = Math.min( aabb.min.x + this.start.x, aabb.min.x + this.end.x );
-	aabb.min.y = Math.min( aabb.min.y + this.start.y, aabb.min.y + this.end.y );
-	aabb.min.z = Math.min( aabb.min.z + this.start.z, aabb.min.z + this.end.z );
+    aabb.min.x = Math.min( aabb.min.x + this.start.x, aabb.min.x + this.end.x );
+    aabb.min.y = Math.min( aabb.min.y + this.start.y, aabb.min.y + this.end.y );
+    aabb.min.z = Math.min( aabb.min.z + this.start.z, aabb.min.z + this.end.z );
 
-	aabb.max.x = Math.max( aabb.max.x + this.start.x, aabb.max.x + this.end.x );
-	aabb.max.y = Math.max( aabb.max.y + this.start.y, aabb.max.y + this.end.y );
-	aabb.max.z = Math.max( aabb.max.z + this.start.z, aabb.max.z + this.end.z );
+    aabb.max.x = Math.max( aabb.max.x + this.start.x, aabb.max.x + this.end.x );
+    aabb.max.y = Math.max( aabb.max.y + this.start.y, aabb.max.y + this.end.y );
+    aabb.max.z = Math.max( aabb.max.z + this.start.z, aabb.max.z + this.end.z );
 };
 
 Goblin.LineSweptShape.prototype.getInertiaTensor = function( mass ) {
-	// this is wrong, but currently not used for anything
-	return this.shape.getInertiaTensor( mass );
+    // this is wrong, but currently not used for anything
+    return this.shape.getInertiaTensor( mass );
 };
 
 /**
@@ -8331,16 +9246,16 @@ Goblin.LineSweptShape.prototype.getInertiaTensor = function( mass ) {
  * @param support_point {vec3} vec3 variable which will contain the supporting point after calling this method
  */
 Goblin.LineSweptShape.prototype.findSupportPoint = function( direction, support_point ) {
-	this.shape.findSupportPoint( direction, support_point );
+    this.shape.findSupportPoint( direction, support_point );
 
-	// Add whichever point of this line lies in `direction`
-	var dot = this.direction.dot( direction );
+    // Add whichever point of this line lies in `direction`
+    var dot = this.direction.dot( direction );
 
-	if ( dot < 0 ) {
-		support_point.add( this.start );
-	} else {
-		support_point.add( this.end );
-	}
+    if ( dot < 0 ) {
+        support_point.add( this.start );
+    } else {
+        support_point.add( this.end );
+    }
 };
 
 /**
@@ -8351,8 +9266,8 @@ Goblin.LineSweptShape.prototype.findSupportPoint = function( direction, support_
  * @property end {vec3} end point of the segment
  * @return {RayIntersection|null} if the segment intersects, a RayIntersection is returned, else `null`
  */
-Goblin.LineSweptShape.prototype.rayIntersect = function(){
-	return null;
+Goblin.LineSweptShape.prototype.rayIntersect = function() {
+    return null;
 };
 /**
  * @param {Goblin.Vector3=} min
@@ -9085,73 +10000,70 @@ Goblin.ContactManifold.prototype.addContact = function( contact ) {
 /**
  * Updates all of this manifold's ContactDetails with the correct contact location & penetration depth
  *
- * @method update
  */
-Goblin.ContactManifold.prototype.update = function() {
-    // Update positions / depths of contacts
-    var i,
-        j,
-        point,
-        penetrationThreshold = 0.2,
-        object_a_world_coords = new Goblin.Vector3(),
-        object_b_world_coords = new Goblin.Vector3(),
-        vector_difference = new Goblin.Vector3(),
-        initial_points_length = this.points.length;
+Goblin.ContactManifold.prototype.update = ( function() {
+    var object_a_world_coords = new Goblin.Vector3();
+    var object_b_world_coords = new Goblin.Vector3();
+    var vector_difference = new Goblin.Vector3();
+    var penetrationThreshold = 0.001;
 
-    for ( i = 0; i < this.points.length; i++ ) {
-        point = this.points[ i ];
+    return function() {
+        // Update positions / depths of contacts
+        for ( var i = 0; i < this.points.length; i++ ) {
+            var point = this.points[ i ];
 
-        // Convert the local contact points into world coordinates
-        point.object_a.transform.transformVector3Into( point.contact_point_in_a, object_a_world_coords );
-        point.object_b.transform.transformVector3Into( point.contact_point_in_b, object_b_world_coords );
+            // Convert the local contact points into world coordinates
+            point.object_a.transform.transformVector3Into( point.contact_point_in_a, object_a_world_coords );
+            point.object_b.transform.transformVector3Into( point.contact_point_in_b, object_b_world_coords );
 
-        // Find new world contact point
-        point.contact_point.addVectors( object_a_world_coords, object_b_world_coords );
-        point.contact_point.scale( 0.5 );
+            // Find new world contact point
+            point.contact_point.addVectors( object_a_world_coords, object_b_world_coords );
+            point.contact_point.scale( 0.5 );
 
-        // Find the new penetration depth
-        vector_difference.subtractVectors( object_a_world_coords, object_b_world_coords );
-        point.penetration_depth = vector_difference.dot( point.contact_normal );
+            // Find the new penetration depth
+            vector_difference.subtractVectors( object_a_world_coords, object_b_world_coords );
+            point.penetration_depth = vector_difference.dot( point.contact_normal );
 
-        if ( ( point.object_a_version !== point.object_a.version ) || ( point.object_b_version !== point.object_b.version ) ) {
-            point.penetration_depth = -Infinity;
-        }
-
-        var thisIsTheLastPoint = this.points.length === 1;
-        // If distance from contact is too great remove this contact point
-        if ( point.penetration_depth < -penetrationThreshold ) {
-            // Points are too far away along the contact normal
-            if ( thisIsTheLastPoint ) {
-                this.object_a.onCollisionContactExit && this.object_a.onCollisionContactExit( point );
+            if ( ( point.object_a_version !== point.object_a.version ) || ( point.object_b_version !== point.object_b.version ) ) {
+                point.penetration_depth = -Infinity;
             }
 
-            point.destroy();
-            this.points[ i ] = this.points[ this.points.length - 1 ];
-            this.points.length = this.points.length - 1;
-        } else {
-            // Check if points are too far away orthogonally
-            _tmp_vec3_1.scaleVector( point.contact_normal, point.penetration_depth );
-            _tmp_vec3_1.subtractVectors( object_a_world_coords, _tmp_vec3_1 );
-
-            _tmp_vec3_1.subtractVectors( object_b_world_coords, _tmp_vec3_1 );
-            var distance = _tmp_vec3_1.length();
-            if ( distance > penetrationThreshold ) {
-                // Points are indeed too far away
+            var thisIsTheLastPoint = this.points.length === 1;
+            // If distance from contact is too great remove this contact point
+            if ( point.penetration_depth < -penetrationThreshold ) {
+                // Points are too far away along the contact normal
                 if ( thisIsTheLastPoint ) {
                     this.object_a.onCollisionContactExit && this.object_a.onCollisionContactExit( point );
                 }
 
                 point.destroy();
                 this.points[ i ] = this.points[ this.points.length - 1 ];
-                this.points.length = this.points.length - 1;
+                this.points.pop();
+            } else {
+                // Check if points are too far away orthogonally
+                _tmp_vec3_1.scaleVector( point.contact_normal, point.penetration_depth );
+                _tmp_vec3_1.subtractVectors( object_a_world_coords, _tmp_vec3_1 );
+
+                _tmp_vec3_1.subtractVectors( object_b_world_coords, _tmp_vec3_1 );
+                var distance = _tmp_vec3_1.length();
+                if ( distance > penetrationThreshold ) {
+                    // Points are indeed too far away
+                    if ( thisIsTheLastPoint ) {
+                        this.object_a.onCollisionContactExit && this.object_a.onCollisionContactExit( point );
+                    }
+
+                    point.destroy();
+                    this.points[ i ] = this.points[ this.points.length - 1 ];
+                    this.points.pop();
+                }
             }
         }
-    }
 
-    if ( this.points.length !== 0 ) {
-        this.object_a.onCollisionContactStay && this.object_a.onCollisionContactStay( this.points[ this.points.length - 1 ] );
-    }
-};
+        if ( this.points.length !== 0 ) {
+            this.object_a.onCollisionContactStay && this.object_a.onCollisionContactStay( this.points[ this.points.length - 1 ] );
+        }
+    };
+} )();
 /**
  * List/Manager of ContactManifolds
  *
@@ -9889,6 +10801,11 @@ Goblin.NarrowPhase.prototype.updateContactManifolds = function() {
     }
 };
 
+/**
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object_a
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object_b
+ * @returns {Goblin.ContactDetails[]|null}
+ */
 Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
     var compound,
         other,
@@ -9897,27 +10814,36 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
     if ( object_a.shape.shapeType === Goblin.Shapes.Type.CompoundShape ) {
         compound = object_a;
         other = object_b;
-        permuted = !false;
+        permuted = true;
     } else {
         compound = object_b;
         other = object_a;
-        permuted = !true;
+        permuted = false;
     }
 
-    var proxy = Goblin.ObjectPool.getObject( 'RigidBodyProxy' ),
-        child_shape, contact, result_contact;
+    var proxy = Goblin.ObjectPool.getObject( 'RigidBodyProxy' );
+    var parent_a = null;
+    var parent_b = null;
+    var contacts = null;
+    var result_contacts = null;
 
     for ( var i = 0; i < compound.shape.child_shapes.length; i++ ) {
-        child_shape = compound.shape.child_shapes[ i ];
+        var child_shape = compound.shape.child_shapes[ i ];
         proxy.setFrom( compound, child_shape );
 
         if ( proxy.shape.shapeType === Goblin.Shapes.Type.CompoundShape || other.shape.shapeType === Goblin.Shapes.Type.CompoundShape ) {
-            contact = this.midPhase( proxy, other );
+            contacts = this.midPhase( proxy, other );
         } else {
-            contact = this.getContact( proxy, other );
+            contacts = this.getContacts( proxy, other );
+            if ( contacts === null ) {
+                continue;
+            }
 
-            if ( contact != null && !contact.tag ) {
-                var parent_a, parent_b;
+            for ( var j = 0; j < contacts.length; j++ ) {
+                var contact = contacts[ j ];
+                if (contact.tag) {
+                    continue;
+                }
 
                 if ( contact.object_a === proxy ) {
                     contact.object_a = compound;
@@ -9941,14 +10867,19 @@ Goblin.NarrowPhase.prototype.midPhase = function( object_a, object_b ) {
             }
         }
 
-        result_contact = result_contact || contact;
+        result_contacts = result_contacts || contacts;
     }
 
     Goblin.ObjectPool.freeObject( 'RigidBodyProxy', proxy );
 
-    return result_contact;
+    return result_contacts;
 };
 
+/**
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object_a
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object_b
+ * @returns {Goblin.ContactDetails[]|null}
+ */
 Goblin.NarrowPhase.prototype.meshCollision = ( function() {
     var b_to_a = new Goblin.Matrix4(),
         tri_b = new Goblin.TriangleShape( new Goblin.Vector3(), new Goblin.Vector3(), new Goblin.Vector3() ),
@@ -9961,7 +10892,7 @@ Goblin.NarrowPhase.prototype.meshCollision = ( function() {
         b_to_a.copy( object_a.transform_inverse );
         b_to_a.multiply( object_b.transform );
 
-        var contact;
+        var contacts = null;
 
         var shape_a = object_a.shape;
         var shape_b = object_b.shape;
@@ -9985,22 +10916,25 @@ Goblin.NarrowPhase.prototype.meshCollision = ( function() {
                 tri_b.normal.normalize();
 
                 var do_lightweight_collision = context._shouldPerformLightweightCollisionBetween( object_a, object_b );
-                contact = Goblin.TriangleTriangle( a_node.object, tri_b, do_lightweight_collision );
+                contacts = Goblin.Collision.triangleTriangle( a_node.object, tri_b, do_lightweight_collision );
 
-                if ( contact != null ) {
-                    object_a.transform.rotateVector3( contact.contact_normal );
-                    object_a.transform.transformVector3( contact.contact_point );
+                if ( contacts !== null ) {
+                    for ( var i = 0; i < contacts.length; i++ ) {
+                        var contact = contacts[ i ];
+                        object_a.transform.rotateVector3( contact.contact_normal );
+                        object_a.transform.transformVector3( contact.contact_point );
 
-                    object_a.transform.transformVector3( contact.contact_point_in_b );
-                    object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
+                        object_a.transform.transformVector3( contact.contact_point_in_b );
+                        object_b.transform_inverse.transformVector3( contact.contact_point_in_b );
 
-                    contact.shape_a = shape_a;
-                    contact.shape_b = shape_b;
+                        contact.shape_a = shape_a;
+                        contact.shape_b = shape_b;
 
-                    contact.object_a = object_a;
-                    contact.object_b = object_b;
+                        contact.object_a = object_a;
+                        contact.object_b = object_b;
 
-                    context.addContact( object_a, object_b, contact );
+                        context.addContact( object_a, object_b, contact );
+                    }
                 }
             } else if ( a_node.isLeaf() ) {
                 // just a_node is a leaf
@@ -10040,7 +10974,7 @@ Goblin.NarrowPhase.prototype.meshCollision = ( function() {
             }
         }
 
-        return contact;
+        return contacts;
     }
 
     function triangleConvex( triangle, mesh, convex, do_lightweight_collision ) {
@@ -10050,11 +10984,11 @@ Goblin.NarrowPhase.prototype.meshCollision = ( function() {
         var child_shape = new Goblin.CompoundShapeChild( triangle, new Goblin.Vector3(), new Goblin.Quaternion() );
         proxy.setFrom( mesh, child_shape );
 
-        var contact = Goblin.GjkEpa.findContact( proxy, convex, do_lightweight_collision );
+        var contacts = Goblin.GjkEpa.findContacts( proxy, convex, do_lightweight_collision );
 
         Goblin.ObjectPool.freeObject( 'RigidBodyProxy', proxy );
 
-        return contact;
+        return contacts;
     }
 
     var meshConvex = ( function() {
@@ -10069,30 +11003,37 @@ Goblin.NarrowPhase.prototype.meshCollision = ( function() {
             convex_aabb_in_mesh.transform( convex.aabb, mesh.transform_inverse );
 
             // Traverse the BHV in mesh
-            var pending_nodes = [ mesh.shape.hierarchy ],
-                contact, result_contact,
-                node;
+            var pending_nodes = [ mesh.shape.hierarchy ];
+            var contacts = null;
+            var result_contacts = null;
+            var node;
+
             while ( ( node = pending_nodes.shift() ) ) {
                 if ( node.aabb.intersects( convex_aabb_in_mesh ) ) {
                     if ( node.isLeaf() ) {
                         // Check node for collision
                         var do_lightweight_collision = context._shouldPerformLightweightCollisionBetween( mesh, convex );
-                        contact = triangleConvex( node.object, mesh, convex, do_lightweight_collision );
-                        if ( contact != null ) {
+                        contacts = triangleConvex( node.object, mesh, convex, do_lightweight_collision );
+                        if ( contacts === null ) {
+                            continue;
+                        }
+
+                        for ( var i = 0; i < contacts.length; i++ ) {
+                            var contact = contacts[ i ];
                             contact.shape_a = mesh.shape;
                             contact.shape_b = convex.shape;
 
                             context.addContact( contact.object_a, contact.object_b, contact );
                         }
 
-                        result_contact = result_contact || contact;
+                        result_contacts = result_contacts || contacts;
                     } else {
                         pending_nodes.push( node.left, node.right );
                     }
                 }
             }
 
-            return result_contact;
+            return result_contacts;
         };
     } )();
 
@@ -10115,11 +11056,11 @@ Goblin.NarrowPhase.prototype.meshCollision = ( function() {
 /**
  * Tests two objects for contact
  *
- * @method getContact
- * @param {Goblin.RigidBody} object_a
- * @param {Goblin.RigidBody} object_b
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object_a
+ * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object_b
+ * @returns {Goblin.ContactDetails[]|null}
  */
-Goblin.NarrowPhase.prototype.getContact = function( object_a, object_b ) {
+Goblin.NarrowPhase.prototype.getContacts = function( object_a, object_b ) {
     if ( !object_a.aabb.intersects( object_b.aabb ) ) {
         return null;
     }
@@ -10134,17 +11075,21 @@ Goblin.NarrowPhase.prototype.getContact = function( object_a, object_b ) {
 
     var doLightweightCollision = this._shouldPerformLightweightCollisionBetween( object_a, object_b );
     var collisionMethod = Goblin.Collision.Factory.getCollisionMethod( object_a.shape, object_b.shape );
-    var contact = collisionMethod( object_a, object_b, doLightweightCollision );
+    var contacts = collisionMethod( object_a, object_b, doLightweightCollision );
+    if ( contacts === null ) {
+        return null;
+    }
 
     // store original shapes that collided on the objects
     // so that it's possible to deduce which actual colliders
     // were involved
-    if ( contact ) {
+    for ( var i = 0; i < contacts.length; i++ ) {
+        var contact = contacts[ i ];
         contact.shape_a = object_a.shape;
         contact.shape_b = object_b.shape;
     }
 
-    return contact;
+    return contacts;
 };
 
 Goblin.NarrowPhase.prototype.addContact = function( object_a, object_b, contact ) {
@@ -10190,17 +11135,19 @@ Goblin.NarrowPhase.prototype.addContact = function( object_a, object_b, contact 
  * @param possible_contacts {Array}
  */
 Goblin.NarrowPhase.prototype.generateContacts = function( possible_contacts ) {
-    var i,
-        contact,
-        possible_contacts_length = possible_contacts.length;
+    var possible_contacts_length = possible_contacts.length;
 
     // Make sure all of the manifolds are up to date
     this.updateContactManifolds();
 
-    for ( i = 0; i < possible_contacts_length; i++ ) {
-        contact = this.getContact( possible_contacts[ i ][ 0 ], possible_contacts[ i ][ 1 ] );
+    for ( var i = 0; i < possible_contacts_length; i++ ) {
+        var contacts = this.getContacts( possible_contacts[ i ][ 0 ], possible_contacts[ i ][ 1 ] );
+        if ( contacts === null ) {
+            continue;
+        }
 
-        if ( contact ) {
+        for ( var j = 0; j < contacts.length; j++ ) {
+            var contact = contacts[ j ];
             this.addContact( contact.object_a, contact.object_b, contact );
         }
     }

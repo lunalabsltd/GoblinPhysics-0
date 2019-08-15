@@ -1,6 +1,4 @@
 /**
- * Performs an intersection test between two triangles
- *
  * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object_a
  * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object_b
  * @param {boolean} do_lightweight_collision

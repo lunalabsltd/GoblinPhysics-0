@@ -63,25 +63,41 @@ Goblin.GjkEpa = {
         } else if ( simplex != null ) {
             return [ Goblin.GjkEpa.EPA( simplex ) ];
         }
+
+        return null;
     },
 
     /**
-     * Returns a closest point on object (either vertex, point on edge or point on face) to a given point.
+     * Returns a closest point on object (either vertex, point on edge or point on face) to a given object.
      * NOTE: point must lie outside the object, otherwise this method will return null.
      * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object
-     * @param {Goblin.Vector3} point
+     * @param {object} anotherObject - something that implements GJK API (.position and .findSupportPoint)
      * @returns {Goblin.Vector3|null}
      */
     findClosestPointOnObject: ( function() {
-        var origin = new Goblin.Vector3();
         var closestPointOnSimplex = new Goblin.Vector3();
+        var currentClosestPointOnSimplex = new Goblin.Vector3();
         var barycentricCoordinates = new Goblin.Vector3();
         var a = new Goblin.Vector3();
         var b = new Goblin.Vector3();
         var c = new Goblin.Vector3();
 
-        return function( object, point ) {
-            var simplex = new Goblin.GjkEpa.Simplex( object, new Goblin.GjkEpa.PointProxy( point ), true );
+        var getRealCoordinatesOnObjectA = function( simplex, closestPointOnSimplex, output ) {
+            simplex.findBarycentricCoordinatesOf( closestPointOnSimplex, barycentricCoordinates );
+
+            a.scaleVector( simplex.points[ 0 ].witness_a, barycentricCoordinates.x );
+            b.scaleVector( simplex.points[ 1 ].witness_a, barycentricCoordinates.y );
+            output.addVectors( a, b );
+
+            // We may end up with a simplex with two or three points. findPointClosestToOrigin and findBarycentricCoordinatesOf handles them just fine.
+            if ( simplex.points.length > 2 ) {
+                c.scaleVector( simplex.points[ 2 ].witness_a, barycentricCoordinates.z );
+                output.add( c );
+            }
+        };
+
+        return function( object, anotherObject ) {
+            var simplex = new Goblin.GjkEpa.Simplex( object, anotherObject, true );
             var gjkResult = simplex.addPoint();
             while ( gjkResult ) {
                 gjkResult = simplex.addPoint();
@@ -92,28 +108,62 @@ Goblin.GjkEpa = {
                 Goblin.GjkEpa.freeSimplex( simplex );
                 return null;
             }
-
-            Goblin.GeometryMethods.findClosestPointInTriangle(
-                origin,
-                simplex.points[ 0 ].point,
-                simplex.points[ 1 ].point,
-                simplex.points[ 2 ].point,
-                closestPointOnSimplex
-            );
-
-            Goblin.GeometryMethods.findBarycentricCoordinates( closestPointOnSimplex, simplex.points[ 0 ].point, simplex.points[ 1 ].point, simplex.points[ 2 ].point, barycentricCoordinates );
-
             var result = new Goblin.Vector3();
-            a.scaleVector( simplex.points[ 0 ].witness_a, barycentricCoordinates.x );
-            b.scaleVector( simplex.points[ 1 ].witness_a, barycentricCoordinates.y );
-            c.scaleVector( simplex.points[ 2 ].witness_a, barycentricCoordinates.z );
-            result.addVectors( a, b );
-            result.add( c );
+            // Ok, now we're sure that our simplex does not contains origin, but we still may not be as close to origin as possible.
+            // We should expand further it until it includes the closest possible point to the origin.
 
+            // Just in case we've completely failed to expand our simplex in recent direction and ended up with some duplicates.
+            simplex.deduplicatePoints();
+            // updateDirection call serves two purposes.
+            // 1) We're most likely will be dealing with a simplex with four points here (one or two of which is definitely redundant). updateDirection will eliminate them.
+            // 2) We still want to perform at leas one expansion here, so we will need an expansion direction anyway.
+            simplex.updateDirection();
+            simplex.findPointClosestToOrigin( closestPointOnSimplex );
+            getRealCoordinatesOnObjectA( simplex, closestPointOnSimplex, result );
+
+            while ( true ) {
+                // So, let's expand our simplex couple of times and see if we can get something better.
+                // Should really be a one or two iteration cycle, even for a tricky shapes.
+                simplex.addPoint();
+                simplex.findPointClosestToOrigin( currentClosestPointOnSimplex );
+                if ( currentClosestPointOnSimplex.lengthSquared() + Goblin.EPSILON >= closestPointOnSimplex.lengthSquared() ) {
+                    break;
+                }
+                closestPointOnSimplex.copy( currentClosestPointOnSimplex );
+                getRealCoordinatesOnObjectA( simplex, closestPointOnSimplex, result );
+                simplex.deduplicatePoints();
+                simplex.updateDirection();
+            }
             Goblin.GjkEpa.freeSimplex( simplex );
+
             return result;
         };
     } )(),
+
+    /**
+     * Returns a closest point on object (either vertex, point on edge or point on face) to a given point.
+     * NOTE: point must lie outside the object, otherwise this method will return null.
+     *
+     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object
+     * @param {Goblin.Vector3} point
+     * @returns {Goblin.Vector3|null}
+     */
+    findClosestPointOnObjectToPoint: function( object, point ) {
+        return Goblin.GjkEpa.findClosestPointOnObject( object, new Goblin.GjkEpa.PointProxy( point ) );
+    },
+
+    /**
+     * Returns a closest point on object (either vertex, point on edge or point on face) to a given line segment.
+     * NOTE: line segment must fully lie outside the object, otherwise this method will return null.
+     *
+     * @param {Goblin.RigidBody|Goblin.RigidBodyProxy} object
+     * @param {Goblin.Vector3} lineSegmentStart
+     * @param {Goblin.Vector3} lineSegmentEnd
+     * @returns {Goblin.Vector3|null}
+     */
+    findClosestPointOnObjectToLineSegment: function( object, lineSegmentStart, lineSegmentEnd ) {
+        return Goblin.GjkEpa.findClosestPointOnObject( object, new Goblin.GjkEpa.LineSegmentProxy( lineSegmentStart, lineSegmentEnd ) );
+    },
 
     /**
      * Perform GJK algorithm against two objects. Returns a ContactDetails object if there is a collision, else null
@@ -431,10 +481,10 @@ Goblin.GjkEpa.Face.prototype = {
 };
 
 ( function() {
-    var origin = new Goblin.Vector3(),
-        ao = new Goblin.Vector3(),
-        ab = new Goblin.Vector3(),
-        ac = new Goblin.Vector3();
+    var ao = new Goblin.Vector3();
+    var ab = new Goblin.Vector3();
+    var ac = new Goblin.Vector3();
+    var bc = new Goblin.Vector3();
 
     var barycentric = new Goblin.Vector3(),
         confirm = {
@@ -466,13 +516,7 @@ Goblin.GjkEpa.Face.prototype = {
                 // Check the margins first
                 // @TODO this can be expanded to support 1-simplex (2 points)
                 if ( this.points.length >= 3 ) {
-                    Goblin.GeometryMethods.findClosestPointInTriangle(
-                        origin,
-                        this.points[ 0 ].point,
-                        this.points[ 1 ].point,
-                        this.points[ 2 ].point,
-                        _tmp_vec3_1
-                    );
+                    this.findPointClosestToOrigin( _tmp_vec3_1 );
                     var distanceSquared = _tmp_vec3_1.lengthSquared();
 
                     if ( distanceSquared <= Goblin.GjkEpa.margins * Goblin.GjkEpa.margins ) {
@@ -490,11 +534,7 @@ Goblin.GjkEpa.Face.prototype = {
 
                         contact.penetration_depth = Goblin.GjkEpa.margins - Math.sqrt( distanceSquared );
 
-                        Goblin.GeometryMethods.findBarycentricCoordinates( _tmp_vec3_1, this.points[ 0 ].point, this.points[ 1 ].point, this.points[ 2 ].point, barycentric );
-
-                        if ( isNaN( barycentric.x ) ) {
-                            return false;
-                        }
+                        this.findBarycentricCoordinatesOf( _tmp_vec3_1, barycentric );
 
                         if ( this.do_lightweight_collision ) {
                             contact.is_lightweight = true;
@@ -540,6 +580,19 @@ Goblin.GjkEpa.Face.prototype = {
             return support_point;
         },
 
+        deduplicatePoints: function() {
+            for ( var i = 0; i < this.points.length; i++ ) {
+                for ( var j = i + 1; j < this.points.length; j++ ) {
+                    if ( this.points[ i ].point.equals( this.points[ j ].point ) ) {
+                        this.points[ j ] = this.points[ this.points.length - 1 ];
+                        this.points.pop();
+                        i--;
+                        break;
+                    }
+                }
+            }
+        },
+
         findDirectionFromLine: function() {
             ao.scaleVector( this.points[ 1 ].point, -1 );
             ab.subtractVectors( this.points[ 0 ].point, this.points[ 1 ].point );
@@ -568,101 +621,116 @@ Goblin.GjkEpa.Face.prototype = {
             }
         },
 
-        findDirectionFromTriangle: function() {
-            // Triangle
-            var a = this.points[ 2 ],
-                b = this.points[ 1 ],
-                c = this.points[ 0 ];
+        findDirectionFromTriangle: ( function() {
+            var triangleNormal = new Goblin.Vector3();
+            var abNormal = new Goblin.Vector3();
+            var acNormal = new Goblin.Vector3();
+            var bcNormal = new Goblin.Vector3();
 
-            ao.scaleVector( a.point, -1 ); // ao
-            ab.subtractVectors( b.point, a.point ); // ab
-            ac.subtractVectors( c.point, a.point ); // ac
+            return function() {
+                // Triangle
+                var a = this.points[ 2 ];
+                var b = this.points[ 1 ];
+                var c = this.points[ 0 ];
 
-            // Determine the triangle's normal
-            _tmp_vec3_1.crossVectors( ab, ac );
+                ao.scaleVector( a.point, -1 );
+                ab.subtractVectors( b.point, a.point );
+                ac.subtractVectors( c.point, a.point );
+                bc.subtractVectors( c.point, b.point );
 
-            // Edge cross products
-            _tmp_vec3_2.crossVectors( ab, _tmp_vec3_1 );
-            _tmp_vec3_3.crossVectors( _tmp_vec3_1, ac );
+                triangleNormal.crossVectors( ab, ac );
 
-            if ( _tmp_vec3_3.dot( ao ) >= 0 ) {
-                // Origin lies on side of ac opposite the triangle
-                if ( ac.dot( ao ) >= 0 ) {
-                    // Origin outside of the ac line, so we form a new
-                    // 1-simplex (line) with points A and C, leaving B behind
-                    this.points.length = 0;
-                    this.points.push( c, a );
-                    Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', b );
+                // Edge cross products
+                abNormal.crossVectors( ab, triangleNormal );
+                acNormal.crossVectors( triangleNormal, ac );
+                bcNormal.crossVectors( bc, triangleNormal );
 
-                    // New search direction is from ac towards the origin
-                    this.next_direction.crossVectors( ac, ao );
-                    this.next_direction.cross( ac );
-                } else {
-                    // *
-                    if ( ab.dot( ao ) >= 0 ) {
-                        // Origin outside of the ab line, so we form a new
-                        // 1-simplex (line) with points A and B, leaving C behind
-                        this.points.length = 0;
-                        this.points.push( b, a );
-                        Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
+                var acNormalDotAo = acNormal.dot( ao );
+                var abNormalDotAo = abNormal.dot( ao );
+                var bcNormalDotAo = bcNormal.dot( ao );
 
-                        // New search direction is from ac towards the origin
-                        this.next_direction.crossVectors( ab, ao );
-                        this.next_direction.cross( ab );
-                    } else {
-                        // only A gives us a good reference point, start over with a 0-simplex
-                        this.points.length = 0;
-                        this.points.push( a );
-                        Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', b );
-                        Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
-                    }
-                    // *
+                if ( Math.abs( acNormalDotAo ) < Goblin.EPSILON ) {
+                    // Origin lies on AC
+                    this.next_direction.copy( acNormal );
+                    return;
+                } else if ( Math.abs( abNormalDotAo ) < Goblin.EPSILON ) {
+                    // Origin lies on AB
+                    this.next_direction.copy( abNormal );
+                    return;
+                } else if ( Math.abs( bcNormalDotAo ) < Goblin.EPSILON ) {
+                    // Origin lies on BC
+                    this.next_direction.copy( bcNormal );
+                    return;
                 }
 
-            } else {
-
-                // Origin lies on the triangle side of ac
-                if ( _tmp_vec3_2.dot( ao ) >= 0 ) {
-                    // Origin lies on side of ab opposite the triangle
-
-                    // *
-                    if ( ab.dot( ao ) >= 0 ) {
-                        // Origin outside of the ab line, so we form a new
-                        // 1-simplex (line) with points A and B, leaving C behind
+                if ( acNormalDotAo >= 0 ) {
+                    // Origin lies on side of ac opposite the triangle
+                    if ( ac.dot( ao ) >= 0 ) {
+                        // Origin outside of the ac line, so we form a new
+                        // 1-simplex (line) with points A and C, leaving B behind
                         this.points.length = 0;
-                        this.points.push( b, a );
-                        Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
+                        this.points.push( c, a );
+                        Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', b );
 
                         // New search direction is from ac towards the origin
-                        this.next_direction.crossVectors( ab, ao );
-                        this.next_direction.cross( ab );
+                        this.next_direction.crossVectors( ac, ao );
+                        this.next_direction.cross( ac );
                     } else {
-                        // only A gives us a good reference point, start over with a 0-simplex
-                        this.points.length = 0;
-                        this.points.push( a );
-                        Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', b );
-                        Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
-                    }
-                    // *
+                        if ( ab.dot( ao ) >= 0 ) {
+                            // Origin outside of the ab line, so we form a new
+                            // 1-simplex (line) with points A and B, leaving C behind
+                            this.points.length = 0;
+                            this.points.push( b, a );
+                            Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
 
+                            // New search direction is from ac towards the origin
+                            this.next_direction.crossVectors( ab, ao );
+                            this.next_direction.cross( ab );
+                        } else {
+                            // only A gives us a good reference point, start over with a 0-simplex
+                            this.points.length = 0;
+                            this.points.push( a );
+                            Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', b );
+                            Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
+                        }
+                    }
                 } else {
+                    // Origin lies on the triangle side of ac
+                    if ( abNormalDotAo >= 0 ) {
+                        // Origin lies on side of ab opposite the triangle
+                        if ( ab.dot( ao ) >= 0 ) {
+                            // Origin outside of the ab line, so we form a new
+                            // 1-simplex (line) with points A and B, leaving C behind
+                            this.points.length = 0;
+                            this.points.push( b, a );
+                            Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
 
-                    // Origin lies somewhere in the triangle or above/below it
-                    if ( _tmp_vec3_1.dot( ao ) >= 0 ) {
-                        // Origin is on the front side of the triangle
-                        this.next_direction.copy( _tmp_vec3_1 );
-                        this.points.length = 0;
-                        this.points.push( a, b, c );
+                            // New search direction is from ac towards the origin
+                            this.next_direction.crossVectors( ab, ao );
+                            this.next_direction.cross( ab );
+                        } else {
+                            // only A gives us a good reference point, start over with a 0-simplex
+                            this.points.length = 0;
+                            this.points.push( a );
+                            Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', b );
+                            Goblin.ObjectPool.freeObject( 'GJK2SupportPoint', c );
+                        }
                     } else {
-                        // Origin is on the back side of the triangle
-                        this.next_direction.copy( _tmp_vec3_1 );
-                        this.next_direction.scale( -1 );
+                        // Origin lies somewhere in the triangle or above/below it
+                        if ( triangleNormal.dot( ao ) >= 0 ) {
+                            // Origin is on the front side of the triangle
+                            this.next_direction.copy( triangleNormal );
+                            this.points.length = 0;
+                            this.points.push( a, b, c );
+                        } else {
+                            // Origin is on the back side of the triangle
+                            this.next_direction.copy( triangleNormal );
+                            this.next_direction.scale( -1 );
+                        }
                     }
-
                 }
-
-            }
-        },
+            };
+        } )(),
 
         getFaceNormal: function( a, b, c, destination ) {
             ab.subtractVectors( b.point, a.point );
@@ -751,36 +819,88 @@ Goblin.GjkEpa.Face.prototype = {
                 this.getFaceNormal( d, a, b, _tmp_vec3_1 );
                 this.next_direction.copy( _tmp_vec3_1 );
             }
+
+            return false;
         },
 
         updateDirection: function() {
             if ( this.points.length === 0 ) {
-
                 this.next_direction.subtractVectors( this.object_b.position, this.object_a.position );
-
+                return false;
             } else if ( this.points.length === 1 ) {
-
                 this.next_direction.scale( -1 );
-
+                return false;
             } else if ( this.points.length === 2 ) {
-
                 this.findDirectionFromLine();
-
+                return false;
             } else if ( this.points.length === 3 ) {
-
                 this.findDirectionFromTriangle();
-
+                return false;
             } else {
-
                 return this.findDirectionFromTetrahedron();
-
             }
-        }
+        },
+
+        /**
+         * This method handle simplexes with any number of points, however, it's result isn't reliable for the simplexes
+         * with more than three points.
+         *
+         * @param {Goblin.Vector3} outputPoint
+         */
+        findPointClosestToOrigin: ( function() {
+            var origin = new Goblin.Vector3();
+
+            return function( outputPoint ) {
+                var points = this.points;
+
+                if ( points.length === 1 ) {
+                    outputPoint.copy( points[ 0 ].point );
+                } else if ( points.length === 2 ) {
+                    Goblin.GeometryMethods.findClosestPointOnASegment( points[ 0 ].point, points[ 1 ].point, origin, outputPoint );
+                } else {
+                    // TODO: Should we really use first 3 points if simplex length > 3? Seems to be the case in current GJK implementation.
+                    Goblin.GeometryMethods.findClosestPointInTriangle(
+                        origin,
+                        points[ 0 ].point,
+                        points[ 1 ].point,
+                        points[ 2 ].point,
+                        outputPoint
+                    );
+                }
+            };
+        } )(),
+
+        /**
+         * This method handle simplexes with any number of points, however, it's result isn't reliable for the simplexes
+         * with more than three points.
+         *
+         * @param {Goblin.Vector3} point
+         * @param {Goblin.Vector3} outputPoint
+         */
+        findBarycentricCoordinatesOf: ( function() {
+            var lineDirection = new Goblin.Vector3();
+            var pointDirection = new Goblin.Vector3();
+
+            return function( point, outputPoint ) {
+                var points = this.points;
+
+                if ( points.length === 1 ) {
+                    outputPoint.set( 1, 0, 0 );
+                } else if ( points.length === 2 ) {
+                    lineDirection.subtractVectors( points[ 1 ].point, points[ 0 ].point );
+                    pointDirection.subtractVectors( point, points[ 0 ].point );
+                    var t = Math.sqrt( pointDirection.lengthSquared() / lineDirection.lengthSquared() );
+                    outputPoint.set( 1 - t, t );
+                } else {
+                    Goblin.GeometryMethods.findBarycentricCoordinates( point, points[ 0 ].point, points[ 1 ].point, points[ 2 ].point, outputPoint );
+                }
+            };
+        } )()
     };
 } )();
 
 /**
- * Wraps a vector in a proxy object so that it can ne used in GJK / EPA
+ * Wraps a vector in a proxy object so that it can ne used in GJK.
  * @param {Goblin.Vector3} point
  * @constructor
  */
@@ -789,9 +909,40 @@ Goblin.GjkEpa.PointProxy = function( point ) {
 };
 
 /**
- * @param {Goblin.Vector3} direction direction to use in finding the support point
- * @param {Goblin.Vector3} support_point vec3 variable which will contain the supporting point after calling this method
+ * @param {Goblin.Vector3} direction - direction to use in finding the support point
+ * @param {Goblin.Vector3} supportPoint - variable which will contain the supporting point after calling this method
  */
-Goblin.GjkEpa.PointProxy.prototype.findSupportPoint = function( direction, support_point ) {
-    support_point.copy( this.position );
+Goblin.GjkEpa.PointProxy.prototype.findSupportPoint = function( direction, supportPoint ) {
+    supportPoint.copy( this.position );
+};
+
+/**
+ * Wraps a line segment in a proxy object so that it can be used in GJK.
+ *
+ * @param {Goblin.Vector3} lineSegmentStart
+ * @param {Goblin.Vector3} lineSegmentEnd
+ * @constructor
+ */
+Goblin.GjkEpa.LineSegmentProxy = function( lineSegmentStart, lineSegmentEnd ) {
+    this.position = new Goblin.Vector3();
+    this.position.addVectors( lineSegmentStart, lineSegmentEnd );
+    this.position.scale( 0.5 );
+
+    this.lineSegmentStart = lineSegmentStart;
+    this.lineSegmentEnd = lineSegmentEnd;
+};
+
+/**
+ * @param {Goblin.Vector3} direction - direction to use in finding the support point
+ * @param {Goblin.Vector3} supportPoint - variable which will contain the supporting point after calling this method
+ */
+Goblin.GjkEpa.LineSegmentProxy.prototype.findSupportPoint = function( direction, supportPoint ) {
+    var dotStart = this.lineSegmentStart.dot( direction );
+    var dotEnd = this.lineSegmentEnd.dot( direction );
+
+    if ( dotStart > dotEnd ) {
+        supportPoint.copy( this.lineSegmentStart );
+    } else {
+        supportPoint.copy( this.lineSegmentEnd );
+    }
 };

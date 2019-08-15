@@ -20,16 +20,13 @@ Goblin.Collision.sphereSphere = function( objectA, objectB, doLightweightCollisi
         return null;
     }
 
-    /**
-     * @type {Goblin.ContactDetails}
-     */
     var contact = Goblin.ObjectPool.getObject( 'ContactDetails' );
     contact.object_a = objectA;
     contact.object_b = objectB;
 
     if ( doLightweightCollision ) {
         contact.is_lightweight = true;
-        return contact;
+        return [ contact ];
     }
 
 

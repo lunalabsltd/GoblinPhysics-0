@@ -21,6 +21,7 @@ Goblin.Collision.Factory = {
         table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.CapsuleShape ] = Goblin.Collision.sphereCapsule;
         table[ Goblin.Shapes.Type.SphereShape | Goblin.Shapes.Type.ConvexHullShape ] = Goblin.Collision.sphereConvexHull;
         table[ Goblin.Shapes.Type.CapsuleShape ] = Goblin.Collision.capsuleCapsule;
+        table[ Goblin.Shapes.Type.CapsuleShape | Goblin.Shapes.Type.ConvexHullShape ] = Goblin.Collision.capsuleConvexHull;
         Goblin.Collision.Factory._collisionTable = table;
     },
 
